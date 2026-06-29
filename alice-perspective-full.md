@@ -1,27 +1,3 @@
----
-AIGC:
-    Label: "1"
-    ContentProducer: 001191440300708461136T1XGW3
-    ProduceID: e5c99e17051756298f900731236cb272_ecac9b60720f11f1897e5254002afed2
-    ReservedCode1: Sw7f39ZhRMXIHBNJeZ436OdBJzE/zgKe+vmgIBMSMHgSczMKbATsO3H4zSrKrYFSbkjOMd/GcCKP/qiuolg0uKWrn9DyKm/dNO8B3/dIgYKezjKByOEx0naielIiCdFMA3++hMGVGzu6ogPOuwFogxz87WfZOOcsTgAMfA6RNq7clrd+so8BGlj53iM=
-    ContentPropagator: 001191440300708461136T1XGW3
-    PropagateID: e5c99e17051756298f900731236cb272_ecac9b60720f11f1897e5254002afed2
-    ReservedCode2: Sw7f39ZhRMXIHBNJeZ436OdBJzE/zgKe+vmgIBMSMHgSczMKbATsO3H4zSrKrYFSbkjOMd/GcCKP/qiuolg0uKWrn9DyKm/dNO8B3/dIgYKezjKByOEx0naielIiCdFMA3++hMGVGzu6ogPOuwFogxz87WfZOOcsTgAMfA6RNq7clrd+so8BGlj53iM=
----
-
----
-AIGC:
-    Label: "1"
-    ContentProducer: 001191440300708461136T1XGW3
-    ProduceID: e5c99e17051756298f900731236cb272_b31461db720f11f1897e5254002afed2
-    ReservedCode1: aLrhQlJ4EUTe+tUuHm5K9m8jyTv5BddUSAs5hfrkmP/yQNCXbPOMcLSxWsuS0gg7kaqX2vmRhjpAeZRP7/Z0DKDboUL9CFpF6ENc5hn+YJ1A3PbkNOYuDfyZriOnEokLYvFaid/A3ECz7BA9MxVpyVit+raNBGqvKjeXHGIwWvhoEruaWjGJhSUQHWI=
-    ContentPropagator: 001191440300708461136T1XGW3
-    PropagateID: e5c99e17051756298f900731236cb272_b31461db720f11f1897e5254002afed2
-    ReservedCode2: aLrhQlJ4EUTe+tUuHm5K9m8jyTv5BddUSAs5hfrkmP/yQNCXbPOMcLSxWsuS0gg7kaqX2vmRhjpAeZRP7/Z0DKDboUL9CFpF6ENc5hn+YJ1A3PbkNOYuDfyZriOnEokLYvFaid/A3ECz7BA9MxVpyVit+raNBGqvKjeXHGIwWvhoEruaWjGJhSUQHWI=
----
-
-
-
 # W取向督导师 · 团体心理督导方法论
 
 > "我们投身于此，是出于真诚的关怀，是基于对来访者处境的理解，更是凭借引导他们的专业能力。这种清晰的临床框架正是建立治疗关系中安全感的基础。"
