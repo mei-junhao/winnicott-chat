@@ -1,7 +1,7 @@
 # Winnicott Chat — 项目手册
 
 > 最后更新：2026-06-29  
-> 当前版本：v4  
+> 当前版本：v4.1  
 > 生产环境：https://mei-junhao.github.io/winnicott-chat/ （GitHub Pages，固定 URL）  
 > 入口文件：master-select.html（主页）  
 > 仓库地址：https://github.com/mei-junhao/winnicott-chat
@@ -101,9 +101,11 @@ master-select.html（大师选择页）
 ### 3.4 ai-supervisor.html（AI 督导）功能
 
 - 🔐 SHA-256 密码验证（明文不存源码）
-- 📎 文件上传（.txt/.md/.docx，限 4000 字）
-- 🔍 整体印象：核心议题→临床信号→初步假设→信息缺口→工作方向
-- 💬 后续督导对话
+- 📎 文件上传（.txt/.md/.docx，建议 4000 字以内，无硬截断，实时字数统计）
+- 🔍 整体印象：可折叠/展开，避免遮挡聊天区
+- 💬 督导对话：chat-messages 扩展至 550px，更多可视空间
+- 💾 自动保存：印象生成 + 每次对话后自动存 localStorage
+- 📂 历史对话：弹窗面板查看/加载/删除历史记录
 - 📚 基于 alice-perspective SKILL.md 的完整督导框架
 - 🔄 四层 API 降级（与聊天页一致）
 
@@ -271,3 +273,7 @@ curl -s -X POST 'https://api.kkdmx.com/v1/chat/completions' \
 | 2026-06-29 | 架构确定：master-select 主页 → winnicott-chat 和 master-chat 同级 |
 | 2026-06-29 | 从旧部署 5b86bd20fcdf… 恢复完整 v4 源码 |
 | 2026-06-29 | 创建 PROJECT.md 项目手册 |
+| 2026-06-29 | **v4.1** ai-supervisor 大改：整体印象可折叠、字数统计、自动保存、历史面板 |
+| 2026-06-29 | master-chat：新增三档温度模式、修复流式 bug、保存按钮、语言按钮移入设置面板 |
+| 2026-06-29 | winnicott-chat：自动保存改为语义话题切换触发 + 三档温度模式支持 |
+| 2026-06-29 | index.html：新增 mode-overlay 三档温度选择层 |
