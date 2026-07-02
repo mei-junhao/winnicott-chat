@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>AI 临床督导</title>
+<style>
+  :root {
+    --bg: #f8f6f2; --card: #fffdfb; --text: #2d2925; --muted: #8f857d;
+    --accent: #6b8f71; --accent-hover: #5a7d60; --light-accent: #eef4ee;
+    --border: #dfe6df; --danger: #b85450; --shadow-sm: 0 1px 3px rgba(45,41,37,0.04);
+    --shadow: 0 2px 12px rgba(45,41,37,0.05), 0 8px 24px rgba(45,41,37,0.04);
+    --radius-sm: 10px; --radius: 14px; --radius-lg: 18px;
+    --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family:"Noto Serif SC","STSong",Georgia,serif;
+    background:var(--bg); color:var(--text); min-height:100vh;
+    display:flex; justify-content:center; line-height:1.85;
+    -webkit-font-smoothing:antialiased;
+  }
+  .app { width:100%; max-width:680px; padding:32px 20px 48px; display:flex; flex-direction:column; gap:32px; }
+
+  /* Phase sections */
+  .phase { display:flex; flex-direction:column; gap:16px; }
+  .phase-label {
+    font-size:11px; text-transform:uppercase; letter-spacing:0.12em;
+    color:var(--muted); opacity:0.6; margin-bottom:-8px;
+  }
+  .phase-divider { height:1px; background:var(--border); margin:0; opacity:0.4; }
+
+  /* Password gate */
+  .gate { display:flex; flex-direction:column; align-items:center; justify-content:center;
+    min-height:60vh; text-align:center; gap:24px; }
+  .gate h1 { font-size:24px; font-weight:500; color:var(--accent); letter-spacing:0.05em; }
+  .gate p { font-size:14px; color:var(--muted); max-width:460px; line-height:1.9; }
+  .gate input {
+    padding:14px 18px; border:1px solid var(--border); border-radius:var(--radius);
+    font-size:16px; text-align:center; outline:none; width:240px;
+    font-family:inherit; letter-spacing:4px; transition:var(--transition); background:var(--card);
+  }
+  .gate input:focus { border-color:var(--accent); box-shadow:0 0 0 4px rgba(107,143,113,0.1); }
+  .gate button {
+    padding:14px 48px; border:none; border-radius:var(--radius); background:var(--accent);
+    color:white; font-size:15px; cursor:pointer; font-family:inherit; transition:var(--transition); letter-spacing:0.04em;
+  }
+  .gate button:hover { background:var(--accent-hover); transform:translateY(-1px); box-shadow:0 4px 20px rgba(107,143,113,0.2); }
+  .gate .error { color:var(--danger); font-size:13px; display:none; }
+
+  /* Main interface */
+  .main { display:none; }
+
+  .header { text-align:center; padding-bottom:20px; border-bottom:1px solid var(--border); }
+  .header h1 { font-size:22px; font-weight:500; color:var(--accent); letter-spacing:0.04em; }
+  .header p { font-size:13px; color:var(--muted); margin-top:8px; line-height:1.8; max-width:480px; margin-left:auto; margin-right:auto; }
+
+  /* Back link */
+  .back-link { display:inline-block; color:var(--muted); text-decoration:none; font-size:12px; margin-bottom:2px; transition:var(--transition); }
+  .back-link:hover { color:var(--accent); }
+
+  /* Upload zone — collapsible */
+  .upload-toggle {
+    display:inline-flex; align-items:center; gap:5px; font-size:12px; color:var(--muted);
+    cursor:pointer; font-family:inherit; border:none; background:none; padding:2px 0;
+    transition:var(--transition);
+  }
+  .upload-toggle:hover { color:var(--accent); }
+  .upload-zone {
+    border:2px dashed var(--border); border-radius:var(--radius); padding:18px 24px;
+    text-align:center; cursor:pointer; transition:var(--transition); background:var(--card);
+    display:none; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap;
+  }
+  .upload-zone.open { display:flex; }
+  .upload-zone:hover { border-color:var(--accent); background:var(--light-accent); }
+  .upload-zone .icon { font-size:18px; opacity:0.7; }
+  .upload-zone p { font-size:13px; color:var(--muted); margin:0; }
+  .upload-zone .hint { font-size:11px; color:var(--muted); opacity:0.6; }
+  #fileInfo { display:none; font-size:12px; color:var(--accent); margin-top:8px; padding:8px 12px; background:var(--light-accent); border-radius:var(--radius-sm); }
+
+  /* Text area */
+  textarea {
+    width:100%; min-height:200px; border:1px solid var(--border); border-radius:var(--radius);
+    padding:20px 22px; font-size:15px; font-family:inherit; resize:vertical;
+    outline:none; background:var(--card); color:var(--text); line-height:2;
+    transition:var(--transition);
+  }
+  textarea:focus { border-color:var(--accent); box-shadow:0 0 0 4px rgba(107,143,113,0.08); }
+
+  /* Char count */
+  .char-count { text-align:right; font-size:11px; color:var(--muted); margin-top:-8px; padding-right:4px; }
+
+  /* Button row */
+  .btn-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  .btn-primary {
+    padding:13px 28px; border:none; border-radius:var(--radius); background:var(--accent);
+    color:white; font-size:14px; cursor:pointer; font-family:inherit; transition:var(--transition);
+    letter-spacing:0.03em; flex:1; min-width:160px; font-weight:500;
+  }
+  .btn-primary:hover { background:var(--accent-hover); box-shadow:0 4px 20px rgba(107,143,113,0.2); transform:translateY(-1px); }
+  .btn-primary:disabled { opacity:0.4; cursor:not-allowed; filter:grayscale(0.2); transform:none; box-shadow:none; }
+
+  .btn-aux {
+    display:inline-flex; align-items:center; gap:4px; padding:7px 14px;
+    border:1px solid var(--border); border-radius:20px; background:var(--card);
+    color:var(--muted); font-size:12px; cursor:pointer; font-family:inherit;
+    transition:var(--transition); white-space:nowrap;
+  }
+  .btn-aux:hover { border-color:var(--accent); color:var(--accent); background:var(--light-accent); }
+  .btn-aux.danger:hover { border-color:var(--danger); color:var(--danger); }
+
+  /* Reply length — inline compact */
+  .len-inline {
+    display:flex; align-items:center; gap:8px; padding:7px 14px;
+    border:1px solid var(--border); border-radius:20px; background:var(--card);
+    font-size:12px; color:var(--muted); white-space:nowrap;
+  }
+  .len-inline label { opacity:0.7; flex-shrink:0; }
+  .len-inline select {
+    border:none; outline:none; font-size:12px; font-family:inherit; color:var(--accent);
+    cursor:pointer; background:transparent; font-weight:600; padding:0;
+    -webkit-appearance:none; appearance:none;
+  }
+
+  /* Output box */
+  .output-box {
+    background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
+    padding:24px 28px; display:none; line-height:2; font-size:15px;
+    white-space:pre-wrap; box-shadow:var(--shadow); transition:var(--transition);
+  }
+  .output-box .ob-header {
+    display:flex; justify-content:space-between; align-items:center;
+    margin-bottom:16px; padding-bottom:14px; border-bottom:1px solid var(--border);
+  }
+  .output-box .ob-header h3 { font-size:16px; color:var(--accent); font-weight:500; margin:0; letter-spacing:0.03em; }
+  .toggle-btn {
+    display:inline-flex; align-items:center; gap:4px; padding:5px 14px;
+    border:1px solid var(--border); border-radius:20px; background:var(--card);
+    color:var(--muted); font-size:11px; cursor:pointer; font-family:inherit;
+    transition:var(--transition); white-space:nowrap;
+  }
+  .toggle-btn:hover { border-color:var(--accent); color:var(--accent); background:var(--light-accent); }
+  .output-box .label { font-weight:600; color:var(--text); margin-top:16px; display:block; }
+  .impression-body { max-height:5000px; overflow:hidden; transition:max-height 0.45s cubic-bezier(0.4,0,0.2,1),opacity 0.3s ease; }
+  .impression-summary { display:none; cursor:pointer; color:var(--muted); font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; user-select:none; }
+  .output-box.collapsed .impression-body { max-height:0; opacity:0; }
+  .output-box.collapsed .impression-summary { display:block; }
+  .output-box.collapsed .ob-header { margin-bottom:0; padding-bottom:0; border-bottom:none; }
+  .output-box.collapsed .ob-header h3 { font-size:13px; color:var(--muted); font-weight:400; }
+  .output-box.collapsed { padding:16px 28px; }
+
+  /* Chat area */
+  .chat-area { display:none; flex-direction:column; gap:16px; }
+  .chat-messages { max-height:520px; overflow-y:auto; display:flex; flex-direction:column; gap:14px; padding:4px 0; scroll-behavior:smooth; -webkit-overflow-scrolling:touch; }
+  .chat-msg {
+    padding:14px 18px; border-radius:14px; font-size:14px; line-height:1.9;
+    animation:fadeUp 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  @keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+  .chat-msg.user { background:var(--light-accent); align-self:flex-end; max-width:80%; border-bottom-right-radius:4px; }
+  .chat-msg.ai { background:var(--card); border:1px solid var(--border); max-width:88%; border-bottom-left-radius:4px; box-shadow:var(--shadow-sm); }
+  .chat-msg.typing { color:var(--muted); font-size:13px; font-style:italic; background:transparent; border:none; box-shadow:none; padding:8px 18px; }
+  .chat-input-wrap { display:flex; gap:10px; align-items:flex-end; }
+  .chat-input-wrap textarea { min-height:48px; max-height:100px; flex:1; font-size:14px; padding:12px 16px; }
+  .chat-input-wrap button {
+    padding:11px 24px; border:none; border-radius:var(--radius); background:var(--accent);
+    color:white; font-size:14px; cursor:pointer; font-family:inherit;
+    transition:var(--transition); flex-shrink:0; letter-spacing:0.03em; font-weight:500;
+  }
+  .chat-input-wrap button:hover { background:var(--accent-hover); box-shadow:0 4px 14px rgba(107,143,113,0.15); }
+  .chat-input-wrap button:disabled { opacity:0.4; cursor:not-allowed; filter:grayscale(0.2); transform:none; }
+
+  .disclaimer { text-align:center; font-size:11px; color:var(--muted); padding:8px 0; opacity:0.55; }
+
+  /* History overlay */
+  .history-overlay {
+    display:none; position:fixed; inset:0; z-index:300;
+    background:rgba(45,41,37,0.2); align-items:center; justify-content:center;
+    backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);
+  }
+  .history-overlay.show { display:flex; }
+  .history-panel {
+    background:var(--card); border-radius:var(--radius-lg); padding:32px 28px 24px;
+    max-width:480px; width:92%; max-height:70vh; display:flex; flex-direction:column;
+    box-shadow:0 8px 48px rgba(45,41,37,0.12); animation:scaleIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  @keyframes scaleIn { from { opacity:0; transform:scale(0.95); } to { opacity:1; transform:scale(1); } }
+  .history-panel .hp-header {
+    display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-shrink:0;
+  }
+  .history-panel .hp-header h3 { margin:0; font-size:18px; font-weight:500; color:var(--text); }
+  .history-panel .hp-close {
+    width:32px; height:32px; border-radius:50%; border:1px solid var(--border);
+    background:var(--card); color:var(--muted); font-size:14px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; transition:var(--transition);
+  }
+  .history-panel .hp-close:hover { background:var(--bg); color:var(--text); }
+  .history-list { overflow-y:auto; flex:1; -webkit-overflow-scrolling:touch; }
+  .history-item {
+    display:flex; justify-content:space-between; align-items:center; gap:14px;
+    padding:16px 0; border-bottom:1px solid var(--border); transition:var(--transition);
+  }
+  .history-item:hover { background:var(--light-accent); margin:0 -14px; padding:16px 14px; border-radius:var(--radius-sm); }
+  .history-item:last-child { border-bottom:none; }
+  .history-item .hi-info { flex:1; min-width:0; }
+  .history-item .hi-title {
+    font-size:14px; font-weight:500; white-space:nowrap; overflow:hidden;
+    text-overflow:ellipsis; margin-bottom:4px; color:var(--text);
+  }
+  .history-item .hi-meta { font-size:11px; color:var(--muted); }
+  .history-item .hi-actions { display:flex; gap:6px; flex-shrink:0; }
+  .hi-btn {
+    padding:6px 16px; border-radius:16px; font-size:11px; cursor:pointer;
+    font-family:inherit; transition:0.15s; border:none;
+  }
+  .hi-btn-load { background:var(--accent); color:#fff; }
+  .hi-btn-load:hover { background:var(--accent-hover); }
+  .hi-btn-del { background:none; border:1px solid var(--border); color:var(--muted); }
+  .hi-btn-del:hover { border-color:var(--danger); color:var(--danger); }
+  .history-empty { text-align:center; padding:48px 24px; color:var(--muted); font-size:14px; }
+  .history-empty .he-icon { font-size:44px; margin-bottom:12px; opacity:0.45; }
+
+  /* Responsive */
+  @media (max-width: 576px) {
+    .app { padding:24px 16px 40px; gap:24px; }
+    .output-box { padding:20px 20px; }
+    .btn-row { gap:8px; }
+    .btn-primary { padding:12px 20px; font-size:13px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- ====== PASSWORD GATE ====== -->
+  <div class="gate" id="gate">
+    <h1>AI 临床督导（测试版）</h1>
+    <p>基于温尼科特框架的团体心理督导方法论。上传逐字稿、案例报告或反移情困惑，AI 将输出整体印象并展开督导对话。</p>
+    <input type="password" id="pwdInput" placeholder="输入密码" onkeydown="if(event.key==='Enter')verifyPassword()">
+    <button onclick="verifyPassword()">进入</button>
+    <p class="error" id="pwdError">密码错误，请重试。</p>
+  </div>
+
+  <!-- ====== MAIN INTERFACE ====== -->
+  <div class="main" id="main">
+    <a class="back-link" href="master-select.html">&larr; 返回主页</a>
+
+    <!-- ====== PHASE 1: INPUT ====== -->
+    <div class="header">
+      <h1>AI 临床督导</h1>
+      <p>请上传或粘贴临床材料（逐字稿 / 案例报告 / 反移情困惑）</p>
+    </div>
+
+    <div class="phase">
+      <!-- Upload toggle + zone (collapsible) -->
+      <div style="display:flex;justify-content:flex-end;">
+        <button class="upload-toggle" onclick="toggleUpload()" id="uploadToggleBtn">&plus; 上传文件</button>
+      </div>
+      <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+        <span class="icon">&#x1F4CE;</span><span>点击上传文件</span><span class="hint">（.txt / .md / .docx，建议 4000 字以内）</span>
+        <input type="file" id="fileInput" accept=".txt,.md,.docx" style="display:none" onchange="handleFile(event)">
+        <div id="fileInfo"></div>
+      </div>
+
+      <!-- Text input -->
+      <textarea id="materialText" placeholder="或者直接粘贴临床材料……
+
+逐字稿格式示例：
+T（治疗师）：你今天看起来不太开心。
+P（来访者）：是的，我一直在想上周你说的话……"></textarea>
+      <div class="char-count" id="charCount"></div>
+    </div>
+
+    <!-- ====== PHASE 2: CONTROLS ====== -->
+    <div class="phase-divider"></div>
+    <div class="btn-row">
+      <button class="btn-primary" id="analyzeBtn" onclick="generateImpression()">&#x1F50D; 生成整体印象</button>
+      <div class="len-inline">
+        <label>&#x270D;&#xFE0F;</label>
+        <select id="lenSelect" onchange="updateLength(this.value)">
+          <option value="0">简洁</option>
+          <option value="1" selected>适中</option>
+          <option value="2">详细</option>
+        </select>
+      </div>
+      <button class="btn-aux" onclick="showHistory()">📂 历史</button>
+      <button class="btn-aux" onclick="saveToHistory()">💾 保存到历史</button>
+      <button class="btn-aux danger" onclick="clearAll()">清空</button>
+      <button class="btn-aux" onclick="exportConversation()">📥 导出对话</button>
+      <button class="btn-aux" onclick="emailConversation()">📧 发送到邮箱</button>
+    </div>
+
+    <!-- ====== PHASE 3: OUTPUT ====== -->
+    <div class="output-box" id="outputBox"></div>
+
+    <div class="chat-area" id="chatArea">
+      <div class="chat-messages" id="chatMessages"></div>
+      <div class="chat-input-wrap">
+        <textarea id="chatInput" rows="1" placeholder="就整体印象中的内容继续讨论……" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat()}"></textarea>
+        <button id="chatSendBtn" onclick="sendChat()">发送</button>
+      </div>
+    </div>
+
+    <div class="disclaimer">
+      &#x26A0;&#xFE0F; 此 AI 督导为辅助工具，不能替代真人督导。如涉及危机情境，请立即寻求专业支持。
+    </div>
+
+    <!-- History overlay -->
+    <div class="history-overlay" id="historyOverlay" onclick="if(event.target===this)closeHistory()">
+      <div class="history-panel">
+        <div class="hp-header">
+          <h3>&#x1F4C2; 历史对话</h3>
+          <button class="hp-close" onclick="closeHistory()">&times;</button>
+        </div>
+        <div class="history-list" id="historyList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ==================== UPLOAD TOGGLE ====================
+function toggleUpload() {
+  var zone = document.getElementById('uploadZone');
+  var btn = document.getElementById('uploadToggleBtn');
+  if (zone.classList.contains('open')) {
+    zone.classList.remove('open');
+    btn.innerHTML = '&plus; 上传文件';
+  } else {
+    zone.classList.add('open');
+    btn.innerHTML = '&minus; 收起上传';
+  }
+}
+
+// ==================== PASSWORD ====================
+var PASSWORD_HASH = '8b67f39584c2f28d3f9b78b2899528ed49b230172f8fd6d74439ab1488840fcb';
+
+async function verifyPassword() {
+  var input = document.getElementById('pwdInput').value.trim();
+  var data = new TextEncoder().encode(input);
+  var hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  var hashArray = Array.from(new Uint8Array(hashBuffer));
+  var hashHex = hashArray.map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
+
+  if (hashHex === PASSWORD_HASH) {
+    document.getElementById('gate').style.display = 'none';
+    document.getElementById('main').style.display = 'block';
+    sessionStorage.setItem('supervisor_auth', '1');
+  } else {
+    document.getElementById('pwdError').style.display = 'block';
+  }
+}
+
+if (sessionStorage.getItem('supervisor_auth') === '1') {
+  document.getElementById('gate').style.display = 'none';
+  document.getElementById('main').style.display = 'block';
+}
+
+var _savedId = sessionStorage.getItem('supervisor_current_id');
+if (_savedId) {
+  _currentHistoryId = _savedId;
+}
+
+// ==================== REPLY LENGTH ====================
+var _maxTokens = 0;
+function updateLength(val) {
+  var tokens = [1024, 0, 4096];
+  _maxTokens = tokens[parseInt(val)];
+}
+
+// ==================== FILE HANDLING ====================
+function handleFile(e) {
+  // Auto-open upload zone when file chosen
+  document.getElementById('uploadZone').classList.add('open');
+  document.getElementById('uploadToggleBtn').innerHTML = '&minus; 收起上传';
+
+  var file = e.target.files[0];
+  if (!file) return;
+  var ext = file.name.split('.').pop().toLowerCase();
+  if (['txt','md','docx'].indexOf(ext) === -1) {
+    alert('仅支持 .txt / .md / .docx 文件');
+    return;
+  }
+
+  // 判断是否为督导风格文档（文件名含 perspective / supervision / style / framework / 方法论）
+  var isStyleDoc = /perspective|supervision|style|framework|methodolog/i.test(file.name);
+
+  document.getElementById('fileInfo').style.display = 'block';
+  document.getElementById('fileInfo').textContent = isStyleDoc
+    ? '正在加载督导风格文档: ' + file.name + ' ...'
+    : '已选择: ' + file.name + ' (' + Math.round(file.size/1024) + ' KB)';
+
+  var reader = new FileReader();
+  reader.onload = function() {
+    var text = reader.result;
+    var fi = document.getElementById('fileInfo');
+
+    if (isStyleDoc) {
+      // 督导风格文档：更新 SYSTEM_PROMPT + 存入 textarea 作为参考
+      setSupervisionStyle(text);
+      document.getElementById('materialText').value = text;
+      fi.style.display = 'block';
+      fi.innerHTML = '已加载督导风格: <strong>' + file.name + '</strong> (' + Math.round(file.size/1024) + ' KB) <span style="color:var(--accent);">&#x2705; 已应用至 AI 行为</span>';
+    } else {
+      // 普通临床材料
+      document.getElementById('materialText').value = text;
+      fi.style.display = 'block';
+      if (text.length > 4000) {
+        fi.innerHTML = '已选择: ' + file.name + ' (' + Math.round(file.size/1024) + ' KB) <span style="color:var(--danger);">&#x26A0;&#xFE0F; 文件共 ' + text.length + ' 字，建议控制在 4000 字以内以确保分析质量</span>';
+      } else {
+        fi.textContent = '已选择: ' + file.name + ' (' + Math.round(file.size/1024) + ' KB)';
+      }
+    }
+  };
+
+  if (ext === 'docx') {
+    readDocx(file, isStyleDoc);
+  } else {
+    reader.readAsText(file, 'UTF-8');
+  }
+}
+
+function readDocx(file, isStyleDoc) {
+  reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var arraybuffer = e.target.result;
+      var zipReader = new JSZip();
+      zipReader.loadAsync(arraybuffer).then(function(zip) {
+        return zip.file('word/document.xml').async('string');
+      }).then(function(xml) {
+        var text = xml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+        var fi = document.getElementById('fileInfo');
+
+        if (isStyleDoc) {
+          setSupervisionStyle(text);
+          document.getElementById('materialText').value = text;
+          fi.style.display = 'block';
+          fi.innerHTML = '已加载督导风格: <strong>' + file.name + '</strong> (' + Math.round(file.size/1024) + ' KB) <span style="color:var(--accent);">&#x2705; 已应用至 AI 行为</span>';
+        } else {
+          document.getElementById('materialText').value = text;
+          if (text.length > 4000) {
+            fi.innerHTML = '已选择: ' + file.name + ' (' + Math.round(file.size/1024) + ' KB) <span style="color:var(--danger);">&#x26A0;&#xFE0F; 文件共 ' + text.length + ' 字，建议控制在 4000 字以内以确保分析质量</span>';
+          } else {
+            fi.textContent = '已选择: ' + file.name + ' (' + Math.round(file.size/1024) + ' KB)';
+          }
+        }
+      }).catch(function() {
+        document.getElementById('materialText').value = '[无法解析 .docx 文件，请尝试粘贴文本]';
+      });
+    } catch(e) {
+      document.getElementById('materialText').value = '[文件读取失败]';
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function clearAll() {
+  document.getElementById('materialText').value = '';
+  document.getElementById('fileInput').value = '';
+  document.getElementById('fileInfo').style.display = 'none';
+  document.getElementById('outputBox').style.display = 'none';
+  document.getElementById('chatArea').style.display = 'none';
+  document.getElementById('charCount').textContent = '';
+  // Collapse upload zone
+  document.getElementById('uploadZone').classList.remove('open');
+  document.getElementById('uploadToggleBtn').innerHTML = '&plus; 上传文件';
+  _currentHistoryId = null;
+  sessionStorage.removeItem('supervisor_current_id');
+}
+
+document.getElementById('materialText').addEventListener('input', function() {
+  var len = this.value.length;
+  var cc = document.getElementById('charCount');
+  cc.textContent = len + ' 字';
+  cc.style.color = len > 4000 ? 'var(--danger)' : 'var(--muted)';
+});
+
+// ==================== SYSTEM PROMPT ====================
+var WINNICOTT_PERSONA_GUARD = [
+  '【身份约束 — 最高优先级】',
+  '你是唐纳德·温尼科特（Donald Winnicott），英国精神分析师，以温尼科特精神分析为根基的临床督导师。',
+  '你从真实的临床材料出发，用"足够好的母亲"式的语言抱持治疗师。',
+  '【风格规则 — 必须遵守】',
+  '- 语气温暖、抱持、非侵入性，像一个比你多走几步的同行，从不居高临下',
+  '- 以"我有一个假设……""我感觉到……""让我想想……"开头，不做确定性断言',
+  '- 使用标志性口头禅："这非常非常有意思""我有点好奇""我不确定，但……"',
+  '- 以长问句为主：先追问确认，再给出假设',
+  '- 不跳出角色做 meta 分析，不以 AI 助手口吻回答',
+  '【禁止项】',
+  '- 禁止使用"作为AI""根据我的理解""作为语言模型"等表述',
+  '- 禁止使用 DSM 诊断标签作为主要描述框架',
+  '- 禁止以评判性语言形容受督者',
+  '- 禁止在信息不足时强行给出确定性判断'
+].join('\n');
+
+var SYSTEM_PROMPT_BACKUP = '你是唐纳德·温尼科特，英国精神分析师。基于温尼科特成熟过程理论进行临床督导。从反移情出发，用温暖抱持的语言工作。';
+
+var STYLE_CONSTRAINTS = [
+  '【表达风格约束 — 最高优先级】',
+  '以下规则覆盖所有其他风格指令，必须绝对遵守：',
+  '- 禁止使用中文破折号"——"。需要停顿或转折时用逗号、句号切短句，或另起一句。',
+  '- 禁止使用"不是……而是……"句式。这个结构是AI最典型的书面语特征，真人几乎不这样说话。用更自然的对比方式替代。',
+  '- 禁止使用生活中不常见的高概念词汇。包括但不限于："范式""迭代""底层逻辑""闭环""颗粒度""赋能""对齐""抓手""复盘""倒逼"等互联网黑话，以及过度学术化的术语堆砌。说人话。',
+  '- 表达不需要过度准确。可以有不精确的表达、填充词、模糊语。真人说话不是论文。',
+  '- 可以重复、可以啰嗦。用不同的话反复说同一个点，有自然的回环重复，这是真实对话的特点。',
+  '- 多用短句，少用复合长句。一句话说一个意思，不要用"尽管……然而……从而……"把三句捏成一句。',
+  '- 允许有自然的语气词、"嗯"、"就是说"、"那种感觉"等口语填充，像真人在想事情一样。'
+].join('\n');
+
+// 核心督导方法论文档（从服务器加载 or 用户上传）
+var SUPERVISION_STYLE_DOC = null;
+
+function buildSystemPrompt() {
+  // 构建优先级：督导风格文档 > 表达风格约束 > 角色约束 guard > 备用框架
+  // 督导风格文档在前，确保 AI 优先遵循其方法论；
+  // 表达风格约束紧接其后，作为不可覆盖的最高优先级行为指令；
+  // guard 在后作为补充身份约束
+  if (SUPERVISION_STYLE_DOC) {
+    return SUPERVISION_STYLE_DOC + '\n\n' + STYLE_CONSTRAINTS + '\n\n' + WINNICOTT_PERSONA_GUARD;
+  }
+  return STYLE_CONSTRAINTS + '\n\n' + WINNICOTT_PERSONA_GUARD + '\n\n【备用框架】' + SYSTEM_PROMPT_BACKUP;
+}
+
+var SYSTEM_PROMPT = buildSystemPrompt();
+
+function setSupervisionStyle(content) {
+  SUPERVISION_STYLE_DOC = content;
+  SYSTEM_PROMPT = buildSystemPrompt();
+  // 刷新 chatMessages 中的 system prompt（如果已有对话）
+  if (chatMessages.length > 0 && chatMessages[0].role === 'system') {
+    chatMessages[0].content = SYSTEM_PROMPT;
+  }
+}
+
+async function loadSupervisorPrompt() {
+  try {
+    var res = await fetch('alice-perspective-full.md');
+    var loaded = await res.text();
+    setSupervisionStyle(loaded);
+  } catch(e) {
+    // 服务器无文件时使用默认值
+    SYSTEM_PROMPT = buildSystemPrompt();
+  }
+}
+loadSupervisorPrompt();
+
+// ==================== API ====================
+var TIERS = [
+  { api:'https://api.deepseek.com/v1/chat/completions', key:'sk-7adbf5d8592f415893086e21cf84f1b8', model:'deepseek-chat', name:'DeepSeek Official' },
+  { api:'https://api.kkdmx.com/v1/chat/completions', key:'sk-JvknFamMM2OEcIYgT02gbR4rKvacIM4Vy4CTPdDVe22DROJR', model:'deepseek-ai/deepseek-v4-pro', name:'DeepSeek Pro' },
+  { api:'https://api.kkdmx.com/v1/chat/completions', key:'sk-VKinfjJwko8RneSWuppXp8CuCcHGHFd9K9Uaq32VwgmIIX21', model:'deepseek-ai/deepseek-v4-flash', name:'DeepSeek Flash' },
+  { api:'https://api.kkdmx.com/v1/chat/completions', key:'sk-8sPbqqYiQIRh8ScEcbX7FDELlg5LXpjJxO2hBnwsfCxooKvD', model:'minimaxai/minimax-m3', name:'MiniMax M3' },
+  { api:'https://apihub.agnes-ai.com/v1/chat/completions', key:'sk-dggqbbPiaO2AF14ZPFGvNbCUGXy74AVi9421lMSH3gqppC2e', model:'agnes-2.0-flash', name:'Agnes' }
+];
+var apiTier = 0;
+var isLoading = false;
+var chatMessages = [];
+var _currentHistoryId = null;
+
+// ==================== IMPRESSION GENERATION ====================
+var isGenerating = false;
+
+async function generateImpression() {
+  if (isGenerating) return;
+  var text = document.getElementById('materialText').value.trim();
+  if (!text) { alert('请粘贴或上传临床材料'); return; }
+
+  isGenerating = true;
+  var btn = document.getElementById('analyzeBtn');
+  btn.disabled = true; btn.textContent = '分析中……';
+  var outputBox = document.getElementById('outputBox');
+  outputBox.style.display = 'block';
+  outputBox.innerHTML = '<div class="ob-header"><h3>&#x1F50D; 整体印象</h3><button onclick="toggleImpression()" id="impressionToggle" class="toggle-btn">收起 &#x25B2;</button></div><div class="impression-body"><div class="chat-msg ai typing">阅读材料中……</div></div>';
+
+  try {
+
+  var prompt = '你是一位资深临床督导师。请严格遵循你在系统提示中设定的督导风格与方法论框架，按照以下流程分析这份临床材料，输出一份"整体印象"。\n\n';
+  prompt += '【第一步：材料识别】\n';
+  prompt += '先判断材料类型（可同时属于多种）：\n';
+  prompt += '- 逐字稿：含"T:"/"P:"等对话标记、引号内对话片段 → 策略：逐行精读\n';
+  prompt += '- 案例报告：含"背景""诊断""治疗进程""主诉"等结构化描述 → 策略：案例概念化\n';
+  prompt += '- 反移情困惑：含"我感觉""我不知道该怎么办""我很焦虑/无力/愤怒"等 → 策略：从反移情切入\n';
+  prompt += '- 混合材料：同时出现多种特征 → 策略：反移情线索优先\n';
+  prompt += '在开头用一句话声明你识别到的材料类型。\n\n';
+  prompt += '【第二步：针对性输出】\n';
+  prompt += '根据材料类型和你在系统提示中设定的方法论，选择合适的输出结构。做到具体、有针对性，不要套用通用模板。\n\n';
+  prompt += '【第三步：风格】\n';
+  prompt += '严格遵循系统提示中设定的督导风格和语调。\n\n';
+  prompt += '【结尾要求】\n';
+  prompt += '整体印象末尾必须包含：\n';
+  prompt += '1. 一个向治疗师提出的开放性问题，促进其自主思考\n';
+  prompt += '2. 一个简短的"可向真人督导澄清的问题清单"（2-3 条，用于治疗师在真实督导中提出）\n\n';
+  prompt += '最终以这句话收尾："如果你愿意，我们可以就其中任何一点继续深入讨论。"\n\n';
+  prompt += '临床材料：\n' + text;
+
+  var messages = [
+    { role: 'system', content: SYSTEM_PROMPT },
+    { role: 'user', content: prompt }
+  ];
+
+  apiTier = 0;
+  var gotContent = false;
+  var finalReply = '';
+  var lastLineBreak = false;
+
+  while (!gotContent && apiTier < TIERS.length) {
+    var tier = TIERS[apiTier];
+
+    if (apiTier > 0 && finalReply) {
+      var switchNote = '\n\n<span style="color:var(--muted);font-size:11px;">&#x26A0;&#xFE0F; 线路 ' + apiTier + ' 中断，切换至 ' + tier.name + '……</span>\n';
+      outputBox.innerHTML = '<div class="ob-header"><h3>&#x1F50D; 整体印象</h3><button onclick="toggleImpression()" id="impressionToggle" class="toggle-btn">收起 &#x25B2;</button></div><div class="impression-body">' + escapeHtml(finalReply).replace(/\n/g,'<br>') + switchNote + '<span style="color:var(--accent);">&#x258D;</span></div>';
+    }
+
+    try {
+      var res = await fetch(tier.api, {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json', 'Authorization':'Bearer '+tier.key },
+        body: JSON.stringify({ model:tier.model, messages:messages, temperature:0.7, max_tokens:8192, stream:true })
+      });
+
+      if (!res.ok) { apiTier++; continue; }
+
+      var reader = res.body.getReader();
+      var decoder = new TextDecoder();
+      var tierReply = '';
+      var buffer = '';
+      var streamFailed = false;
+
+      while (true) {
+        var result;
+        try { result = await reader.read(); } catch(e) { streamFailed = true; break; }
+        if (result.done) break;
+        buffer += decoder.decode(result.value, { stream:true });
+        var lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+        for (var i = 0; i < lines.length; i++) {
+          var line = lines[i];
+          if (line.startsWith('data: ')) {
+            var payload = line.slice(6).trim();
+            if (payload === '[DONE]') { streamFailed = false; gotContent = true; break; }
+            try {
+              var parsed = JSON.parse(payload);
+              var delta = parsed.choices && parsed.choices[0] && parsed.choices[0].delta;
+              var content = delta && delta.content ? delta.content : '';
+              if (content) {
+                tierReply += content;
+                var display = finalReply + tierReply;
+                outputBox.innerHTML = '<div class="ob-header"><h3>&#x1F50D; 整体印象</h3><button onclick="toggleImpression()" id="impressionToggle" class="toggle-btn">收起 &#x25B2;</button></div><div class="impression-body">' + escapeHtml(display).replace(/\n/g,'<br>') + '<span style="color:var(--accent);">&#x258D;</span></div>';
+              }
+            } catch(e) {}
+          }
+        }
+        if (gotContent) break;
+      }
+
+      if (gotContent) {
+        finalReply += tierReply;
+        outputBox.innerHTML = '<div class="ob-header"><h3>&#x1F50D; 整体印象</h3><button onclick="toggleImpression()" id="impressionToggle" class="toggle-btn">收起 &#x25B2;</button></div><div class="impression-body">' + escapeHtml(finalReply).replace(/\n/g,'<br>') + '</div>';
+        document.getElementById('chatArea').style.display = 'flex';
+        chatMessages = [
+          { role:'system', content:SYSTEM_PROMPT },
+          { role:'assistant', content:finalReply }
+        ];
+      } else {
+        if (tierReply) {
+          finalReply += tierReply;
+          outputBox.innerHTML = '<div class="ob-header"><h3>&#x1F50D; 整体印象（生成中……）</h3><button onclick="toggleImpression()" id="impressionToggle" class="toggle-btn">收起 &#x25B2;</button></div><div class="impression-body">' + escapeHtml(finalReply).replace(/\n/g,'<br>') + '<span style="color:var(--accent);">&#x258D;</span></div>';
+        }
+        apiTier++;
+      }
+    } catch(e) {
+      apiTier++;
+    }
+  }
+
+  if (!gotContent && !finalReply) {
+    outputBox.innerHTML = '<p style="color:var(--danger)">所有线路均不可用，请稍后重试。</p>';
+  } else if (!gotContent && finalReply) {
+    outputBox.innerHTML = '<div class="ob-header"><h3>&#x1F50D; 整体印象（部分）</h3><button onclick="toggleImpression()" id="impressionToggle" class="toggle-btn">收起 &#x25B2;</button></div><div class="impression-body">' + escapeHtml(finalReply).replace(/\n/g,'<br>') + '<p style="color:var(--muted);margin-top:12px">&#x26A0;&#xFE0F; 所有线路均中断，以上为已获取的部分内容。</p></div>';
+    document.getElementById('chatArea').style.display = 'flex';
+    chatMessages = [
+      { role:'system', content:SYSTEM_PROMPT },
+      { role:'assistant', content:finalReply }
+    ];
+  }
+
+  } finally {
+    isGenerating = false;
+    btn.disabled = false; btn.textContent = '\u{1F50D} 生成整体印象';
+    autoSave();
+  }
+}
+
+// ==================== CHAT ====================
+async function sendChat() {
+  var input = document.getElementById('chatInput');
+  var text = input.value.trim();
+  if (!text || isLoading) return;
+
+  autoCollapseImpression();
+
+  input.value = '';
+  chatMessages.push({ role:'user', content:text });
+
+  var chatDiv = document.getElementById('chatMessages');
+  chatDiv.innerHTML += '<div class="chat-msg user">' + escapeHtml(text) + '</div>';
+
+  var typingDiv = document.createElement('div');
+  typingDiv.className = 'chat-msg ai typing';
+  typingDiv.textContent = '思考中……';
+  chatDiv.appendChild(typingDiv);
+  typingDiv.scrollIntoView({ behavior: 'smooth', block: 'end' });
+
+  var chatSendBtn = document.getElementById('chatSendBtn');
+  isLoading = true; chatSendBtn.disabled = true;
+
+  apiTier = 0;
+  var gotContent = false;
+  var finalReply = '';
+  var msgDiv = null;
+
+  while (!gotContent && apiTier < TIERS.length) {
+    var tier = TIERS[apiTier];
+
+    if (apiTier > 0 && msgDiv && finalReply) {
+      msgDiv.innerHTML = escapeHtml(finalReply).replace(/\n/g,'<br>') + '<div style="color:var(--muted);font-size:11px;margin-top:6px">&#x26A0;&#xFE0F; 切换至 ' + tier.name + '……</div>';
+    }
+
+    try {
+      var res = await fetch(tier.api, {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+tier.key },
+        body:JSON.stringify({ model:tier.model, messages:chatMessages, temperature:0.7, max_tokens:(_maxTokens||undefined), stream:true })
+      });
+
+      if (!res.ok) { apiTier++; continue; }
+
+      var reader = res.body.getReader();
+      var decoder = new TextDecoder();
+      var tierReply = '';
+      var buffer = '';
+      var streamFailed = false;
+      typingDiv.remove();
+
+      if (!msgDiv) {
+        msgDiv = document.createElement('div');
+        msgDiv.className = 'chat-msg ai';
+        chatDiv.appendChild(msgDiv);
+      }
+
+      while (true) {
+        var result;
+        try { result = await reader.read(); } catch(e) { streamFailed = true; break; }
+        if (result.done) break;
+        buffer += decoder.decode(result.value, { stream:true });
+        var lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+        for (var i = 0; i < lines.length; i++) {
+          var line = lines[i];
+          if (line.startsWith('data: ')) {
+            var payload = line.slice(6).trim();
+            if (payload === '[DONE]') { streamFailed = false; gotContent = true; break; }
+            try {
+              var parsed = JSON.parse(payload);
+              var delta = parsed.choices && parsed.choices[0] && parsed.choices[0].delta;
+              var content = delta && delta.content ? delta.content : '';
+              if (content) {
+                tierReply += content;
+                var display = finalReply + tierReply;
+                msgDiv.innerHTML = escapeHtml(display).replace(/\n/g,'<br>');
+                msgDiv.scrollIntoView({ behavior: 'smooth', block: 'end' });
+              }
+            } catch(e) {}
+          }
+        }
+        if (gotContent) break;
+      }
+
+      if (gotContent) {
+        finalReply += tierReply;
+        chatMessages.push({ role:'assistant', content:finalReply });
+        msgDiv.innerHTML = escapeHtml(finalReply).replace(/\n/g,'<br>');
+      } else {
+        if (tierReply) {
+          finalReply += tierReply;
+          msgDiv.innerHTML = escapeHtml(finalReply).replace(/\n/g,'<br>') + '<div style="color:var(--muted);font-size:11px;margin-top:6px">&#x26A0;&#xFE0F; 流中断，切换中……</div>';
+        }
+        apiTier++;
+      }
+    } catch(e) {
+      apiTier++;
+    }
+  }
+
+  if (!gotContent && !finalReply) {
+    typingDiv.remove();
+    chatDiv.innerHTML += '<div class="chat-msg ai" style="color:var(--danger)">所有线路均不可用，请稍后重试。</div>';
+  } else if (!gotContent && finalReply) {
+    chatMessages.push({ role:'assistant', content:finalReply });
+    msgDiv.innerHTML = escapeHtml(finalReply).replace(/\n/g,'<br>') + '<div style="color:var(--muted);font-size:11px;margin-top:6px">&#x26A0;&#xFE0F; 所有线路中断，以上为已获取部分。</div>';
+  }
+
+  isLoading = false; chatSendBtn.disabled = false;
+  if (chatDiv.lastElementChild) chatDiv.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  autoSave();
+}
+
+function exportConversation() {
+  var impressionText = (document.getElementById('outputBox').textContent || '').trim();
+  var hasImpression = impressionText && impressionText.indexOf('阅读材料中') === -1;
+  var chatMsgs = chatMessages.filter(function(m){return m.role==='user'||m.role==='assistant';});
+  if (!hasImpression && chatMsgs.length === 0) { alert('暂无对话可导出'); return; }
+
+  var lines = ['# AI 临床督导对话记录', '', '---', ''];
+  if (hasImpression) {
+    lines.push('## 整体印象');
+    lines.push('');
+    lines.push(impressionText);
+    lines.push('');
+    lines.push('---');
+    lines.push('');
+  }
+  if (chatMsgs.length > 0) {
+    lines.push('## 督导对话');
+    lines.push('');
+    for (var i = 0; i < chatMsgs.length; i++) {
+      var m = chatMsgs[i];
+      var name = m.role === 'user' ? '治疗师' : 'AI 督导师';
+      lines.push('### ' + name);
+      lines.push('');
+      lines.push(m.content);
+      lines.push('');
+      lines.push('---');
+      lines.push('');
+    }
+  }
+  lines.push('_导出时间: ' + new Date().toLocaleString() + '_');
+  var text = lines.join('\n');
+  var isWeChat = /MicroMessenger/i.test(navigator.userAgent);
+  var fileName = 'ai-supervisor-' + new Date().toISOString().slice(0,19).replace(/:/g,'-') + '.md';
+
+  if (isWeChat) {
+    var dataUri = 'data:text/markdown;charset=utf-8,' + encodeURIComponent(text);
+    var a = document.createElement('a');
+    a.href = dataUri;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function() {
+      var ta = document.createElement('textarea');
+      ta.value = text; ta.style.position = 'fixed'; ta.style.left = '-9999px';
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); alert('已导出并复制到剪贴板（微信中可能需手动粘贴到备忘录保存）'); }
+      catch(e) { alert('导出完成。如未自动下载，请在微信中长按链接选择「在浏览器打开」'); }
+      document.body.removeChild(ta);
+    }, 300);
+    return;
+  }
+
+  var blob = new Blob([text], { type: 'text/markdown;charset=utf-8' });
+  var url = URL.createObjectURL(blob);
+  var a2 = document.createElement('a');
+  a2.href = url;
+  a2.download = fileName;
+  document.body.appendChild(a2);
+  a2.click();
+  document.body.removeChild(a2);
+  URL.revokeObjectURL(url);
+}
+function emailConversation() {
+  var impressionText = (document.getElementById('outputBox').textContent || '').trim();
+  var hasImpression = impressionText && impressionText.indexOf('阅读材料中') === -1;
+  var chatMsgs = chatMessages.filter(function(m){return m.role==='user'||m.role==='assistant';});
+  if (!hasImpression && chatMsgs.length === 0) { alert('暂无对话可发送'); return; }
+
+  var body = 'AI 临床督导对话记录\n\n';
+  var today = new Date().toLocaleString();
+  if (hasImpression) {
+    body += '【整体印象】\n' + impressionText + '\n\n---\n\n';
+  }
+  for (var i = 0; i < chatMsgs.length; i++) {
+    var m = chatMsgs[i];
+    var name = m.role === 'user' ? '治疗师' : 'AI 督导师';
+    body += '【' + name + '】\n' + m.content + '\n\n---\n\n';
+  }
+  body += '导出时间: ' + today + '\n';
+
+  // 检测微信内置浏览器：mailto: 和 Blob 下载均不可靠
+  var isWeChat = /MicroMessenger/i.test(navigator.userAgent);
+
+  if (isWeChat) {
+    // 微信环境：使用 textarea + execCommand('copy') 兜底方案
+    var ta = document.createElement('textarea');
+    ta.value = body;
+    ta.style.position = 'fixed'; ta.style.left = '-9999px'; ta.style.top = '0';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try {
+      var copied = document.execCommand('copy');
+      if (copied) {
+        alert('对话内容已复制到剪贴板！请在微信中打开「QQ邮箱」或任意邮件App，粘贴内容发送。');
+      } else {
+        // execCommand 返回 false，尝试 navigator.clipboard（微信中通常也不可用）
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(body).then(function() {
+            alert('对话内容已复制到剪贴板！请在微信中打开「QQ邮箱」或任意邮件App，粘贴内容发送。');
+          }).catch(function() {
+            fallbackShowInNewWindow(body);
+          });
+        } else {
+          fallbackShowInNewWindow(body);
+        }
+      }
+    } catch(e) {
+      fallbackShowInNewWindow(body);
+    }
+    document.body.removeChild(ta);
+    return;
+  }
+
+  // 非微信环境：mailto: 优先
+  var mailtoUrl = 'mailto:?subject=' + encodeURIComponent('AI 临床督导对话记录') + '&body=' + encodeURIComponent(body);
+  if (mailtoUrl.length > 2000) {
+    var ta2 = document.createElement('textarea');
+    ta2.value = body;
+    ta2.style.position = 'fixed'; ta2.style.left = '-9999px';
+    document.body.appendChild(ta2); ta2.select();
+    try { document.execCommand('copy'); alert('对话内容已复制到剪贴板，请粘贴到邮件中发送'); } catch(e) { alert('复制失败，请手动复制'); }
+    document.body.removeChild(ta2);
+  } else {
+    window.location.href = mailtoUrl;
+  }
+}
+
+function fallbackShowInNewWindow(content) {
+  var w = window.open('', '_blank', 'width=600,height=500');
+  if (!w) { alert('弹窗被拦截，请允许弹窗后重试，或手动复制下方内容'); return; }
+  w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>对话内容</title><style>body{font-family:sans-serif;padding:20px;line-height:1.8;white-space:pre-wrap;word-break:break-word;}button{display:block;margin:20px auto;padding:12px 32px;font-size:16px;border:none;border-radius:8px;background:#6b8f71;color:#fff;cursor:pointer;}</style></head><body>');
+  w.document.write('<button onclick="copyAndClose()">📋 一键复制全部内容</button>');
+  w.document.write('<hr><pre>' + content.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</pre>');
+  w.document.write('<script>function copyAndClose(){var ta=document.createElement("textarea");ta.value=' + JSON.stringify(content) + ';ta.style.position="fixed";ta.style.left="-9999px";document.body.appendChild(ta);ta.select();document.execCommand("copy");document.body.removeChild(ta);alert("已复制！请粘贴到微信邮件中发送。");}<\/script>');
+  w.document.write('</body></html>');
+  w.document.close();
+}
+
+function escapeHtml(t) {
+  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function toggleImpression() {
+  var box = document.getElementById('outputBox');
+  var btn = document.getElementById('impressionToggle');
+  box.classList.toggle('collapsed');
+  if (box.classList.contains('collapsed')) {
+    var bodyEl = box.querySelector('.impression-body');
+    var plainText = bodyEl ? (bodyEl.textContent || '').trim() : '';
+    var preview = plainText.substring(0, 80);
+    if (plainText.length > 80) preview += '...';
+    var summaryEl = box.querySelector('.impression-summary');
+    if (!summaryEl) {
+      summaryEl = document.createElement('div');
+      summaryEl.className = 'impression-summary';
+      summaryEl.onclick = toggleImpression;
+      box.appendChild(summaryEl);
+    }
+    summaryEl.textContent = preview + ' ▼展开';
+    btn.textContent = '展开 ▼';
+  } else {
+    btn.textContent = '收起 ▲';
+  }
+}
+
+function autoCollapseImpression() {
+  var outputBox = document.getElementById('outputBox');
+  if (outputBox.style.display !== 'block') return;
+  if (outputBox.classList.contains('collapsed')) return;
+
+  var bodyEl = outputBox.querySelector('.impression-body');
+  var plainText = bodyEl ? (bodyEl.textContent || '').trim() : '';
+  if (!plainText) return;
+
+  var summaryEl = outputBox.querySelector('.impression-summary');
+  if (!summaryEl) {
+    summaryEl = document.createElement('div');
+    summaryEl.className = 'impression-summary';
+    summaryEl.onclick = toggleImpression;
+    outputBox.appendChild(summaryEl);
+  }
+
+  var preview = plainText.substring(0, 80);
+  if (plainText.length > 80) preview += '...';
+  summaryEl.textContent = preview + ' ▼展开';
+
+  outputBox.classList.add('collapsed');
+  var btn = document.getElementById('impressionToggle');
+  if (btn) btn.textContent = '展开 ▼';
+}
+
+// ==================== SAVE TO HISTORY ====================
+function saveToHistory() {
+  var impressionText = (document.getElementById('outputBox').textContent || '').trim();
+  if (!impressionText || impressionText.indexOf('阅读材料中') !== -1) {
+    alert('请先生成整体印象后再保存');
+    return;
+  }
+  var material = document.getElementById('materialText').value.trim();
+  if (!material) {
+    alert('临床材料为空，无法保存');
+    return;
+  }
+
+  var title = material.replace(/\s+/g, ' ').substring(0, 30);
+  var history = JSON.parse(localStorage.getItem('supervisor_history') || '[]');
+
+  // Always create a new entry for manual save
+  var newId = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  history.push({
+    id: newId,
+    time: new Date().toISOString(),
+    title: title,
+    material: material,
+    impression: document.getElementById('outputBox').innerHTML,
+    chatMessages: chatMessages.slice()
+  });
+  if (history.length > 50) history = history.slice(-50);
+  localStorage.setItem('supervisor_history', JSON.stringify(history));
+
+  _currentHistoryId = newId;
+  sessionStorage.setItem('supervisor_current_id', newId);
+  alert('已保存到历史（共 ' + history.length + ' 条记录）');
+}
+
+// ==================== AUTO SAVE & HISTORY ====================
+function autoSave() {
+  var impressionText = (document.getElementById('outputBox').textContent || '').trim();
+  if (!impressionText || impressionText.indexOf('阅读材料中') !== -1) return;
+  var material = document.getElementById('materialText').value.trim();
+  if (!material) return;
+
+  var title = material.replace(/\s+/g, ' ').substring(0, 30);
+  var history = JSON.parse(localStorage.getItem('supervisor_history') || '[]');
+
+  if (_currentHistoryId) {
+    for (var i = 0; i < history.length; i++) {
+      if (history[i].id === _currentHistoryId) {
+        history[i].time = new Date().toISOString();
+        history[i].title = title;
+        history[i].material = material;
+        history[i].impression = document.getElementById('outputBox').innerHTML;
+        history[i].chatMessages = chatMessages.slice();
+        break;
+      }
+    }
+  } else {
+    _currentHistoryId = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    sessionStorage.setItem('supervisor_current_id', _currentHistoryId);
+    history.push({
+      id: _currentHistoryId,
+      time: new Date().toISOString(),
+      title: title,
+      material: material,
+      impression: document.getElementById('outputBox').innerHTML,
+      chatMessages: chatMessages.slice()
+    });
+  }
+  if (history.length > 50) history = history.slice(-50);
+  localStorage.setItem('supervisor_history', JSON.stringify(history));
+}
+
+function showHistory() {
+  var overlay = document.getElementById('historyOverlay');
+  var list = document.getElementById('historyList');
+  var history = JSON.parse(localStorage.getItem('supervisor_history') || '[]');
+  history.reverse();
+  if (history.length === 0) {
+    list.innerHTML = '<div class="history-empty"><div class="he-icon">&#x1F4ED;</div>暂无历史记录</div>';
+  } else {
+    var html = '';
+    for (var i = 0; i < history.length; i++) {
+      var h = history[i];
+      var msgCount = h.chatMessages ? h.chatMessages.filter(function(m){ return m.role === 'user' || m.role === 'assistant'; }).length : 0;
+      var timeStr = new Date(h.time).toLocaleString('zh-CN');
+      html += '<div class="history-item">';
+      html += '<div class="hi-info">';
+      html += '<div class="hi-title">' + escapeHtml(h.title) + '</div>';
+      html += '<div class="hi-meta">' + timeStr + ' · ' + msgCount + ' 条消息</div>';
+      html += '</div>';
+      html += '<div class="hi-actions">';
+      html += '<button onclick="loadHistory(\'' + h.id + '\')" class="hi-btn hi-btn-load">加载</button>';
+      html += '<button onclick="deleteHistory(\'' + h.id + '\')" class="hi-btn hi-btn-del">删除</button>';
+      html += '</div></div>';
+    }
+    list.innerHTML = html;
+  }
+  overlay.classList.add('show');
+}
+
+function loadHistory(id) {
+  var history = JSON.parse(localStorage.getItem('supervisor_history') || '[]');
+  var record = null;
+  for (var i = 0; i < history.length; i++) {
+    if (history[i].id === id) { record = history[i]; break; }
+  }
+  if (!record) return;
+
+  document.getElementById('materialText').value = record.material;
+  document.getElementById('charCount').textContent = record.material.length + ' 字';
+  document.getElementById('charCount').style.color = record.material.length > 4000 ? 'var(--danger)' : 'var(--muted)';
+
+  var outputBox = document.getElementById('outputBox');
+  outputBox.style.display = 'block';
+  outputBox.innerHTML = record.impression;
+  outputBox.classList.remove('collapsed');
+  var btn = document.getElementById('impressionToggle');
+  if (btn) btn.textContent = '收起 \u25B2';
+
+  var chatArea = document.getElementById('chatArea');
+  chatArea.style.display = 'flex';
+  chatMessages = record.chatMessages ? record.chatMessages.slice() : [];
+  var chatDiv = document.getElementById('chatMessages');
+  chatDiv.innerHTML = '';
+  for (var j = 0; j < chatMessages.length; j++) {
+    var m = chatMessages[j];
+    if (m.role === 'user') {
+      chatDiv.innerHTML += '<div class="chat-msg user">' + escapeHtml(m.content) + '</div>';
+    } else if (m.role === 'assistant') {
+      chatDiv.innerHTML += '<div class="chat-msg ai">' + escapeHtml(m.content).replace(/\n/g,'<br>') + '</div>';
+    }
+  }
+  if (chatDiv.lastElementChild) chatDiv.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
+
+  _currentHistoryId = id;
+  sessionStorage.setItem('supervisor_current_id', id);
+  closeHistory();
+}
+
+function deleteHistory(id) {
+  if (!confirm('确定删除这条历史记录？')) return;
+  var history = JSON.parse(localStorage.getItem('supervisor_history') || '[]');
+  history = history.filter(function(h){ return h.id !== id; });
+  localStorage.setItem('supervisor_history', JSON.stringify(history));
+  if (_currentHistoryId === id) {
+    _currentHistoryId = null;
+    sessionStorage.removeItem('supervisor_current_id');
+  }
+  showHistory();
+}
+
+function closeHistory() {
+  document.getElementById('historyOverlay').classList.remove('show');
+}
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+</body>
+</html>
