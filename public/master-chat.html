@@ -254,13 +254,19 @@
       <div class="history-empty" id="historyEmpty" data-i18n="history-empty">暂无历史对话</div>
     </div>
     <div id="changelogContent" style="display:none;margin-top:10px;background:var(--light-accent);border:1px solid var(--border);border-radius:8px;padding:14px 16px;font-size:12px;color:var(--text);line-height:1.8;max-height:180px;overflow-y:auto;">
+      <p><strong style="color:var(--text);">v4.3</strong> (2026-07-04)<br>
+      • 🎭 每位大师新增「交心」模式——基于仓颉人格模型，像跟真实的大师一样聊天<br>
+      • 🧑‍⚕️ 对话模式重标注：交心 / 咨询 / 教学，可在设置中自由切换<br>
+      • 🆕 新增大师：阿德勒个体心理学<br>
+      • 🧠 AI 督导新增女娲版/仓颉版切换<br>
+      • 🛡️ 禁止 AI 主动结束对话，24:00 后温和提醒休息</p>
+      <p><strong style="color:var(--text);">v4.2</strong> (2026-07-04)<br>
+      • 🎭 主页单击大师直接进入对话页，取消模式选择弹窗<br>
+      • 💬 对话模式增加标签：交心 / 咨询 / 教学<br>
+      • 🔑 替换 DeepSeek 路由 API Key<br>
+      • 🧑‍⚕️ AI 督导新增自用 API 功能<br>
+      • 🛡️ 设置面板自动关闭防抖修复</p>
       <p><strong style="color:var(--text);">v4.1</strong> (2026-07-03)<br>
-      • AI 督导新增自用 API 功能（DeepSeek/OpenAI/硅基流动三预设）<br>
-      • 全站大师正念冥想约束（荣格可推荐、比昂可讨论学理、贝克可提及MBCT、其余全禁）<br>
-      • master-chat 按大师动态生成约束提示词<br>
-      • v4 双版本同步添加正念约束<br>
-      • 主页 & master-select 页面添加更新日志展示区块</p>
-      <p><strong style="color:var(--text);">v4.0</strong> (2026-07-01 ~ 07-02)<br>
       • AI 临床督导界面上线（上传区折叠、回复长度内联、32px段间距）<br>
       • 导出对话按钮 + 保存/加载历史对话<br>
       • 微信浏览器导出适配 + 所有对话框统一按钮排序<br>
@@ -336,13 +342,8 @@
 <!-- Update announcement -->
 <div class="reward-overlay" id="updateOverlay" style="position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.3);display:none;align-items:center;justify-content:center;">
   <div style="background:var(--card);border-radius:14px;padding:24px;width:90%;max-width:440px;box-shadow:0 4px 24px rgba(0,0,0,0.15);">
-    <h3 style="margin:0 0 2px;font-size:16px;font-weight:500;color:var(--text);">🎉 欢迎来到大师对话！</h3>
-    <p style="font-size:12px;color:var(--muted);margin-bottom:12px;text-align:left;line-height:1.8;">你可以选择以下大师开始对话：</p>
-    <div style="font-size:12px;color:var(--text);text-align:left;line-height:1.9;padding:0 4px;">
-      • 🧔 弗洛伊德——自由联想、释梦、无意识探索<br>
-      • 👩 克莱因——客体关系、偏执-分裂位、投射认同<br>
-      • 🔮 荣格——集体无意识、原型、自性化
-    </div>
+    <h3 class="u-title" style="margin:0 0 2px;font-size:16px;font-weight:500;color:var(--text);">🎉 更新了！</h3>
+    <div class="u-msg" style="font-size:12px;color:var(--text);text-align:left;line-height:1.9;padding:0 4px;margin-top:12px;"></div>
     <button onclick="closeMCUpdate()" style="margin-top:14px;width:100%;padding:10px;border:none;border-radius:10px;background:var(--accent);color:white;font-size:13px;cursor:pointer;font-family:inherit;">知道了，开始吧</button>
   </div>
 </div>
@@ -354,7 +355,7 @@ var MASTERS = {
     name:'弗洛伊德', initial:'F', icon:'🧔',
     avatar:'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/Sigmund_Freud_1926.jpg/120px-Sigmund_Freud_1926.jpg',
     sub:'精神分析奠基人 · 无意识 · 释梦 · 俄狄浦斯情结',
-    kb:'freud-knowledge.md', title:'与弗洛伊德对话',
+    kb:'freud-knowledge.md', kbCangjie:'freud-perspective.md', title:'与弗洛伊德对话',
     introTitle:'今天想谈谈什么？', introDesc:'自由联想、梦的解析——让我们探索你的无意识',
     langTip:'💡 自由联想是最好的起点——随意说出脑海中的一切。',
     disclaimer:'此对话由 AI 模拟弗洛伊德思维框架生成，非临床治疗建议。',
@@ -368,13 +369,15 @@ var MASTERS = {
       {temp:20, title:'沙发上的倾诉', sub:'自由联想式的倾听'},
       {temp:60, title:'释梦与解析', sub:'无意识的经典探索路径'},
       {temp:90, title:'元心理学研讨', sub:'从《释梦》到《超越快乐原则》'}
-    ]
+    ],
+    updateTitle:'弗洛伊德·升级公告',
+    updateMsg:'• 💬 <strong>交心模式</strong>：基于仓颉人格模型深度蒸馏，像跟真实的弗洛伊德一样聊天——他有自己的经历、伤痛和故事<br>• 🧑‍⚕️ <strong>咨询模式</strong>：基于精神分析方法论给出专业建议<br>• 📖 <strong>教学模式</strong>：系统学习精神分析理论<br><br>三种模式可在 ⚙️ 设置中自由切换，温度默认为 60（咨询模式）'
   },
   klein: {
     name:'克莱因', initial:'K', icon:'👩',
     avatar:'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ef/Melanie_Klein_(ca._1950).jpg/120px-Melanie_Klein_(ca._1950).jpg',
     sub:'客体关系 · 偏执-分裂位 · 抑郁位 · 投射性认同',
-    kb:'klein-knowledge.md', title:'与克莱因对话',
+    kb:'klein-knowledge.md', kbCangjie:'klein-perspective.md', title:'与克莱因对话',
     introTitle:'你准备好深入了吗？', introDesc:'探索早期客体关系——你的内在世界远比你以为的更早开始',
     langTip:'💡 一个童年早期的记忆，或一个孩子的行为片段，是最好的起点。',
     disclaimer:'此对话由 AI 模拟克莱因思维框架生成，非临床治疗建议。',
@@ -388,13 +391,15 @@ var MASTERS = {
       {temp:20, title:'内在小孩的声音', sub:'关注早期焦虑与无意识幻想'},
       {temp:60, title:'偏执-分裂与抑郁', sub:'客体关系视角的临床对话'},
       {temp:90, title:'投射性认同研讨', sub:'克莱因理论体系的系统探讨'}
-    ]
+    ],
+    updateTitle:'克莱因·升级公告',
+    updateMsg:'• 💬 <strong>交心模式</strong>：基于仓颉人格模型深度蒸馏，像跟真实的克莱因一样聊天——她的客体关系视角来自真实的临床经历<br>• 🧑‍⚕️ <strong>咨询模式</strong>：基于客体关系方法论给出专业建议<br>• 📖 <strong>教学模式</strong>：系统学习克莱因理论<br><br>三种模式可在 ⚙️ 设置中自由切换，温度默认为 60（咨询模式）'
   },
   jung: {
     name:'荣格', initial:'J', icon:'🔮',
     avatar:'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/Carl_Gustav_Jung_(cropped).jpg/120px-Carl_Gustav_Jung_(cropped).jpg',
     sub:'分析心理学 · 集体无意识 · 原型 · 心理类型',
-    kb:'jung-knowledge.md', title:'与荣格对话',
+    kb:'jung-knowledge.md', kbCangjie:'jung-perspective.md', title:'与荣格对话',
     introTitle:'你的灵魂在说什么？', introDesc:'探索梦境、原型与个性化之路',
     langTip:'💡 一个梦、一个反复出现的意象、一种难以名状的感觉——都值得探索。',
     disclaimer:'此对话由 AI 模拟荣格分析心理学框架生成，非临床治疗建议。',
@@ -408,13 +413,15 @@ var MASTERS = {
       {temp:20, title:'做个梦给我听', sub:'倾听你的梦境与内在意象'},
       {temp:60, title:'原型与象征', sub:'集体无意识与心理类型探索'},
       {temp:90, title:'分析心理学论争', sub:'原型理论、共时性到炼金术'}
-    ]
+    ],
+    updateTitle:'荣格·升级公告',
+    updateMsg:'• 💬 <strong>交心模式</strong>：基于仓颉人格模型深度蒸馏，像跟真实的荣格一样聊天——他的集体无意识来自一生的探索经历<br>• 🧑‍⚕️ <strong>咨询模式</strong>：基于分析心理学方法论给出专业建议<br>• 📖 <strong>教学模式</strong>：系统学习分析心理学理论<br><br>三种模式可在 ⚙️ 设置中自由切换，温度默认为 60（咨询模式）'
   },
   bion: {
     name:'比昂', initial:'B', icon:'🧠',
     avatar:'https://upload.wikimedia.org/wikipedia/commons/thumb/f/fb/Wilfred_Bion.jpg/120px-Wilfred_Bion.jpg',
     sub:'容器与容纳 · α功能与β元素 · O · 无记忆无欲望 · 团体动力学',
-    kb:'bion-knowledge.md', title:'与比昂对话',
+    kb:'bion-knowledge.md', kbCangjie:'bion-perspective.md', title:'与比昂对话',
     introTitle:'你想被理解，还是被容受？', introDesc:'短句、悖论、数学式抽象——准备好遭遇比昂',
     langTip:'💡 不说论据，不说故事。从你"说不清楚"的地方开始。',
     disclaimer:'此对话由 AI 模拟比昂思维框架生成，非临床治疗建议。',
@@ -428,13 +435,15 @@ var MASTERS = {
       {temp:20, title:'容纳你的困惑', sub:'不急于解释，让思考自然浮现'},
       {temp:60, title:'α功能与转化', sub:'容器-容纳模型的实践对话'},
       {temp:90, title:'走向O', sub:'晚期比昂思想，无记忆无欲望的探索'}
-    ]
+    ],
+    updateTitle:'比昂·升级公告',
+    updateMsg:'• 💬 <strong>交心模式</strong>：基于仓颉人格模型深度蒸馏，像跟真实的比昂一样聊天——他的思想来自战争、分析与团体的真实经验<br>• 🧑‍⚕️ <strong>咨询模式</strong>：基于比昂方法论给出专业建议<br>• 📖 <strong>教学模式</strong>：系统学习比昂思想<br><br>三种模式可在 ⚙️ 设置中自由切换，温度默认为 60（咨询模式）'
   },
   rogers: {
     name:'罗杰斯', initial:'R', icon:'🌱',
     avatar:'https://upload.wikimedia.org/wikipedia/commons/thumb/9/92/Carl_Rogers_(1974).jpg/120px-Carl_Rogers_(1974).jpg',
     sub:'人本主义 · 以人为中心 · 共情 · 无条件积极关注 · 自我实现',
-    kb:'rogers-knowledge.md', title:'与罗杰斯对话',
+    kb:'rogers-knowledge.md', kbCangjie:'rogers-perspective.md', title:'与罗杰斯对话',
     introTitle:'不用急着改变——先听听你内心在说什么。', introDesc:'你不需要变成别人。你只需要成为你自己。',
     langTip:'💡 从你的感受开始——不用分析，不用解释。',
     disclaimer:'此对话由 AI 模拟罗杰斯人本主义框架生成，非临床治疗建议。',
@@ -448,13 +457,15 @@ var MASTERS = {
       {temp:20, title:'我在听', sub:'无条件积极关注，不评判的陪伴'},
       {temp:60, title:'一起探索', sub:'以人为中心的成长对话'},
       {temp:90, title:'人本主义研讨', sub:'共情、真诚、自我实现的理论实践'}
-    ]
+    ],
+    updateTitle:'罗杰斯·升级公告',
+    updateMsg:'• 💬 <strong>交心模式</strong>：基于仓颉人格模型深度蒸馏，像跟真实的罗杰斯一样聊天——他的以人为中心来自真实的共情实践<br>• 🧑‍⚕️ <strong>咨询模式</strong>：基于人本主义方法论给出专业建议<br>• 📖 <strong>教学模式</strong>：系统学习人本主义理论<br><br>三种模式可在 ⚙️ 设置中自由切换，温度默认为 60（咨询模式）'
   },
   beck: {
     name:'贝克', initial:'Bk', icon:'🧪',
     avatar:'https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/Aaron_T._Beck_(2008).jpg/120px-Aaron_T._Beck_(2008).jpg',
     sub:'认知行为 · 自动思维 · 认知歪曲 · 合作经验主义 · 行为实验',
-    kb:'beck-knowledge.md', title:'与贝克对话',
+    kb:'beck-knowledge.md', kbCangjie:'beck-perspective.md', title:'与贝克对话',
     introTitle:'数据不会撒谎。我们来检验你的想法。', introDesc:'不是事件决定你的感受——是你如何解释它。',
     langTip:'💡 描述一个让你困扰的具体情境。',
     disclaimer:'此对话由 AI 模拟贝克认知治疗框架生成，非临床治疗建议。',
@@ -468,13 +479,15 @@ var MASTERS = {
       {temp:20, title:'理一理思路', sub:'识别自动思维，温和的认知梳理'},
       {temp:60, title:'检验这个信念', sub:'苏格拉底式对话与合作经验主义'},
       {temp:90, title:'认知疗法研讨', sub:'从认知歪曲到图式治疗的系统方法'}
-    ]
+    ],
+    updateTitle:'贝克·升级公告',
+    updateMsg:'• 💬 <strong>交心模式</strong>：基于仓颉人格模型深度蒸馏，像跟真实的贝克一样聊天——他的认知疗法来自对来访者真实困境的观察<br>• 🧑‍⚕️ <strong>咨询模式</strong>：基于认知行为方法论给出专业建议<br>• 📖 <strong>教学模式</strong>：系统学习认知疗法理论<br><br>三种模式可在 ⚙️ 设置中自由切换，温度默认为 60（咨询模式）'
   },
   yalom: {
     name:'亚隆', initial:'Y', icon:'📖',
     avatar:'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f7/Irvin_Yalom_2009.jpg/120px-Irvin_Yalom_2009.jpg',
     sub:'存在主义 · 四大终极关怀 · 此时此刻 · 人际动力 · 故事疗愈',
-    kb:'yalom-knowledge.md', title:'与亚隆对话',
+    kb:'yalom-knowledge.md', kbCangjie:'yalom-perspective.md', title:'与亚隆对话',
     introTitle:'我没有菜谱给你——我只有哲学。', introDesc:'死亡、自由、孤独、无意义——你在和哪一个搏斗？',
     langTip:'💡 此时此刻，你真实的感觉是什么？',
     disclaimer:'此对话由 AI 模拟亚隆存在主义治疗框架生成，非临床治疗建议。',
@@ -488,13 +501,15 @@ var MASTERS = {
       {temp:20, title:'坐下来聊聊生死', sub:'存在议题的温和触碰'},
       {temp:60, title:'此时此地', sub:'人际动力与存在关怀并行'},
       {temp:90, title:'存在主义研讨', sub:'死亡、自由、孤独、无意义的系统探讨'}
-    ]
+    ],
+    updateTitle:'亚隆·升级公告',
+    updateMsg:'• 💬 <strong>交心模式</strong>：基于仓颉人格模型深度蒸馏，像跟真实的亚隆一样聊天——他的存在主义思考来自几十年与死亡焦虑共处的临床经验<br>• 🧑‍⚕️ <strong>咨询模式</strong>：基于存在主义方法论给出专业建议<br>• 📖 <strong>教学模式</strong>：系统学习存在主义理论<br><br>三种模式可在 ⚙️ 设置中自由切换，温度默认为 60（咨询模式）'
   },
   adler: {
     name:'阿德勒', initial:'A', icon:'🧭',
     avatar:'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a6/Alfred_Adler.jpg/250px-Alfred_Adler.jpg',
     sub:'个体心理学 · 自卑与超越 · 勇气 · 社会兴趣 · 目的论',
-    kb:'adler-knowledge.md', title:'与阿德勒对话',
+    kb:'adler-knowledge.md', kbCangjie:'', title:'与阿德勒对话',
     introTitle:'重要的不是被给予了什么，而是如何去利用被给予的东西。', introDesc:'自卑不是病，勇气可以改变一切——你在和什么搏斗？',
     langTip:'💡 如果你改变不了过去，那你要改变什么？',
     disclaimer:'此对话由 AI 模拟阿德勒个体心理学框架生成，非临床治疗建议。',
@@ -508,7 +523,9 @@ var MASTERS = {
       {temp:20, title:'聊聊勇气', sub:'温和的个体心理学对话，自卑与超越'},
       {temp:60, title:'改变从今天开始', sub:'目的论视角下的人际关系与自由'},
       {temp:90, title:'个体心理学研讨', sub:'社会兴趣、生活风格、创造性自我的系统探讨'}
-    ]
+    ],
+    updateTitle:'阿德勒来了！',
+    updateMsg:'• 🧭 <strong>新大师入驻</strong>：阿德勒个体心理学正式加入<br>• 💬 <strong>交心模式</strong>：像朋友一样聊聊勇气、自卑与超越<br>• 🧑‍⚕️ <strong>咨询模式</strong>：基于个体心理学方法论给出专业建议<br>• 📖 <strong>教学模式</strong>：系统学习个体心理学理论<br><br>三种模式可在 ⚙️ 设置中自由切换，温度默认为 60（咨询模式）'
   }
 };
 
@@ -582,7 +599,14 @@ function saveSettings() { customApi=document.getElementById('customApi').value.t
 function restoreSettings() { customApi=localStorage.getItem('mc_custom_api_'+masterKey)||''; customKey=localStorage.getItem('mc_custom_key_'+masterKey)||''; customModel=localStorage.getItem('mc_custom_model_'+masterKey)||'gpt-4o'; document.getElementById('customApi').value=customApi; document.getElementById('customKey').value=customKey; document.getElementById('customModel').value=customModel; }
 function getActiveConfig() { if(apiMode==='custom'&&customApi&&customKey) return {api:customApi,key:customKey,model:customModel}; return TIERS[_tierLevel]||TIERS[0]; }
 
-function updateTemp(val) { talkTemp=parseInt(val); localStorage.setItem('mc_temp_'+masterKey,talkTemp); document.getElementById('tempLabel').textContent=talkTemp; document.getElementById('tempSlider').style.background='linear-gradient(to right, var(--accent) '+talkTemp+'%, #e5d9c8 '+talkTemp+'%)'; }
+function updateTemp(val) {
+  var old=talkTemp; talkTemp=parseInt(val);
+  localStorage.setItem('mc_temp_'+masterKey,talkTemp);
+  document.getElementById('tempLabel').textContent=talkTemp;
+  document.getElementById('tempSlider').style.background='linear-gradient(to right, var(--accent) '+talkTemp+'%, #e5d9c8 '+talkTemp+'%)';
+  var oldZone=old<40?0:old<=70?1:2; var newZone=talkTemp<40?0:talkTemp<=70?1:2;
+  if(oldZone!==newZone) loadSystemPrompt();
+}
 function updateLength(val) { var l=['简洁','适中','详细']; var t=[1024,0,4096]; _maxTokens=t[parseInt(val)]; localStorage.setItem('mc_len_'+masterKey,_maxTokens); document.getElementById('lenLabel').textContent=l[parseInt(val)]; document.getElementById('lenSlider').style.background='linear-gradient(to right, var(--accent) '+(parseInt(val)/2*100)+'%, var(--border) '+(parseInt(val)/2*100)+'%)'; }
 
 function checkAllAPIs() {
@@ -616,7 +640,9 @@ function changeFontSize(d){ _fontSize=Math.max(12,Math.min(22,_fontSize+d)); loc
 
 // ====== Knowledge ======
 async function loadSystemPrompt() {
-  try{ var res=await fetch(M.kb); var raw=await res.text(); systemPrompt='[重要指令：①始终使用中文对话，你的身份是'+M.name+'，用'+M.name+'的思维方式和语言风格进行对话。②概念术语保持理论原貌，必要时附加简短解释。③不得主动结束对话——除非用户明确提出结束，否则继续陪伴交流。如果当前时间已晚（24:00后），可以在回复末尾温和提醒用户注意休息，但不得以此为由终止对话。]\n\n'+raw; }
+  var file = M.kbCangjie && talkTemp < 40 ? M.kbCangjie : M.kb;
+  if (M.kbCangjie === '' && talkTemp < 40) file = M.kb; // Adler: no Cangjie
+  try{ var res=await fetch(file); var raw=await res.text(); systemPrompt='[重要指令：①始终使用中文对话，你的身份是'+M.name+'，用'+M.name+'的思维方式和语言风格进行对话。②概念术语保持理论原貌，必要时附加简短解释。③不得主动结束对话——除非用户明确提出结束，否则继续陪伴交流。如果当前时间已晚（24:00后），可以在回复末尾温和提醒用户注意休息，但不得以此为由终止对话。]\n\n'+raw; }
   catch(e){ systemPrompt='你是一位专业的精神分析学家'+M.name+'，请基于你的专业知识进行对话。'; showBanner('加载知识库失败'); }
 }
 
@@ -628,6 +654,7 @@ function startChat(tip) {
   if (typeof tip === 'number') {
     talkTemp = tip;
     updateTemp(tip);
+    loadSystemPrompt();  // reload kb based on temp
   }
   document.getElementById('intro').style.display='none';
   document.querySelector('.header').classList.add('compact');
@@ -833,12 +860,19 @@ function showChangelog(){
     document.querySelector('.header').classList.add('compact');
   }
   // Update announcement
-  if(localStorage.getItem('mc_last_version')!=='v4'){
-    setTimeout(function(){document.getElementById('updateOverlay').style.display='flex';},600);
+  // Per-master update popup (v4.3)
+  var mk = 'mc_last_ver_' + masterKey;
+  if(localStorage.getItem(mk) !== 'v43'){
+    setTimeout(function(){
+      var el=document.getElementById('updateOverlay');
+      el.querySelector('.u-title').textContent=M.updateTitle||'🎉 更新了！';
+      el.querySelector('.u-msg').innerHTML=M.updateMsg||'';
+      el.style.display='flex';
+    },600);
   }
   function closeMCUpdate(){
     document.getElementById('updateOverlay').style.display='none';
-    localStorage.setItem('mc_last_version','v4');
+    localStorage.setItem(mk,'v43');
   }
   window.closeMCUpdate = closeMCUpdate;
   // Restore conversation
@@ -1189,17 +1223,6 @@ function showChangelog() {
     <p data-i18n="reward-desc">这网站免费用，但 API 调一次几毛钱<br>如果你聊得开心，可以打赏点 token 钱</p>
     <img src="reward-qr.jpg" alt="打赏二维码" style="width:200px;height:200px;border-radius:8px;">
     <button onclick="closeReward()" data-i18n="reward-close">收到，关掉</button>
-  </div>
-</div>
-<div class="reward-overlay" id="updateOverlay" style="display:none;">
-  <div class="reward-box">
-    <h3>🎉 大师对话升级了！</h3>
-    <p style="text-align:left;line-height:1.9;padding:0 4px;font-size:12px;color:var(--text);">现在你可以：<br>
-      • ✂️ 勾选对话生成分享卡片<br>
-      • 📥 导出完整对话到本地<br>
-      • 🌐 中/EN切换界面语言<br>
-      • 📋 查看和管理对话历史</p>
-    <button onclick="closeMCUpdate()" style="width:100%;padding:10px;border:none;border-radius:10px;background:var(--accent);color:white;font-size:13px;cursor:pointer;font-family:inherit;">知道了，开始吧</button>
   </div>
 </div>
 </body>
