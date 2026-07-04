@@ -1,9 +1,9 @@
 # Winnicott Chat — 项目手册
 
-> 最后更新：2026-06-29  
-> 当前版本：v4.1  
+> 最后更新：2026-07-04  
+> 当前版本：v4.2  
 > 生产环境：https://mei-junhao.github.io/winnicott-chat/ （GitHub Pages，固定 URL）  
-> 入口文件：master-select.html（主页）  
+> 入口文件：index.html（主页，替代已废弃的 master-select.html）  
 > 仓库地址：https://github.com/mei-junhao/winnicott-chat
 
 ---
@@ -21,7 +21,7 @@
 ```
 winnicott-chat/
 ├── public/                          ← 部署目录（所有静态资源）
-│   ├── master-select.html           ← ★ 主页：大师选择页（8 位大师卡片 + 留言板）
+│   ├── index.html                   ← ★ 主页：大师选择页（9 位大师卡片 + 留言板）
 │   ├── winnicott-chat.html          ← 温尼科特/拉康双人对话 (v4, 107KB)
 │   ├── master-chat.html             ← 多大师共享模板（?master=freud|klein|...），winnicott-chat 同级
 │   ├── ai-supervisor.html           ← AI 督导（密码保护，基于 alice-perspective skill）
