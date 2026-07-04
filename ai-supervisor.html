@@ -242,6 +242,15 @@
   .api-save-btn { margin-top:6px; width:100%; padding:6px; border:none; border-radius:8px; background:var(--accent); color:white; font-size:12px; cursor:pointer; font-family:inherit; }
   .api-save-btn:hover { background:var(--accent-hover); }
 
+  /* Supervisor mode tabs */
+  .spv-tabs-wrap { display:flex; align-items:center; margin:6px 0 8px; }
+  .spv-tabs { display:flex; gap:0; border-radius:8px; overflow:hidden; border:1px solid var(--border); flex:1; }
+  .spv-tab { flex:1; padding:6px 0; border:none; font-size:12px; cursor:pointer; font-family:inherit; transition:0.2s; background:var(--bg); color:var(--text); }
+  .spv-tab.active { background:var(--accent); color:white; }
+  .spv-tab:hover:not(.active) { background:var(--light-accent); }
+  .spv-diff-btn { font-size:10px; color:var(--muted); cursor:pointer; text-decoration:underline; margin-left:8px; flex-shrink:0; background:none; border:none; font-family:inherit; padding:0; }
+  .spv-desc { font-size:11px; color:var(--muted); line-height:1.8; padding:2px 0 8px; }
+
   /* Responsive */
   @media (max-width: 576px) {
     .app { padding:24px 16px 40px; gap:24px; }
@@ -271,6 +280,16 @@
       <h1>AI 临床督导</h1>
       <p>请上传或粘贴临床材料（逐字稿 / 案例报告 / 反移情困惑）</p>
     </div>
+
+    <!-- Supervisor mode switch -->
+    <div class="spv-tabs-wrap">
+      <div class="spv-tabs">
+        <button class="spv-tab active" onclick="switchSpvMode('nvwa')" id="tabNvwa">女娲版</button>
+        <button class="spv-tab" onclick="switchSpvMode('cangjie')" id="tabCangjie">仓颉版</button>
+      </div>
+      <button class="spv-diff-btn" onclick="showSpvDiff()">区别？</button>
+    </div>
+    <div class="spv-desc" id="spvDesc">女娲版教你「怎么做督导」，仓颉版告诉你「我是怎么督导的」</div>
 
     <div class="settings-panel" id="settingsPanel">
       <h3>API 设置</h3>
@@ -577,7 +596,8 @@ function setSupervisionStyle(content) {
 
 async function loadSupervisorPrompt() {
   try {
-    var res = await fetch('alice-perspective-full.md');
+    var file = spvMode === 'cangjie' ? 'cangjie-perspective-full.md' : 'nvwa-perspective-full.md';
+    var res = await fetch(file);
     var loaded = await res.text();
     setSupervisionStyle(loaded);
   } catch(e) {
@@ -1241,7 +1261,43 @@ function deleteHistory(id) {
 function closeHistory() {
   document.getElementById('historyOverlay').classList.remove('show');
 }
+
+// Supervisor mode switch (nvwa / cangjie)
+var spvMode = localStorage.getItem('sv_mode') || 'nvwa';
+function switchSpvMode(mode) {
+  spvMode = mode;
+  localStorage.setItem('sv_mode', mode);
+  document.getElementById('tabNvwa').className = 'spv-tab' + (mode === 'nvwa' ? ' active' : '');
+  document.getElementById('tabCangjie').className = 'spv-tab' + (mode === 'cangjie' ? ' active' : '');
+  document.getElementById('spvDesc').textContent =
+    mode === 'nvwa' ? '女娲版教你「怎么做督导」，仓颉版告诉你「我是怎么督导的」'
+    : '仓颉版告诉你「我是怎么督导的」，女娲版教你「怎么做督导」';
+  loadSupervisorPrompt();
+}
+function showSpvDiff() {
+  var m = document.getElementById('spvDiffOverlay');
+  if (m) m.style.display = 'flex';
+}
+function closeSpvDiff() {
+  document.getElementById('spvDiffOverlay').style.display = 'none';
+}
+// Apply saved mode on load
+setTimeout(function(){
+  if(spvMode==='cangjie') switchSpvMode('cangjie');
+}, 100);
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+<!-- Supervisor mode diff overlay -->
+<div class="reward-overlay" id="spvDiffOverlay" style="display:none;" onclick="if(event.target===this)closeSpvDiff()">
+  <div class="reward-box" style="max-width:480px;">
+    <h3 style="margin:0 0 10px;font-size:15px;font-weight:500;color:var(--text);">女娲版 vs 仓颉版</h3>
+    <div style="font-size:12px;color:var(--text);text-align:left;line-height:1.9;padding:0 4px;">
+      <p><strong style="color:var(--accent);">女娲版</strong>：一个结构化的督导操作系统。收到逐字稿后会按六类信号逐行标注，对案例做五层概念化，从反移情切入，最后按三段式输出——追问确认、动力学假设、具体方向加示范话术。适合你需要一套清晰的督导工作流、有具体逐字稿或案例要分析的时候。</p>
+      <p style="margin-top:10px;"><strong style="color:var(--accent);">仓颉版</strong>：一位督导师的私人操作笔记。每条信念都绑着真实的督导场景（来访者说"你烦我吗"、受督者过度友善反而阻碍来访者），决策启发式来自几十年的肌肉记忆（"乖巧是绝望，捣乱是希望""你的失败是治疗性的"），也有承认过的失败和不确定。适合你想了解一位温尼科特取向督导师的内在逻辑和判断依据，而不是照手册操作的时候。</p>
+    </div>
+    <button onclick="closeSpvDiff()" style="margin-top:12px;width:100%;padding:10px;border:none;border-radius:10px;background:var(--accent);color:white;font-size:13px;cursor:pointer;font-family:inherit;">知道了</button>
+  </div>
+</div>
 </body>
 </html>
