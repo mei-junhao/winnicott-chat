@@ -385,11 +385,11 @@ function confirmInvite() {
   var checked = document.querySelectorAll('#inviteList input:checked');
   var keys = [];
   checked.forEach(function(cb) { keys.push(cb.value); });
-  // Check default API limit (max 2 masters including Winnicott)
+  // Check default API limit (max 3 masters including Winnicott)
   var cfg = getActiveConfig();
   var isDefault = (apiMode !== 'custom' || !customKey);
   var newCount = 1 + keys.length;  // 1 = Winnicott always
-  if (isDefault && newCount > 2) {
+  if (isDefault && newCount > 3) {
     closeInvite();
     showApiLimitWarning();
     return;
@@ -406,7 +406,7 @@ function confirmInvite() {
 
 function showApiLimitWarning() {
   var el = document.getElementById('banner');
-  el.innerHTML = '⚠️ 默认 API 最多支持 2 位大师。使用 <b style="cursor:pointer;text-decoration:underline;" onclick="toggleSettings();el.classList.remove(\'show\');">自有 API</b> 可邀请更多大师';
+  el.innerHTML = '⚠️ 默认 API 最多支持 3 位大师。使用 <b style="cursor:pointer;text-decoration:underline;" onclick="toggleSettings();el.classList.remove(\'show\');">自有 API</b> 可邀请更多大师';
   el.classList.add('show');
   el.style.background = '#d4a056';
   clearTimeout(bannerTimer);
