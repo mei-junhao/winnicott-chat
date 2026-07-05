@@ -61,6 +61,15 @@
   .toolbar button.active-mode { background:#8b6f5c; color:white; border-color:#8b6f5c; }
   .toolbar .font-group { margin-left:auto; display:flex; gap:2px; }
   .toolbar .font-group button { width:26px; padding:3px 0; text-align:center; font-size:13px; font-weight:600; }
+  .toolbar .rounds-toggle { font-size:10px; color:#8f857d; }
+  .toolbar .rounds-toggle input { vertical-align:middle; margin-right:2px; accent-color:#8b6f5c; }
+
+  /* Preset buttons */
+  .preset-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px; }
+  .preset-card { padding:10px 12px; border-radius:10px; border:1px solid #e8e1d9; cursor:pointer; text-align:center; transition:0.15s; background:#faf8f5; }
+  .preset-card:hover { border-color:#8b6f5c; background:#f3ede6; }
+  .preset-card .pc-title { font-size:12px; font-weight:500; color:#2d2925; }
+  .preset-card .pc-sub { font-size:10px; color:#8f857d; margin-top:2px; }
 
   /* Settings panel */
   .settings-btn { position:absolute; right:12px; top:12px; background:none; border:1px solid #e8e1d9; border-radius:6px; padding:2px 8px; font-size:11px; cursor:pointer; color:#8f857d; font-family:inherit; line-height:1.6; }
@@ -134,7 +143,7 @@
   <!-- Header -->
   <div class="header" style="position:relative;">
     <a class="back-link" href="index.html">&larr; 返回</a>
-    <h1>🪑 圆桌会议室 <span style="font-size:10px;color:#8f857d;font-weight:400;">v5.0</span></h1>
+    <h1>🪑 圆桌会议室 <span style="font-size:10px;color:#8f857d;font-weight:400;">v5.1</span></h1>
     <p>多位大师同时回应的对话空间</p>
     <button class="settings-btn" onclick="toggleSettings()" title="API 设置">⚙️</button>
   </div>
@@ -162,10 +171,14 @@
 
   <!-- Toolbar -->
   <div class="toolbar">
+    <button onclick="openPresets()">🎯 预设组合</button>
     <button onclick="setRespondMode()" id="modeToggleBtn">🌐 全体回应</button>
     <button onclick="clearChat()">🔄 新对话</button>
     <button onclick="saveHistory()">💾 保存对话</button>
     <button onclick="showHistory()">📋 历史记录</button>
+    <span class="rounds-toggle">
+      <input type="checkbox" id="roundsCheck" checked onchange="updateRounds()"><label for="roundsCheck">互评</label>
+    </span>
     <span class="font-group">
       <button onclick="zoomFont(-1)" title="缩小">A−</button>
       <button onclick="zoomFont(1)" title="放大">A+</button>
@@ -219,6 +232,17 @@
 <!-- Banner -->
 <div class="banner" id="banner"></div>
 
+<!-- Preset modal -->
+<div class="overlay" id="presetOverlay" onclick="if(event.target===this)closePresets()">
+  <div class="modal">
+    <h3>🎯 预设组合</h3>
+    <div class="preset-grid" id="presetGrid"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closePresets()">关闭</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ====== Master Config ======
 var MASTERS = {
@@ -270,6 +294,74 @@ var conversation = [];  // {name, text, time}
 var isLoading = false;
 var respondMode = 'all';  // 'all' | 'mention'
 var fontSize = 100;  // percentage
+var respondRounds = 2;  // 1 = no inter-master dialogue, 2 = with inter-master dialogue
+
+// ====== Presets ======
+var PRESETS = [
+  { id:'classic', title:'经典三人组', sub:'温尼科特 + 弗洛伊德 + 荣格', keys:['winnicott','freud','jung'], desc:'梦的解析、原型与在场——一次对话三种切面' },
+  { id:'existential', title:'存在主义专场', sub:'温尼科特 + 亚隆 + 罗杰斯', keys:['winnicott','yalom','rogers'], desc:'死亡焦虑、共情与抱持——存在的深度探讨' },
+  { id:'cbt', title:'认知行为组', sub:'温尼科特 + 贝克 + 罗杰斯', keys:['winnicott','beck','rogers'], desc:'认知歪曲、无条件积极关注与足够好的抱持' },
+  { id:'object', title:'客体关系组', sub:'温尼科特 + 克莱因', keys:['winnicott','klein'], desc:'早期客体关系、投射认同与过渡性空间' },
+  { id:'solo', title:'独坐温尼科特', sub:'仅温尼科特一人', keys:['winnicott'], desc:'回到最纯粹的温尼科特式陪伴' }
+];
+
+function openPresets() {
+  var grid = document.getElementById('presetGrid');
+  var html = '';
+  PRESETS.forEach(function(p) {
+    html += '<div class="preset-card" onclick="applyPreset(\''+p.id+'\')" title="'+p.desc+'">'
+      + '<div class="pc-title">' + p.title + '</div>'
+      + '<div class="pc-sub">' + p.sub + '</div></div>';
+  });
+  grid.innerHTML = html;
+  document.getElementById('presetOverlay').classList.add('show');
+}
+function closePresets() { document.getElementById('presetOverlay').classList.remove('show'); }
+
+function applyPreset(id) {
+  var p = null;
+  for (var i = 0; i < PRESETS.length; i++) { if (PRESETS[i].id === id) { p = PRESETS[i]; break; } }
+  if (!p) return;
+  var cfg = getActiveConfig();
+  var isDefault = (apiMode !== 'custom' || !customKey);
+  if (isDefault && p.keys.length > 3) {
+    closePresets();
+    showApiLimitWarning();
+    return;
+  }
+  activeMasters = p.keys.slice();
+  // Ensure Winnicott is present
+  if (activeMasters.indexOf('winnicott') === -1) { activeMasters.unshift('winnicott'); }
+  allMasterKeys.forEach(function(k) { autoRespond[k] = activeMasters.indexOf(k) !== -1; });
+  renderAvatarBar();
+  saveProfile();
+  closePresets();
+  addSystemMsg('已切换至「' + p.title + '」');
+}
+
+// ====== Profile save/load ======
+function saveProfile() {
+  var profile = { masters: activeMasters.slice(), autoRespond: JSON.parse(JSON.stringify(autoRespond)) };
+  localStorage.setItem('rt_profile', JSON.stringify(profile));
+}
+function loadProfile() {
+  try {
+    var raw = localStorage.getItem('rt_profile');
+    if (!raw) return;
+    var profile = JSON.parse(raw);
+    if (profile.masters && profile.masters.length > 0) {
+      activeMasters = profile.masters;
+      if (profile.autoRespond) autoRespond = profile.autoRespond;
+      renderAvatarBar();
+    }
+  } catch(e) {}
+}
+
+// ====== Rounds toggle ======
+function updateRounds() {
+  respondRounds = document.getElementById('roundsCheck').checked ? 2 : 1;
+  showBanner(respondRounds === 2 ? '大师互评已开启' : '大师互评已关闭');
+}
 
 // ====== TIERS (API config) ======
 var TIERS = [
@@ -356,6 +448,7 @@ function renderAvatarBar() {
 function toggleAutoRespond(key) {
   autoRespond[key] = !autoRespond[key];
   renderAvatarBar();
+  saveProfile();
 }
 
 // ====== Remove Master (double click) ======
@@ -400,6 +493,7 @@ function confirmInvite() {
     if (activeMasters.indexOf(key) === -1) activeMasters.push(key);
   });
   renderAvatarBar();
+  saveProfile();
   addSystemMsg('圆桌成员已更新');
   closeInvite();
 }
@@ -521,6 +615,30 @@ async function sendMsg() {
   // Parse @mentions
   var mentioned = parseAtMentions(text);
 
+  // Scenario recommendation: check if keywords suggest inviting other masters
+  var suggest = checkScenario(text);
+  if (suggest.length > 0) {
+    var names = [];
+    suggest.forEach(function(k) { names.push(MASTERS[k].name); });
+    setTimeout(function() {
+      if (confirm('检测到关键词，是否邀请 ' + names.join('、') + ' 加入圆桌？')) {
+        suggest.forEach(function(k) {
+          if (activeMasters.indexOf(k) === -1) {
+            var cfg = getActiveConfig();
+            var isDefault = (apiMode !== 'custom' || !customKey);
+            var newCount = activeMasters.length + 1;
+            if (isDefault && newCount > 3) { showApiLimitWarning(); return; }
+            activeMasters.push(k);
+            autoRespond[k] = true;
+          }
+        });
+        renderAvatarBar();
+        saveProfile();
+        addSystemMsg(names.join('、') + ' 加入了圆桌');
+      }
+    }, 200);
+  }
+
   // Determine which masters respond
   var responders = [];
   if (respondMode === 'mention' && mentioned.length > 0) {
@@ -592,8 +710,8 @@ async function sendMsg() {
   });
 
   // Round 2 (P2): Inter-master dialogue - masters can briefly react to each other
-  // Only if at least 2 masters replied and user didn't @-mention
-  if (repliedKeys.length >= 2 && mentioned.length === 0) {
+  // Only if respondRounds > 1, at least 2 masters replied, and user didn't @-mention
+  if (respondRounds > 1 && repliedKeys.length >= 2 && mentioned.length === 0) {
     // Rebuild history with the new responses
     var convHistory2 = conversation.map(function(msg) {
       var prefix = msg.name === 'user' ? '用户' : MASTERS[msg.name] ? MASTERS[msg.name].name : msg.name;
@@ -687,7 +805,31 @@ async function callMasterAPI(key, activeNames, history, userMsg, isReactMode) {
   }
 }
 
+// ====== Scenario keywords ======
+var SCENARIOS = {
+  '梦': ['freud','jung'], '梦境': ['freud','jung'], '梦见': ['freud','jung'],
+  '死亡': ['yalom'], '去世': ['yalom'], '临终': ['yalom'],
+  '童年': ['klein','winnicott'], '小时候': ['klein','winnicott'], '父母': ['klein','winnicott'],
+  '关系': ['rogers','klein'], '婚姻': ['rogers','klein'],
+  '焦虑': ['beck','yalom'], '恐惧': ['beck','yalom'], '害怕': ['beck','yalom'],
+  '自卑': ['adler'], '勇气': ['adler'],
+  '认知': ['beck'], '思维': ['beck'], '想法': ['beck']
+};
+
+function checkScenario(text) {
+  var suggestKeys = [];
+  for (var keyword in SCENARIOS) {
+    if (text.indexOf(keyword) !== -1) {
+      SCENARIOS[keyword].forEach(function(k) {
+        if (activeMasters.indexOf(k) === -1 && suggestKeys.indexOf(k) === -1) suggestKeys.push(k);
+      });
+    }
+  }
+  return suggestKeys;
+}
+
 // ====== Init ======
+loadProfile();  // Restore saved profile before rendering
 renderAvatarBar();
 // Restore font size
 var savedFont = parseInt(localStorage.getItem('rt_font'));
