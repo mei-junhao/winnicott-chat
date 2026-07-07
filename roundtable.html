@@ -206,6 +206,7 @@
       <button onclick="zoomFont(-1)" title="缩小">A−</button>
       <button onclick="zoomFont(1)" title="放大">A+</button>
     </span>
+    <button onclick="showReward()" style="background:none;border:1px solid var(--border);padding:4px 10px;border-radius:20px;font-size:12px;cursor:pointer;color:var(--muted);font-family:inherit;">☕ 打赏</button>
   </div>
 
   <!-- Avatar bar -->
@@ -226,6 +227,16 @@
       <textarea id="inputEl" placeholder="输入你的问题…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg()}" rows="1"></textarea>
       <button class="send-btn" id="sendBtn" onclick="sendMsg()">发送</button>
     </div>
+  </div>
+</div>
+
+<!-- Reward overlay -->
+<div class="reward-overlay" id="rtRewardOverlay" style="position:fixed;inset:0;z-index:999;background:rgba(0,0,0,0.3);display:none;align-items:center;justify-content:center;">
+  <div style="background:var(--card);border-radius:16px;padding:28px 24px;text-align:center;max-width:360px;width:90%;box-shadow:0 4px 24px rgba(0,0,0,0.15);">
+    <h3 style="margin:0 0 4px;font-size:16px;font-weight:500;color:var(--text);">☕ 觉得是个好活？</h3>
+    <p style="font-size:12px;color:var(--muted);margin:0 0 16px;line-height:1.6;">这网站免费用，但 API 调一次几毛钱<br>如果你聊得开心，可以打赏点 token 钱</p>
+    <img src="reward-qr.jpg" alt="打赏二维码" style="width:200px;height:200px;border-radius:8px;">
+    <button onclick="closeReward()" style="margin-top:12px;background:none;border:1px solid var(--border);border-radius:8px;padding:8px 20px;font-size:12px;cursor:pointer;color:var(--muted);font-family:inherit;">收到，关掉</button>
   </div>
 </div>
 
@@ -695,6 +706,16 @@ function zoomFont(delta) {
 }
 
 // ====== Send message ======
+// ====== Reward ======
+var rtUserMsgCount = 0;
+function showReward(){ document.getElementById('rtRewardOverlay').style.display='flex'; }
+function closeReward(){ document.getElementById('rtRewardOverlay').style.display='none'; }
+function rtMaybeAutoReward(){
+  if (rtUserMsgCount === 10 && !sessionStorage.getItem('rt_reward_auto_shown')) {
+    setTimeout(function(){ showReward(); sessionStorage.setItem('rt_reward_auto_shown','1'); }, 1200);
+  }
+}
+
 async function sendMsg() {
   var input = document.getElementById('inputEl');
   var text = input.value.trim();
@@ -744,6 +765,7 @@ async function sendMsg() {
   // Add user message
   addMsg(null, text, true);
   conversation.push({name:'user', text:text, time:Date.now()});
+  rtUserMsgCount++; rtMaybeAutoReward();
   input.value = '';
   input.style.height = 'auto';
 

@@ -346,6 +346,7 @@ P（来访者）：是的，我一直在想上周你说的话……"></textarea>
       <button class="btn-aux" onclick="exportConversation()">📥 导出对话</button>
       <button class="btn-aux" onclick="emailConversation()">📧 发送到邮箱</button>
       <button class="btn-aux" onclick="toggleSettings()" id="settingsBtn">⚙️ API 设置</button>
+      <button class="btn-aux" onclick="showReward()">☕ 打赏</button>
     </div>
 
     <!-- ====== PHASE 3: OUTPUT ====== -->
@@ -800,6 +801,16 @@ async function generateImpression() {
 }
 
 // ==================== CHAT ====================
+// ====== Reward ======
+var spvUserMsgCount = 0;
+function showReward(){ document.getElementById('spvRewardOverlay').style.display='flex'; }
+function closeReward(){ document.getElementById('spvRewardOverlay').style.display='none'; }
+function spvMaybeAutoReward(){
+  if (spvUserMsgCount === 10 && !sessionStorage.getItem('spv_reward_auto_shown')) {
+    setTimeout(function(){ showReward(); sessionStorage.setItem('spv_reward_auto_shown','1'); }, 1200);
+  }
+}
+
 async function sendChat() {
   var input = document.getElementById('chatInput');
   var text = input.value.trim();
@@ -809,6 +820,7 @@ async function sendChat() {
 
   input.value = '';
   chatMessages.push({ role:'user', content:text });
+  spvUserMsgCount++; spvMaybeAutoReward();
 
   var chatDiv = document.getElementById('chatMessages');
   chatDiv.innerHTML += '<div class="chat-msg user">' + escapeHtml(text) + '</div>';
@@ -1295,6 +1307,16 @@ setTimeout(function(){
       <p style="margin-top:10px;"><strong style="color:var(--accent);">仓颉版</strong>：一位督导师的私人操作笔记。每条信念都绑着真实的督导场景（来访者说"你烦我吗"、受督者过度友善反而阻碍来访者），决策启发式来自几十年的肌肉记忆（"乖巧是绝望，捣乱是希望""你的失败是治疗性的"），也有承认过的失败和不确定。适合你想了解一位温尼科特取向督导师的内在逻辑和判断依据，而不是照手册操作的时候。</p>
     </div>
     <button onclick="closeSpvDiff()" style="margin-top:12px;width:100%;padding:10px;border:none;border-radius:10px;background:var(--accent);color:white;font-size:13px;cursor:pointer;font-family:inherit;">知道了</button>
+  </div>
+</div>
+
+<!-- Reward overlay -->
+<div class="reward-overlay" id="spvRewardOverlay" style="position:fixed;inset:0;z-index:999;background:rgba(0,0,0,0.3);display:none;align-items:center;justify-content:center;">
+  <div style="background:var(--card);border-radius:16px;padding:28px 24px;text-align:center;max-width:360px;width:90%;box-shadow:0 4px 24px rgba(0,0,0,0.15);">
+    <h3 style="margin:0 0 4px;font-size:16px;font-weight:500;color:var(--text);">☕ 觉得是个好活？</h3>
+    <p style="font-size:12px;color:var(--muted);margin:0 0 16px;line-height:1.6;">这网站免费用，但 API 调一次几毛钱<br>如果你聊得开心，可以打赏点 token 钱</p>
+    <img src="reward-qr.jpg" alt="打赏二维码" style="width:200px;height:200px;border-radius:8px;">
+    <button onclick="closeReward()" style="margin-top:12px;background:none;border:1px solid var(--border);border-radius:8px;padding:8px 20px;font-size:12px;cursor:pointer;color:var(--muted);font-family:inherit;">收到，关掉</button>
   </div>
 </div>
 </body>
