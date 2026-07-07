@@ -201,7 +201,7 @@
       <button onclick="changeFontSize(-1)" style="background:none;border:1px solid var(--border);padding:4px 10px;border-radius:20px;font-size:12px;cursor:pointer;color:var(--muted);font-family:inherit;">A−</button>
       <button onclick="changeFontSize(1)" style="background:none;border:1px solid var(--border);padding:4px 10px;border-radius:20px;font-size:12px;cursor:pointer;color:var(--muted);font-family:inherit;">A+</button>
       <button onclick="toggleForwardMode()" style="background:none;border:1px solid var(--border);padding:4px 10px;border-radius:20px;font-size:12px;cursor:pointer;color:var(--muted);font-family:inherit;" data-i18n="forward-btn">✂️ 转发</button>
-      <button onclick="showRewardModal(false)" style="background:none;border:1px solid var(--border);padding:4px 10px;border-radius:20px;font-size:12px;cursor:pointer;color:var(--muted);font-family:inherit;" data-i18n="reward-btn">☕ 打赏</button>
+      <button onclick="showRewardMC()" style="background:none;border:1px solid var(--border);padding:4px 10px;border-radius:20px;font-size:12px;cursor:pointer;color:var(--muted);font-family:inherit;" data-i18n="reward-btn">☕ 打赏</button>
     </div>
 
     <div class="mode-toggle">
@@ -657,8 +657,14 @@ if(_dark){ document.documentElement.classList.add('dark'); document.getElementBy
 function toggleDark(){ _dark=!_dark; document.documentElement.classList.toggle('dark',_dark); document.getElementById('darkBtn').textContent=_dark?'☀️ 浅色':'🌙 深色'; localStorage.setItem('mc_dark_'+masterKey,_dark?'1':'0'); }
 
 // ====== Reward ======
+var mcUserMsgCount = 0;
 function showRewardMC(){ document.getElementById('rewardOverlayMC').style.display='flex'; }
 function closeRewardMC(){ document.getElementById('rewardOverlayMC').style.display='none'; }
+function maybeAutoRewardMC(){
+  if (mcUserMsgCount === 10 && !sessionStorage.getItem('mc_reward_auto_shown')) {
+    setTimeout(function(){ showRewardMC(); sessionStorage.setItem('mc_reward_auto_shown','1'); }, 1200);
+  }
+}
 
 // ====== Font ======
 var _fontSize = parseInt(localStorage.getItem('mc_fs_'+masterKey)||'15');
@@ -779,6 +785,7 @@ async function sendMessage() {
   var text=inputEl.value.trim(); if(!text||isLoading)return;
   if(!systemPrompt){showBanner('知识库加载中，请稍等');return;}
   inputEl.value=''; appendMessage('user',text); conversation.push({role:'user',content:text});
+  mcUserMsgCount++; maybeAutoRewardMC();
   _streamIdx++; isLoading=true; sendBtn.disabled=true; showTyping(); document.querySelector('.header').classList.add('compact');
   // Hide intro if still visible (user typed directly)
   document.getElementById('intro').style.display='none';
@@ -1175,8 +1182,6 @@ function mcFallbackWindow(content) {
   w.document.write('</body></html>');
   w.document.close();
 }
-function showRewardModal(auto) { document.getElementById('rewardOverlay').classList.add('show'); }
-function closeReward() { document.getElementById('rewardOverlay').classList.remove('show'); }
 
 // History
 function showHistory() {
@@ -1282,14 +1287,6 @@ function showChangelog() {
     <p data-i18n="share-save">长按图片保存，分享到朋友圈</p>
     <img id="sharePreviewImg" src="" alt="分享卡片">
     <button class="share-close-btn" onclick="closeSharePreview()" data-i18n="share-close">关 闭</button>
-  </div>
-</div>
-<div class="reward-overlay" id="rewardOverlay" onclick="if(event.target===this)closeReward()">
-  <div class="reward-box">
-    <h3 data-i18n="reward-title">☕ 觉得是个好活？</h3>
-    <p data-i18n="reward-desc">这网站免费用，但 API 调一次几毛钱<br>如果你聊得开心，可以打赏点 token 钱</p>
-    <img src="reward-qr.jpg" alt="打赏二维码" style="width:200px;height:200px;border-radius:8px;">
-    <button onclick="closeReward()" data-i18n="reward-close">收到，关掉</button>
   </div>
 </div>
 </body>
