@@ -35,18 +35,16 @@
     min-height:60vh; text-align:center; gap:24px; }
   .gate h1 { font-size:24px; font-weight:500; color:var(--accent); letter-spacing:0.05em; }
   .gate p { font-size:14px; color:var(--muted); max-width:460px; line-height:1.9; }
-  .gate input {
-    padding:14px 18px; border:1px solid var(--border); border-radius:var(--radius);
-    font-size:16px; text-align:center; outline:none; width:240px;
-    font-family:inherit; letter-spacing:4px; transition:var(--transition); background:var(--card);
+  .gate-note {
+    font-size:13px; color:var(--danger); max-width:480px; line-height:1.8; text-align:left;
+    border:1px solid var(--border); border-left:3px solid var(--danger);
+    padding:10px 14px; border-radius:8px; background:rgba(181,82,74,0.06);
   }
-  .gate input:focus { border-color:var(--accent); box-shadow:0 0 0 4px rgba(107,143,113,0.1); }
   .gate button {
     padding:14px 48px; border:none; border-radius:var(--radius); background:var(--accent);
     color:white; font-size:15px; cursor:pointer; font-family:inherit; transition:var(--transition); letter-spacing:0.04em;
   }
   .gate button:hover { background:var(--accent-hover); transform:translateY(-1px); box-shadow:0 4px 20px rgba(107,143,113,0.2); }
-  .gate .error { color:var(--danger); font-size:13px; display:none; }
 
   /* Main interface */
   .main { display:none; }
@@ -262,13 +260,12 @@
 </head>
 <body>
 <div class="app">
-  <!-- ====== PASSWORD GATE ====== -->
+  <!-- ====== ENTRY GATE ====== -->
   <div class="gate" id="gate">
     <h1>AI 临床督导（测试版）</h1>
     <p>基于温尼科特框架的团体心理督导方法论。上传逐字稿、案例报告或反移情困惑，AI 将输出整体印象并展开督导对话。</p>
-    <input type="password" id="pwdInput" placeholder="输入密码" onkeydown="if(event.key==='Enter')verifyPassword()">
-    <button onclick="verifyPassword()">进入</button>
-    <p class="error" id="pwdError">密码错误，请重试。</p>
+    <p class="gate-note">禁止将未脱敏的材料上传。本工具仅代表温尼科特取向观点，不构成临床建议，不能替代真人督导。</p>
+    <button onclick="enterApp()">进入</button>
   </div>
 
   <!-- ====== MAIN INTERFACE ====== -->
@@ -393,23 +390,11 @@ function toggleUpload() {
   }
 }
 
-// ==================== PASSWORD ====================
-var PASSWORD_HASH = '8b67f39584c2f28d3f9b78b2899528ed49b230172f8fd6d74439ab1488840fcb';
-
-async function verifyPassword() {
-  var input = document.getElementById('pwdInput').value.trim();
-  var data = new TextEncoder().encode(input);
-  var hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  var hashArray = Array.from(new Uint8Array(hashBuffer));
-  var hashHex = hashArray.map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
-
-  if (hashHex === PASSWORD_HASH) {
-    document.getElementById('gate').style.display = 'none';
-    document.getElementById('main').style.display = 'block';
-    sessionStorage.setItem('supervisor_auth', '1');
-  } else {
-    document.getElementById('pwdError').style.display = 'block';
-  }
+// ==================== ENTRY ====================
+function enterApp() {
+  document.getElementById('gate').style.display = 'none';
+  document.getElementById('main').style.display = 'block';
+  sessionStorage.setItem('supervisor_auth', '1');
 }
 
 if (sessionStorage.getItem('supervisor_auth') === '1') {
