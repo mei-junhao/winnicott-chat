@@ -904,10 +904,10 @@ function renderHistory() {
   empty.style.display = 'none';
   var html = '';
   h.slice(0, 10).forEach(function(entry) {
-    html += '<div class="history-item" onclick="loadHistoryItem('' + entry.id + '')">'
+    html += '<div class="history-item" onclick="loadHistoryItem(\'' + entry.id + '\')">'
       + escapeHtml(entry.title)
       + ' <span style="color:#c9b99d;font-size:10px;">' + entry.msgCount + '条 &middot; ' + new Date(entry.time).toLocaleString() + '</span>'
-      + '<button onclick="event.stopPropagation();deleteHistoryItem('' + entry.id + '')" style="float:right;background:none;border:none;color:#c0392b;cursor:pointer;font-size:10px;">✕</button></div>';
+      + '<button onclick="event.stopPropagation();deleteHistoryItem(\'' + entry.id + '\')" style="float:right;background:none;border:none;color:#c0392b;cursor:pointer;font-size:10px;">✕</button></div>';
   });
   container.insertAdjacentHTML('beforeend', html);
 }

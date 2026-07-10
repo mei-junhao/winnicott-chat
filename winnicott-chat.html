@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
+<link rel="icon" href="data:,">
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>与温尼科特对话</title>
@@ -1097,7 +1099,7 @@ function switchPersona(mode) {
   if (tip) tip.innerHTML = mode === 'lacan' ? '💡 原始语料为法语，法语术语保留原文 / French terms kept in original' : '💡 原始语料为英文，用英文提问效果更佳 / <span style="font-size:11px;opacity:0.7;">English prompts work best</span>';
   // Reload knowledge base
   loadSystemPrompt();
-  showBanner('info', '已切换到' + (isSupervisor ? 'AI督导' : (mode === 'lacan' ? '拉康' : '温尼科特')) + '模式');
+  showBanner('info', '已切换到' + (mode === 'lacan' ? '拉康' : '温尼科特') + '模式');
 }
 function restoreForm() {
   document.getElementById('customApi').value = customApi;
