@@ -924,11 +924,12 @@
 </div>
 <script>
 // Model tiers: auto-switch on failure with friendly messages
-const TIER_PRO = { api: 'https://api.kkdmx.com/v1/chat/completions', key: 'sk-JvknFamMM2OEcIYgT02gbR4rKvacIM4Vy4CTPdDVe22DROJR', model: 'deepseek-ai/deepseek-v4-pro', name: 'DeepSeek Pro' };
-const TIER_FLASH = { api: 'https://api.kkdmx.com/v1/chat/completions', key: 'sk-VKinfjJwko8RneSWuppXp8CuCcHGHFd9K9Uaq32VwgmIIX21', model: 'deepseek-ai/deepseek-v4-flash', name: 'DeepSeek Flash' };
-const TIER_M3 = { api: 'https://api.kkdmx.com/v1/chat/completions', key: 'sk-8sPbqqYiQIRh8ScEcbX7FDELlg5LXpjJxO2hBnwsfCxooKvD', model: 'minimaxai/minimax-m3', name: 'MiniMax M3' };
-const TIER_AGNES = { api: 'https://apihub.agnes-ai.com/v1/chat/completions', key: 'sk-dggqbbPiaO2AF14ZPFGvNbCUGXy74AVi9421lMSH3gqppC2e', model: 'agnes-2.0-flash', name: 'Agnes' };
-const TIER_OFFICIAL = { api:'https://api.deepseek.com/v1/chat/completions', key:'sk-22f21e4622a643599e54ff8b200b8045', model:'deepseek-v4-flash', name:'DeepSeek V4 Flash' };
+const SCF_URL = 'https://xinjingchat.online';
+const TIER_PRO = { api: 'https://api.kkdmx.com/v1/chat/completions', key: '', model: 'deepseek-ai/deepseek-v4-pro', name: 'DeepSeek Pro' };
+const TIER_FLASH = { api: 'https://api.kkdmx.com/v1/chat/completions', key: '', model: 'deepseek-ai/deepseek-v4-flash', name: 'DeepSeek Flash' };
+const TIER_M3 = { api: 'https://api.kkdmx.com/v1/chat/completions', key: '', model: 'minimaxai/minimax-m3', name: 'MiniMax M3' };
+const TIER_AGNES = { api: 'https://apihub.agnes-ai.com/v1/chat/completions', key: '', model: 'agnes-2.0-flash', name: 'Agnes' };
+const TIER_OFFICIAL = { api:'https://api.deepseek.com/v1/chat/completions', key:'', model:'deepseek-v4-flash', name:'DeepSeek V4 Flash' };
 const TIERS = [TIER_OFFICIAL, TIER_PRO, TIER_FLASH, TIER_M3, TIER_AGNES];
 
 var _tierLevel = 0;
@@ -1068,6 +1069,9 @@ function fillPreset(api, model) {
 function getActiveConfig() {
   if (apiMode === 'custom' && customApi && customKey) {
     return { api: customApi, key: customKey, model: customModel };
+  }
+  if (SCF_URL) {
+    return { api: SCF_URL.replace(/\/+$/, ''), key: '', model: 'proxy' };
   }
   var level = Math.min(_tierLevel, TIERS.length - 1);
   var t = TIERS[level];
@@ -1558,6 +1562,22 @@ function closeSharePreview() {
 // API Health Check
 function checkAllAPIs() {
   var row = document.getElementById('apiHealthRow');
+  if (SCF_URL) {
+    row.innerHTML = '<span style="background:#eee;color:#999;padding:2px 8px;border-radius:8px;font-size:10px;">SCF 代理 …</span>';
+    var ac = new AbortController();
+    var tm = setTimeout(function(){ac.abort();},10000);
+    var start = Date.now();
+    fetch(SCF_URL.replace(/\/+$/, ''), {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({messages:[{role:'user',content:'hi'}],max_tokens:1}), signal:ac.signal})
+    .then(function(r) {
+      clearTimeout(tm);
+      var ms = Date.now() - start;
+      var color = r.ok ? '#4a9' : '#c60';
+      var label = r.ok ? '✓ ' + ms + 'ms' : '⚡ ' + r.status;
+      updateTierBadge('SCF 代理', color, label);
+    })
+    .catch(function(){ clearTimeout(tm); updateTierBadge('SCF 代理','#c33','✗ 不可达'); });
+    return;
+  }
   row.innerHTML = TIERS.map(function(t){ return '<span style="background:#eee;color:#999;padding:2px 8px;border-radius:8px;font-size:10px;">' + t.name + ' …</span>'; }).join('');
   TIERS.forEach(function(tier, i) {
     setTimeout(function() {
