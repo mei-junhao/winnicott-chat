@@ -702,12 +702,17 @@ var messagesEl = document.getElementById('messages');
 var inputEl = document.getElementById('input');
 var sendBtn = document.getElementById('sendBtn');
 
-// 代理地址：浏览器只调这一个，密钥留在边缘函数里（前端零密钥）
-// 若本页由 EdgeOne 同域托管，自动拼接 /api/proxy（免 CORS）；
-// 若由 GitHub Pages 打开，请把下方 <你的域名> 换成你的真实边缘函数域名。
-const API_PROXY = (location.hostname.indexOf('edgeone.app') >= 0 || location.hostname.indexOf('edgeone.site') >= 0)
-  ? location.origin + '/api/proxy'
-  : 'https://<你的域名>.edgeone.app/api/proxy';
+// === 代理地址（三层回退：SCF 云函数 > EdgeOne 边缘函数 > GitHub Pages 兜底） ===
+// 部署 SCF 后把下方占位符换成真实函数 URL
+const SCF_URL = ''; // 填入：'https://<appid>.scf.tencentcs.com/release/'
+const API_PROXY = (function(){
+  // 1) SCF 云函数已配（密钥存云端环境变量，推荐）
+  if(SCF_URL && SCF_URL.indexOf('://') >= 0) return SCF_URL.replace(/\/+$/, '');
+  // 2) EdgeOne 同源：自动拼 /api/proxy（免 CORS）
+  try { var h=location.hostname; if(h&&(h.indexOf('edgeone.app')>=0||h.indexOf('edgeone.site')>=0||h.indexOf('edgeone.cool')>=0)) return location.origin+'/api/proxy'; }catch(e){}
+  // 3) 兜底：GitHub Pages → EdgeOne 域名
+  return 'https://<你的域名>.edgeone.app/api/proxy';
+})();
 
 // ====== Settings ======
 function toggleSettings() {
@@ -918,7 +923,7 @@ async function sendMessage() {
     try{
       removeTyping(); messagesEl.appendChild(div); scrollToBottom();
       var hdrs={'Content-Type':'application/json'};
-      // 注意：不再带 Authorization —— 密钥在边缘函数里
+      // 注意：不再带 Authorization —— 密钥在 SCF/边缘函数里
       var res=await fetch(cfg.api,{method:'POST',headers:hdrs,body:JSON.stringify({model:cfg.model,messages:ctxMessages,temperature:0.7,max_tokens:_maxTokens||undefined,stream:true})});
       if(!res.ok){showBanner(cfg.name+' 返回 '+res.status+'，重试中'); continue;}
 

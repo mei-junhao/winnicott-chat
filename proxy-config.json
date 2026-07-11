@@ -1,0 +1,13 @@
+{
+  "mode": "scf",
+  "scfUrl": "https://<你的SCF函数URL>/",
+  "port": 8080,
+  "token": "",
+  "upstreams": [
+    { "host": "api.deepseek.com", "model": "deepseek-v4-flash", "key": "" },
+    { "host": "api.kkdmx.com", "model": "deepseek-ai/deepseek-v4-pro", "key": "" },
+    { "host": "api.kkdmx.com", "model": "deepseek-ai/deepseek-v4-flash", "key": "" },
+    { "host": "api.kkdmx.com", "model": "minimaxai/minimax-m3", "key": "" },
+    { "host": "apihub.agnes-ai.com", "model": "agnes-2.0-flash", "key": "" }
+  ]
+}
