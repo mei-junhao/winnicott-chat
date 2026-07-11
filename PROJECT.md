@@ -1,6 +1,6 @@
 # Winnicott Chat — 项目手册
 
-> 最后更新：2026-07-11  
+> 最后更新：2026-07-12  
 > 当前版本：v5.2  
 > 生产环境：https://mei-junhao.github.io/winnicott-chat/ （GitHub Pages，固定 URL）  
 > 入口文件：index.html（主页；旧的 master-select.html 已废弃并删除）  
@@ -291,7 +291,7 @@ curl -s -X POST 'https://api.kkdmx.com/v1/chat/completions' \
 
 ## 七、已知问题
 
-1. **GitHub remote URL 硬编码 PAT 明文**（如 `https://mei-junhao:ghp_***@github.com/...`），属 P0 安全隐患，**需用户本人在 GitHub 后台轮换 PAT**；轮换后清理本地 `.git-credentials` 与 remote URL 明文。该明文未进入公开 git 历史。
+1. **GitHub 凭据安全（2026-07-12 已加固）**：原 `remote.origin.url` 硬编码 PAT 明文（`https://mei-junhao:ghp_***@github.com/...`）已清除，remote 改为 SSH 形式 `git@github.com:mei-junhao/winnicott-chat.git`；仓库级 `credential.helper=store` 已移除；`~/.git-credentials` 的 github 行已删、空文件已删；新增 SSH 部署密钥 `C:\Users\Administrator\.ssh\id_ed25519_winnicott` 并写入 `~/.ssh/config`。**仍建议**：旧 `ghp_` PAT 已在明文暴露过，请到 GitHub → Settings → Developer settings 撤销/轮换。该明文未进入公开 git 历史。
 2. **consultant-a 密码为前端明文校验**（meijunhao123 写在源码），仅软门禁、非真实鉴权；任何查看源码者均可获取。如需真正限制访问应改服务端鉴权。
 3. `master-select.html` 已废弃删除，主页统一为 `index.html`；旧文档/链接若仍指向 master-select 属失效引用。
 4. AI 督导 docx 解析依赖外部 JSZip CDN。
@@ -313,7 +313,7 @@ curl -s -X POST 'https://api.kkdmx.com/v1/chat/completions' \
 - [x] 取消 AI 督导密码 + 加免责声明
 - [x] 作者链接统一改为 mei-personal-site
 - [x] 新增 咨询师A 定制服务页（密码门 + 温度锁 60）
-- [ ] **GitHub PAT 明文轮换 + 清理本地凭证（P0）**
+- [x] **GitHub 凭据加固（2026-07-12）**：remote 改 SSH 部署密钥、删 .git-credentials、去仓库级 credential.helper；**旧 PAT 仍需到 GitHub 后台撤销/轮换**
 - [ ] consultant-a 改为服务端鉴权（当前仅前端软门禁）
 - [ ] 清理开发备份文件（backup-*/index-dev*/original-index.html/v4-*）
 - [ ] 对话自动章节改为基于语义相似度
@@ -348,3 +348,5 @@ curl -s -X POST 'https://api.kkdmx.com/v1/chat/completions' \
 | 2026-07-07 | 全局 UI 优化：5 个活动页注入 `<style id="ui-optimize">`（Tier A/B/C 视觉层，仅 CSS） |
 | 2026-07-10 | 新增 咨询师A 定制服务页 `consultant-a.html`：复用 master-chat 界面（MASTERS 重赋值仅 consultantA），温度锁 60 不可调，密码门 meijunhao123（门面「本页面为定制服务，具体请联系开发者」）；首页圆桌下加「定制服务」入口；人格 `consultant-a-knowledge.md` |
 | 2026-07-10 | 更新 PROJECT.md：整合 UI 优化 / 打赏节奏 / consultant-a / 圆桌 / 已知 PAT 安全议题等新情况；移除 master-select.html 失效引用；部署命令改为 subtree 分支强推 |
+| 2026-07-12 | **多大师(roundtable.html) API 打通**：根因是代理 server.js 硬编码 `stream:true` 永远返回 SSE 流，而 roundtable 发 `stream:false` 用 `apiRes.json()` 解析 → 解析失败静默返回空；改为代理尊重客户端 `stream` 字段（非流式返完整 JSON、流式返 SSE），前端零改动。服务器侧验证两路径全绿 |
+| 2026-07-12 | **GitHub 凭据安全加固**：remote 由明文 PAT 改为 SSH 部署密钥 `git@github.com:mei-junhao/winnicott-chat.git`；清 `credential.helper=store`、删 `~/.git-credentials`；新增 `C:\Users\Administrator\.ssh\id_ed25519_winnicott` 并写入 `~/.ssh/config`。待用户在 GitHub 添加 deploy key（勾选 write）并轮换旧 PAT |
