@@ -704,7 +704,7 @@ var sendBtn = document.getElementById('sendBtn');
 
 // === 代理地址（三层回退：SCF 云函数 > EdgeOne 边缘函数 > GitHub Pages 兜底） ===
 // 部署 SCF 后把下方占位符换成真实函数 URL
-const SCF_URL = ''; // 填入：'https://<appid>.scf.tencentcs.com/release/'
+const SCF_URL = 'https://1439314927-lx3a2qzw5z.ap-guangzhou.tencentscf.com';
 const API_PROXY = (function(){
   // 1) SCF 云函数已配（密钥存云端环境变量，推荐）
   if(SCF_URL && SCF_URL.indexOf('://') >= 0) return SCF_URL.replace(/\/+$/, '');
