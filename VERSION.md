@@ -1,5 +1,40 @@
 # Winnicott Chat — 版本日志
 
+## v5.2 (2026-07-11) — SCF 云函数代理 + 密钥安全升级
+
+### 架构变更
+
+- 🔑 **API Key 安全迁移**：前端所有明文 Key 全部移除，通过 SCF Web 函数 / 轻量服务器代理中转
+- 🏗️ **新增代理层**：`https://xinjingchat.online/`（腾讯云轻量服务器，Node.js + nginx + HTTPS）
+- 🔄 **流式透传**：nginx `proxy_buffering off` + `X-Accel-Buffering: no`，SSE 打字机效果无损
+
+### 安全性
+
+- 🔒 前端零密钥：已从 `master-chat.html` / `roundtable.html` / `winnicott-chat.html` / `v4-master-chat.html` 清除共 20+ 个硬编码 API Key
+- 🛡️ CORS 白名单：服务器端 `Access-Control-Allow-Origin` 动态回显来源
+- 🚫 防盗刷：Referer 白名单 + 防火墙 443 端口限制
+
+### 具体改动
+
+| 文件 | 改动 |
+|---|---|
+| `scf-proxy/index.py` | SCF Web 函数，单 DeepSeek 供应商，SSE 透传 |
+| `edge-functions/api/proxy.js` | 适配 Makers 的 `export default` 格式 |
+| `public/master-chat.html` | 增加 `SCF_URL` 三层回退（SCF > EdgeOne > 兜底） |
+| `public/roundtable.html` | 添加 SCF 代理 + 去明文 Key |
+| `public/winnicott-chat.html` | 添加 SCF 代理 + 去明文 Key + health check 改为检测 SCF |
+| `public/v4-master-chat.html` | 添加 SCF 代理 + 去明文 Key |
+| `proxy-config.json` | 去明文 Key，新增 `mode:scf` / `scfUrl` 字段 |
+| `public/proxy.js` | 支持 SCF 模式探测 |
+
+### 部署
+
+- 腾讯云轻量服务器：Ubuntu 24 + Node.js 22 + nginx + Certbot（自动 HTTPS）
+- 域名：`xinjingchat.online`（A 记录指向 43.138.198.165）
+- Docker/systemd 守护：`chat-proxy.service` 自动重启
+
+---
+
 ## v4.1 (2026-06-29) — AI 督导增强 + 全线体验优化
 
 ### AI 督导 (ai-supervisor.html)
