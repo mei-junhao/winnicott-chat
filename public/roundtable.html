@@ -578,7 +578,7 @@ var apiMode = (customApi && customKey) ? 'custom' : 'default';
 
 function getActiveConfig() {
   if (apiMode === 'custom' && customApi && customKey) return { api: customApi, key: customKey, model: customModel || 'gpt-4o' };
-  if (SCF_URL) return { api: SCF_URL.replace(/\/+$/, ''), key: '', model: 'proxy' };
+  if (SCF_URL) return { api: SCF_URL.replace(/\/+$/, ''), key: '', model: '' };
   return TIERS[_tierLevel] || TIERS[0];
 }
 

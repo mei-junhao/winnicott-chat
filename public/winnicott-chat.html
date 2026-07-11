@@ -1071,7 +1071,7 @@ function getActiveConfig() {
     return { api: customApi, key: customKey, model: customModel };
   }
   if (SCF_URL) {
-    return { api: SCF_URL.replace(/\/+$/, ''), key: '', model: 'proxy' };
+    return { api: SCF_URL.replace(/\/+$/, ''), key: '', model: '' };
   }
   var level = Math.min(_tierLevel, TIERS.length - 1);
   var t = TIERS[level];
