@@ -265,6 +265,15 @@
     <span class="arrow" data-i18n="idx_go">前往 →</span>
   </div>
 
+  <div class="card" onclick="openModeOverlay('kohut')" data-master="kohut">
+    <div class="circle" style="background:#E3EFF2;color:#3E7C8C;">H</div>
+    <div class="info">
+      <div class="name">科胡特</div>
+      <div class="desc">自体心理学 · 共情-内省 · 自体客体 · 镜映</div>
+    </div>
+    <span class="arrow">前往 →</span>
+  </div>
+
   <div class="msg-section">
     <p data-i18n="idx_suggest_prompt">你还想与哪位大师对话？写下名字发送给我们</p>
     <div class="msg-row">
@@ -415,6 +424,15 @@ var MODE_OPTIONS = {
       {temp:20, title:'情感探索', sub:'跟随情绪线索深入'},
       {temp:60, title:'关系模式分析', sub:'EFT框架下的关系对话'},
       {temp:90, title:'EFT理论与实操', sub:'情感聚焦疗法的系统学习'}
+    ]
+  },
+  kohut: {
+    name: '科胡特',
+    url: 'master-chat.html?master=kohut',
+    modes: [
+      {temp:20, title:'被理解的感觉', sub:'共情-内省地进入你的体验世界'},
+      {temp:60, title:'自体结构探索', sub:'自体心理学视角的临床对话'},
+      {temp:90, title:'自体心理学论争', sub:'镜映、自体客体、转换性内化的系统探讨'}
     ]
   }
 };
