@@ -900,7 +900,7 @@ async function sendMessage() {
   mcUserMsgCount++; maybeAutoRewardMC();
   _streamIdx++; isLoading=true; sendBtn.disabled=true; showTyping(); document.querySelector('.header').classList.add('compact');
   // Hide intro if still visible (user typed directly)
-  document.getElementById('intro').style.display='none';
+  var _ie=document.getElementById('intro'); if(_ie)_ie.style.display='none';
 
   var tempInstr='\n\n[请以'+M.name+'的身份和风格进行回应，用中文'+(window.LANG_REPLY_LANG?window.LANG_REPLY_LANG():'用中文')+'。温度权重'+talkTemp+'/100。';
   if(talkTemp<=30) tempInstr+='偏向内心感受与情感陪伴]';
@@ -1007,12 +1007,19 @@ function loadHistory(id){
   var entry=null;
   for(var i=0;i<h.length;i++){if(h[i].id===id){entry=h[i];break;}}
   if(!entry){showBanner('未找到历史记录');return;}
-  conversation=entry.messages.slice();
-  messagesEl.querySelectorAll('.msg,.chapter-divider,.intro').forEach(function(e){e.remove();});
+  var msgs=entry.messages;
+  if(!Array.isArray(msgs)||!msgs.length){
+    msgs=entry.conversation;
+    if(!Array.isArray(msgs)||!msgs.length){showBanner('该历史记录无可用对话内容，无法继续');return;}
+  }
+  conversation=msgs.slice();
+  messagesEl.querySelectorAll('.msg,.chapter-divider').forEach(function(e){e.remove();});
+  var _ie=document.getElementById('intro'); if(_ie)_ie.style.display='none';
   document.querySelector('.header').classList.add('compact');
   document.getElementById('settingsPanel').classList.remove('open');
   document.getElementById('changelogContent').style.display='none';
   for(var j=0;j<conversation.length;j++)appendMessage(conversation[j].role,conversation[j].content,j);
+  saveConversation();
   showBanner('已加载历史对话');
 }
 
@@ -1281,12 +1288,20 @@ function loadHistoryItem(id) {
   var entry = null;
   for (var i = 0; i < h.length; i++) { if (h[i].id === id) { entry = h[i]; break; } }
   if (!entry) { showBanner('未找到历史记录'); return; }
-  conversation = entry.messages.slice();
-  messagesEl.querySelectorAll('.msg,.chapter-divider,.intro').forEach(function(e) { e.remove(); });
+  // 兼容不同版本的历史存储结构，缺失内容时明确报错而非静默崩溃
+  var msgs = entry.messages;
+  if (!Array.isArray(msgs) || !msgs.length) {
+    msgs = entry.conversation;
+    if (!Array.isArray(msgs) || !msgs.length) { showBanner('该历史记录无可用对话内容，无法继续'); return; }
+  }
+  conversation = msgs.slice();
+  messagesEl.querySelectorAll('.msg,.chapter-divider').forEach(function(e) { e.remove(); });
+  var _ie=document.getElementById('intro'); if(_ie)_ie.style.display='none';
   document.querySelector('.header').classList.add('compact');
   document.getElementById('settingsPanel').classList.remove('open');
   document.getElementById('historyContent').classList.remove('show');
   for (var j = 0; j < conversation.length; j++) appendMessage(conversation[j].role, conversation[j].content, j);
+  saveConversation(); // 固化活动会话，刷新/继续追问均不丢失历史
   showBanner('已加载历史对话');
 }
 function deleteHistoryItem(id) {
