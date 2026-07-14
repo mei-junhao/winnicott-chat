@@ -785,6 +785,9 @@ async function generateImpression() {
   if (isGenerating) return;
   var text = document.getElementById('materialText').value.trim();
   if (!text) { alert('请粘贴或上传临床材料'); return; }
+  if (/^\[(无法解析|文件读取失败)/.test(text)) {
+    alert('文件解析失败，请直接将文本粘贴到材料框后再生成整体印象'); return;
+  }
 
   isGenerating = true;
   var btn = document.getElementById('analyzeBtn');
@@ -932,6 +935,24 @@ async function sendChat() {
 
   input.value = '';
   chatMessages.push({ role:'user', content:text });
+
+  // 将上传/粘贴的临床材料作为上下文注入（用副本，不写回对话历史，避免多轮重复）
+  var rawMaterial = document.getElementById('materialText').value.trim();
+  var isPlaceholder = /^\[(无法解析|文件读取失败)/.test(rawMaterial);
+  var hasMaterial = rawMaterial && !isPlaceholder;
+
+  var apiMessages = chatMessages.slice();
+  if (hasMaterial) {
+    var insertIdx = apiMessages.findIndex(function(m){ return m.role === 'user'; });
+    if (insertIdx === -1) insertIdx = apiMessages.length;
+    apiMessages.splice(insertIdx, 0, {
+      role: 'system',
+      content: '【被督导的临床材料（用户上传/粘贴，供你参考分析）】\n' + rawMaterial
+    });
+  }
+  if (isPlaceholder) {
+    console.warn('materialText 为解析失败占位符，未作为材料发送');
+  }
   spvUserMsgCount++; spvMaybeAutoReward();
 
   var chatDiv = document.getElementById('chatMessages');
@@ -962,7 +983,7 @@ async function sendChat() {
       var res = await fetch(tier.api, {
         method:'POST',
         headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+tier.key },
-        body:JSON.stringify({ model:tier.model, messages:chatMessages, temperature:0.7, max_tokens:(_maxTokens||undefined), stream:true })
+        body:JSON.stringify({ model:tier.model, messages:apiMessages, temperature:0.7, max_tokens:(_maxTokens||undefined), stream:true })
       });
 
       if (!res.ok) { apiTier++; continue; }
