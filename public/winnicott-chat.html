@@ -829,7 +829,7 @@
   <div class="bottom-bar">
   <div class="input-area">
     <div class="input-wrap">
-      <textarea id="input" rows="1" data-i18n="input-placeholder" placeholder="写下你想说的……" onkeydown="handleKey(event)"></textarea>
+      <textarea id="input" rows="1" data-i18n-ph="input-placeholder" placeholder="写下你想说的……" onkeydown="handleKey(event)"></textarea>
       <button id="sendBtn" onclick="sendMessage()" title="发送">
         <svg viewBox="0 0 24 24" fill="currentColor" style="width:22px;height:22px"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
       </button>
@@ -1766,7 +1766,7 @@ async function sendMessage() {
   while (_retry <= _maxRetries) {
     var _firstAttempt = (_retry === 0);
     if (!_firstAttempt) {
-      showBanner('info', '线路 ' + (_tierLevel + 1) + ' ' + TIERS[_tierLevel].name + ' 繁忙，尝试下一条……');
+      showBanner('info', window.T('banner-retry'));
       await new Promise(function(r){setTimeout(r, 1500);});
       removeTyping();
       div.querySelector('.bubble').innerHTML = '';
@@ -1793,7 +1793,7 @@ async function sendMessage() {
         if (res.status === 401 || errMsg.indexOf('invalid_api_key') >= 0 || errMsg.indexOf('auth') >= 0) {
           showBanner('error', 'API Key 无效，请在设置中检查。');
         } else if (errMsg.indexOf('rate') >= 0 || errMsg.indexOf('quota') >= 0 || errMsg.indexOf('insufficient') >= 0) {
-          showBanner('info', TIERS[_tierLevel].name + ' 忙碌中，正在尝试其他路线……');
+          showBanner('info', window.T('banner-retry'));
           if (_tierLevel < TIERS.length - 1 && apiMode !== 'custom') {
             _tierLevel++;
             conversation.pop();
@@ -1808,7 +1808,7 @@ async function sendMessage() {
           // Retry on transient server errors
           _retry++; continue;
         } else {
-          showBanner('info', TIERS[_tierLevel].name + ' 忙碌中，切换下一条路线……');
+          showBanner('info', window.T('banner-retry'));
           if (_tierLevel < TIERS.length - 1 && apiMode !== 'custom') {
             _tierLevel++;
             conversation.pop();
@@ -1877,7 +1877,7 @@ async function sendMessage() {
     } catch (e) {
       removeTyping();
       // 本地代理不可用，自动降级到Agnes
-      showBanner('info', TIERS[_tierLevel].name + ' 暂时不可用，尝试下一条路线……');
+      showBanner('info', window.T('banner-retry'));
       if (_tierLevel < TIERS.length - 1 && apiMode !== 'custom') {
         _tierLevel++;
         div.querySelector('.bubble').innerHTML = '';
