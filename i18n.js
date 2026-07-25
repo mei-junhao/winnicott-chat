@@ -189,6 +189,13 @@
     'chat-feeling': { zh: '聊聊心事', en: 'Share feelings', pt: 'Share feelings' },
     'email-btn': { zh: '📧 发送到邮箱', en: '📧 发送到邮箱', pt: '📧 发送到邮箱' },
 
+    /* ===== 开屏提醒（全站统一，可关闭，关闭后同一浏览器不再弹） ===== */
+    'opening_notice': {
+      zh: '🚀 今日因 DeepSeek 网络更换模型名称，对话曾短暂中断，现已恢复正常，可继续使用。如需<strong>桌面端</strong>（含全部对话功能，仅支持 Windows），可发邮件至 <a href="mailto:985729106@qq.com">985729106@qq.com</a> 申请<strong>免费试用</strong>。',
+      en: '🚀 Today a DeepSeek model-name change briefly interrupted the chat. It is now fixed and running normally. For a <strong>desktop app</strong> (all chat features, Windows only), email <a href="mailto:985729106@qq.com">985729106@qq.com</a> for a <strong>free trial</strong>.',
+      pt: '🚀 Hoje uma mudança de nome de modelo no DeepSeek interrompeu o chat brevemente. Já está resolvido e funcionando normalmente. Para um <strong>aplicativo desktop</strong> (todas as funções de chat, só Windows), envie e-mail para <a href="mailto:985729106@qq.com">985729106@qq.com</a> para um <strong>teste grátis</strong>.'
+    },
+
   };
 
   /* ---------- 核心方法 ---------- */
@@ -283,7 +290,15 @@
       '.i18n-box .prim:hover{background:#7a5f4d;transform:translateY(-1px);}' +
       '.i18n-box .lnk{margin-top:10px;background:none;border:none;font-size:12px;color:#8f857d;cursor:pointer;font-family:inherit;display:block;width:100%;}' +
       /* 保留旧版兼容：若代码仍引用 lang-corner，也保证在右下角 */
-      '#langBtn.lang-corner{top:auto;bottom:84px;left:auto;right:14px;}';
+      '#langBtn.lang-corner{top:auto;bottom:84px;left:auto;right:14px;}' +
+      /* 开屏提醒横幅：置于页面顶部，可关闭，关闭后同一浏览器不再弹出 */
+      '#openingNoticeBar{position:static;top:0;left:0;right:0;z-index:1500;background:#FBF1E6;border-bottom:1px solid #E7C9A8;box-shadow:0 2px 8px rgba(45,41,37,.10);font-family:inherit;}' +
+      '#openingNoticeBar .onb-inner{display:flex;align-items:center;gap:10px;max-width:960px;margin:0 auto;padding:9px 14px;}' +
+      '#openingNoticeBar .onb-ico{font-size:15px;flex-shrink:0;}' +
+      '#openingNoticeBar .onb-text{font-size:13px;line-height:1.6;color:#7A5A3C;flex:1;}' +
+      '#openingNoticeBar .onb-text a{color:#9a6a2f;font-weight:600;text-decoration:underline;}' +
+      '#openingNoticeBar .onb-close{flex-shrink:0;border:none;background:transparent;color:#9a7b2a;font-size:15px;cursor:pointer;padding:4px 7px;border-radius:6px;line-height:1;}' +
+      '#openingNoticeBar .onb-close:hover{background:rgba(154,123,42,.12);}';
     var s = document.createElement('style'); s.id = 'i18n-style'; s.textContent = css;
     document.head.appendChild(s);
   }
@@ -356,8 +371,29 @@
     cv.classList.add('show');
   }
 
+  /* ---------- 开屏提醒（全站统一） ---------- */
+  function maybeShowOpeningNotice() {
+    var KEY = 'opening_notice_v1';           /* 改内容时把版本号 +1 即可重新弹出 */
+    try { if (localStorage.getItem(KEY + '_read') === '1') return; } catch (e) {}
+    if (document.getElementById('openingNoticeBar')) return;
+    var bar = document.createElement('div');
+    bar.id = 'openingNoticeBar';
+    bar.innerHTML =
+      '<div class="onb-inner">' +
+        '<span class="onb-ico">📌</span>' +
+        '<span class="onb-text">' + (typeof window.T === 'function' ? window.T('opening_notice') : '') + '</span>' +
+        '<button class="onb-close" aria-label="close" type="button">✕</button>' +
+      '</div>';
+    if (document.body) document.body.insertBefore(bar, document.body.firstChild);
+    var closeBtn = bar.querySelector('.onb-close');
+    if (closeBtn) closeBtn.onclick = function () {
+      try { localStorage.setItem(KEY + '_read', '1'); } catch (e) {}
+      if (bar.parentNode) bar.parentNode.removeChild(bar);
+    };
+  }
+
   /* ---------- 启动 ---------- */
-  function boot() { buildUI(); applyI18n(); }
+  function boot() { buildUI(); applyI18n(); maybeShowOpeningNotice(); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
 })();
