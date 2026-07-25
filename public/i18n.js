@@ -189,7 +189,8 @@
     'chat-feeling': { zh: '聊聊心事', en: 'Share feelings', pt: 'Share feelings' },
     'email-btn': { zh: '📧 发送到邮箱', en: '📧 发送到邮箱', pt: '📧 发送到邮箱' },
 
-    /* ===== 开屏提醒（全站统一，可关闭，关闭后同一浏览器不再弹） ===== */
+    /* ===== 开屏公告（全站统一，模态弹窗，关闭后同一浏览器不再弹） ===== */
+    'opening_notice_title': { zh: '系统公告', en: 'Announcement', pt: 'Aviso' },
     'opening_notice': {
       zh: '🚀 今日因 DeepSeek 网络更换模型名称，对话曾短暂中断，现已恢复正常，可继续使用。如需<strong>桌面端</strong>（含全部对话功能，仅支持 Windows），可发邮件至 <a href="mailto:985729106@qq.com">985729106@qq.com</a> 申请<strong>免费试用</strong>。',
       en: '🚀 Today a DeepSeek model-name change briefly interrupted the chat. It is now fixed and running normally. For a <strong>desktop app</strong> (all chat features, Windows only), email <a href="mailto:985729106@qq.com">985729106@qq.com</a> for a <strong>free trial</strong>.',
@@ -291,14 +292,23 @@
       '.i18n-box .lnk{margin-top:10px;background:none;border:none;font-size:12px;color:#8f857d;cursor:pointer;font-family:inherit;display:block;width:100%;}' +
       /* 保留旧版兼容：若代码仍引用 lang-corner，也保证在右下角 */
       '#langBtn.lang-corner{top:auto;bottom:84px;left:auto;right:14px;}' +
-      /* 开屏提醒横幅：置于页面顶部，可关闭，关闭后同一浏览器不再弹出 */
-      '#openingNoticeBar{position:static;top:0;left:0;right:0;z-index:1500;background:#FBF1E6;border-bottom:1px solid #E7C9A8;box-shadow:0 2px 8px rgba(45,41,37,.10);font-family:inherit;}' +
-      '#openingNoticeBar .onb-inner{display:flex;align-items:center;gap:10px;max-width:960px;margin:0 auto;padding:9px 14px;}' +
-      '#openingNoticeBar .onb-ico{font-size:15px;flex-shrink:0;}' +
-      '#openingNoticeBar .onb-text{font-size:13px;line-height:1.6;color:#7A5A3C;flex:1;}' +
-      '#openingNoticeBar .onb-text a{color:#9a6a2f;font-weight:600;text-decoration:underline;}' +
-      '#openingNoticeBar .onb-close{flex-shrink:0;border:none;background:transparent;color:#9a7b2a;font-size:15px;cursor:pointer;padding:4px 7px;border-radius:6px;line-height:1;}' +
-      '#openingNoticeBar .onb-close:hover{background:rgba(154,123,42,.12);}';
+      /* 开屏公告：居中模态弹窗（仿升级公告），可关闭，关闭后同一浏览器不再弹出 */
+      '.opening-notice-ovl{position:fixed;inset:0;z-index:2000;display:none;align-items:center;justify-content:center;' +
+      'background:rgba(45,41,37,.42);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);}' +
+      '.opening-notice-ovl.show{display:flex;}' +
+      '.opening-notice-modal{background:#fffdfb;border-radius:18px;max-width:430px;width:90%;overflow:hidden;' +
+      'box-shadow:0 16px 48px rgba(45,41,37,.22);font-family:"Noto Serif SC",Georgia,serif;' +
+      'animation:onPop .3s cubic-bezier(.2,.8,.2,1) both;}' +
+      '@keyframes onPop{from{opacity:0;transform:translateY(12px) scale(.96)}to{opacity:1;transform:none}}' +
+      '.opening-notice-modal .onm-top{background:linear-gradient(135deg,#FBF1E6,#F6E5D2);padding:24px 24px 18px;text-align:center;border-bottom:1px solid #E7C9A8;}' +
+      '.opening-notice-modal .onm-ico{font-size:32px;line-height:1;display:block;margin-bottom:10px;}' +
+      '.opening-notice-modal .onm-title{font-size:17px;font-weight:600;color:#7A5A3C;letter-spacing:.06em;margin:0;}' +
+      '.opening-notice-modal .onm-body{padding:22px 26px 8px;font-size:14px;line-height:1.9;color:#4a443e;}' +
+      '.opening-notice-modal .onm-body a{color:#9a6a2f;font-weight:600;text-decoration:underline;}' +
+      '.opening-notice-modal .onm-foot{padding:16px 24px 24px;text-align:center;}' +
+      '.opening-notice-modal .onm-ok{background:#8b6f5c;color:#fff;border:none;border-radius:10px;padding:11px 36px;' +
+      'font-size:14px;cursor:pointer;font-family:inherit;letter-spacing:.05em;transition:all .18s ease;}' +
+      '.opening-notice-modal .onm-ok:hover{background:#7a5f4d;transform:translateY(-1px);}';
     var s = document.createElement('style'); s.id = 'i18n-style'; s.textContent = css;
     document.head.appendChild(s);
   }
@@ -371,25 +381,34 @@
     cv.classList.add('show');
   }
 
-  /* ---------- 开屏提醒（全站统一） ---------- */
+  /* ---------- 开屏公告（全站统一，模态弹窗） ---------- */
   function maybeShowOpeningNotice() {
-    var KEY = 'opening_notice_v1';           /* 改内容时把版本号 +1 即可重新弹出 */
+    var KEY = 'opening_notice_v2';           /* 改内容/呈现方式时把版本号 +1 即可重新弹出 */
     try { if (localStorage.getItem(KEY + '_read') === '1') return; } catch (e) {}
-    if (document.getElementById('openingNoticeBar')) return;
-    var bar = document.createElement('div');
-    bar.id = 'openingNoticeBar';
-    bar.innerHTML =
-      '<div class="onb-inner">' +
-        '<span class="onb-ico">📌</span>' +
-        '<span class="onb-text">' + (typeof window.T === 'function' ? window.T('opening_notice') : '') + '</span>' +
-        '<button class="onb-close" aria-label="close" type="button">✕</button>' +
+    if (document.getElementById('openingNoticeOvl')) return;
+    var ovl = document.createElement('div');
+    ovl.id = 'openingNoticeOvl';
+    ovl.className = 'opening-notice-ovl';
+    var title = (typeof window.T === 'function') ? window.T('opening_notice_title') : '系统公告';
+    var body = (typeof window.T === 'function') ? window.T('opening_notice') : '';
+    var okText = (typeof window.T === 'function') ? window.T('ui_confirm') : '知道了';
+    ovl.innerHTML =
+      '<div class="opening-notice-modal" role="dialog" aria-modal="true">' +
+        '<div class="onm-top"><span class="onm-ico">📢</span><h3 class="onm-title">' + title + '</h3></div>' +
+        '<div class="onm-body">' + body + '</div>' +
+        '<div class="onm-foot"><button type="button" class="onm-ok">' + okText + '</button></div>' +
       '</div>';
-    if (document.body) document.body.insertBefore(bar, document.body.firstChild);
-    var closeBtn = bar.querySelector('.onb-close');
-    if (closeBtn) closeBtn.onclick = function () {
+    if (document.body) document.body.appendChild(ovl);
+    var close = function () {
       try { localStorage.setItem(KEY + '_read', '1'); } catch (e) {}
-      if (bar.parentNode) bar.parentNode.removeChild(bar);
+      if (ovl.parentNode) ovl.parentNode.removeChild(ovl);
     };
+    /* 点击遮罩空白处也可关闭，但主要内容需主动点「知道了」 */
+    ovl.addEventListener('click', function (e) { if (e.target === ovl) close(); });
+    var okBtn = ovl.querySelector('.onm-ok');
+    if (okBtn) okBtn.onclick = close;
+    /* 稍延迟再出现，避免与首屏渲染抢帧，弹出更顺滑 */
+    setTimeout(function () { if (ovl.parentNode) ovl.classList.add('show'); }, 140);
   }
 
   /* ---------- 启动 ---------- */
