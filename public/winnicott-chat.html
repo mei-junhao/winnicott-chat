@@ -1071,7 +1071,7 @@ function getActiveConfig() {
     return { api: customApi, key: customKey, model: customModel };
   }
   if (SCF_URL) {
-    return { api: SCF_URL.replace(/\/+$/, ''), key: '', model: '' };
+    return { api: SCF_URL.replace(/\/+$/, ''), key: '', model: 'deepseek-v4-pro' };
   }
   var level = Math.min(_tierLevel, TIERS.length - 1);
   var t = TIERS[level];
