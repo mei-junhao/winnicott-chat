@@ -42,12 +42,12 @@
     idx_title: { zh: '与更多大师对话', en: 'Talk with More Masters', pt: 'Converse com Mais Mestres' },
     idx_sub: { zh: '选择一个精神分析大师开始对话', en: 'Choose a psychoanalytic master to begin', pt: 'Escolha um mestre da psicanálise para começar' },
     idx_local_notice: {
-      zh: '<strong style="color:var(--accent);">👉 这是我做的本地咨询管理工具</strong> —— 数据全部存在你自己的电脑里，不上传任何云端。点下面卡片右侧的「对这个项目的介绍」即可在线预览网页版。',
-      en: '<strong style="color:var(--accent);">👉 A local case-management tool I built</strong> —— all data stays on your own computer, nothing is uploaded to any cloud. Tap “About this project” on the right of the card below to preview the web version.',
-      pt: '<strong style="color:var(--accent);">👉 Uma ferramenta local de gestão de casos que criei</strong> —— todos os dados ficam no seu próprio computador, nada é enviado para a nuvem. Toque em “Sobre este projeto” à direita do cartão abaixo para pré-visualizar a versão web.'
+      zh: '<strong style="color:var(--accent);">👉 这是我做的本地咨询管理工具</strong> —— 数据全部存在你自己的电脑里，不上传任何云端。点下面卡片右侧的「对这个项目的介绍」可查看项目详情与下载桌面端（已完整包含本页所有大师对话功能）。',
+      en: '<strong style="color:var(--accent);">👉 A local case-management tool I built</strong> —— all data stays on your own computer, nothing is uploaded to any cloud. Tap “About this project” on the right of the card below to see details and download the desktop version (it fully includes every master-chat feature on this page).',
+      pt: '<strong style="color:var(--accent);">👉 Uma ferramenta local de gestão de casos que criei</strong> —— todos os dados ficam no seu próprio computador, nada é enviado para a nuvem. Toque em “Sobre este projeto” à direita do cartão abaixo para ver detalhes e baixar a versão desktop (inclui todas as funções de conversa com os mestres desta página).'
     },
     idx_mirror_name: { zh: '心镜 · 本地咨询个案管理系统', en: 'MindMirror · Local Case Management System', pt: 'MindMirror · Sistema Local de Gestão de Casos' },
-    idx_mirror_desc: { zh: '纯本地、数据不出本机的咨询工作流（网页预览版）', en: 'Fully local counseling workflow, data never leaves your device (web preview)', pt: 'Fluxo de aconselhamento totalmente local, os dados nunca saem do seu dispositivo (pré-visualização web)' },
+    idx_mirror_desc: { zh: '纯本地、数据不出本机的咨询工作流（桌面端下载 · 已含全部在线大师对话功能）', en: 'Fully local counseling workflow, data never leaves your device (desktop download · includes every online master-chat feature)', pt: 'Fluxo de aconselhamento totalmente local, os dados nunca saem do seu dispositivo (download desktop · inclui todas as funções de conversa com os mestres)' },
     idx_mirror_link: { zh: '对这个项目的介绍 →', en: 'About this project →', pt: 'Sobre este projeto →' },
 
     idx_m_winnicott_name: { zh: '温尼科特 / 拉康', en: 'Winnicott / Lacan', pt: 'Winnicott / Lacan' },
