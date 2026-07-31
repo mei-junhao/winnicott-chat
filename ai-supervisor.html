@@ -720,10 +720,10 @@ loadSupervisorPrompt();
 
 // ==================== API ====================
 // 默认走 VPS 边缘函数代理（xinjingchat.online），前端不带任何 API key；
-// 代理在服务端注入 opencode go 的 deepseek-v4-pro 密钥。与 master-chat 同源。
+// 代理在服务端注入 opencode go 的 deepseek-v4-flash 密钥。与 master-chat 同源。
 // 若代理不可用，可在 ⚙️ 设置中切到「自用 API」填入自己的 key（仅存本机 localStorage）。
 var TIERS = [
-  { api:'https://xinjingchat.online', key:'', model:'deepseek-v4-pro', name: '连通性检测' }
+  { api:'https://xinjingchat.online', key:'', model:'deepseek-v4-flash', name: '连通性检测' }
 ];
 var apiTier = 0;
 var isLoading = false;
