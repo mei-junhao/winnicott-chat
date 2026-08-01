@@ -727,6 +727,7 @@ var sendBtn = document.getElementById('sendBtn');
 // === 代理地址（三层回退：SCF 云函数 > EdgeOne 边缘函数 > GitHub Pages 兜底） ===
 // 部署 SCF 后把下方占位符换成真实函数 URL
 const SCF_URL = 'https://xinjingchat.online';
+var PROXY_TOKEN = '571df4e176aaee062770d4b756c168ab';   // 代理防护 token（与 VPS .env 一致）
 const API_PROXY = (function(){
   // 1) SCF 云函数已配（密钥存云端环境变量，推荐）
   if(SCF_URL && SCF_URL.indexOf('://') >= 0) return SCF_URL.replace(/\/+$/, '');
@@ -774,7 +775,7 @@ function checkAllAPIs() {
   var ac=new AbortController(); var tm=setTimeout(function(){ac.abort();},10000);
   fetch(API_PROXY,{
     method:'POST',
-    headers:{'Content-Type':'application/json'},
+    headers:{'Content-Type':'application/json','X-Proxy-Token':PROXY_TOKEN},
     body:JSON.stringify({model:'deepseek-v4-pro',messages:[{role:'user',content:'hi'}],max_tokens:1}),
     signal:ac.signal
   })
@@ -790,7 +791,7 @@ function checkAllAPIs() {
   var ac2=new AbortController(); var tm2=setTimeout(function(){ac2.abort();},15000);
   fetch(API_PROXY,{
     method:'POST',
-    headers:{'Content-Type':'application/json'},
+    headers:{'Content-Type':'application/json','X-Proxy-Token':PROXY_TOKEN},
     body:JSON.stringify({model:'gpt-5.6',messages:[{role:'user',content:'hi'}],max_tokens:1}),
     signal:ac2.signal
   })
@@ -961,7 +962,7 @@ async function sendMessage() {
   var ctxMessages=[{role:'system',content:systemPrompt+tempInstr+'\n\n'+timeNote}];
   ctxMessages=ctxMessages.concat(conversation);
 
-  var fullReply=''; var success=false; var _retry=0; var _maxRetries=3; var _fatalError=false;
+  var fullReply=''; var success=false; var _retry=0; var _maxRetries=3; var _fatalError=false; var _rateLimited=false;
 
   var div=document.createElement('div'); div.className='msg ai'; _streamIdx++; var streamIdx=_streamIdx;
   div.innerHTML='<div class="ai-header"><div class="avatar" style="overflow:hidden;background:transparent;">'+(M.avatar?'<img src="'+M.avatar+'" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">':M.initial)+'</div><span class="ai-name">'+M.name+'</span></div><div class="bubble" id="streamBubble'+streamIdx+'"></div>';
@@ -971,8 +972,10 @@ async function sendMessage() {
     try{
       removeTyping(); messagesEl.appendChild(div); scrollToBottom();
       var hdrs={'Content-Type':'application/json'};
-      // 注意：不再带 Authorization —— 密钥在 SCF/边缘函数里
+      if(cfg.key)hdrs['Authorization']='Bearer '+cfg.key;   // 修复：自定义线路可带 key
+      if(cfg.api.indexOf('xinjingchat.online')>=0)hdrs['X-Proxy-Token']=PROXY_TOKEN;
       var res=await fetch(cfg.api,{method:'POST',headers:hdrs,body:JSON.stringify({model:cfg.model,messages:ctxMessages,temperature:0.7,max_tokens:_maxTokens||undefined,stream:true})});
+      if(res.status===429){_rateLimited=true;try{var ej=await res.json();var ra=(ej.error&&ej.error.retry_after_seconds)||60;showBanner('请求过于频繁，请等待约 '+ra+' 秒后重试');}catch(_e){showBanner('请求过于频繁，请等待约 60 秒后重试');}break;}
       if(!res.ok){showBanner(cfg.name+' 返回 '+res.status+'，重试中'); continue;}
 
       var reader=res.body.getReader(); var decoder=new TextDecoder();
@@ -997,7 +1000,7 @@ async function sendMessage() {
   }
 
   if(!success){
-    showBanner('没事儿，服务暂时不可用，还不行发邮件 985729106@qq.com 问问');
+    if(!_rateLimited) showBanner('没事儿，服务暂时不可用，还不行发邮件 985729106@qq.com 问问');
     conversation.pop(); _fatalError=true;
   }
 

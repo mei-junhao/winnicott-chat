@@ -563,6 +563,7 @@ function updateRounds() {
 
 // ====== SCF 云函数代理（优先） ======
 var SCF_URL = 'https://xinjingchat.online';
+var PROXY_TOKEN = '571df4e176aaee062770d4b756c168ab';   // 代理防护 token（与 VPS .env 一致）
 
 // ====== TIERS (API config, 仅 SCF 不可用时回退) ======
 var TIERS = [
@@ -1116,11 +1117,18 @@ async function callMasterAPI(key, activeNames, history, userMsg, isReactMode) {
     var cfg = getActiveConfig();
     var hdrs = { 'Content-Type': 'application/json' };
     if (cfg.key) hdrs['Authorization'] = 'Bearer ' + cfg.key;
+    if (cfg.api.indexOf('xinjingchat.online') >= 0) hdrs['X-Proxy-Token'] = PROXY_TOKEN;
     var apiRes = await fetch(cfg.api, {
       method: 'POST',
       headers: hdrs,
       body: JSON.stringify({ model: cfg.model, messages: msgs, temperature: isReactMode ? 0.6 : 0.7, max_tokens: isReactMode === 'summary' ? 600 : (isReactMode ? 400 : 512), stream: false })
     });
+    if (apiRes.status === 429) {
+      var ej2; try { ej2 = await apiRes.json(); } catch(e) { ej2 = {}; }
+      var ra = (ej2.error && ej2.error.retry_after_seconds) || 60;
+      showBanner('请求过于频繁，请等待约 ' + ra + ' 秒后重试');
+      return '';
+    }
     if (!apiRes.ok) return '';
     var data = await apiRes.json();
     var reply = data.choices && data.choices[0] && data.choices[0].message ? data.choices[0].message.content.trim() : '';
