@@ -406,6 +406,11 @@
         <button class="default-btn active" id="defaultModeBtn" onclick="setMode('default')">默认 API</button>
         <button class="custom-btn" id="customModeBtn" onclick="setMode('custom')">自用 API</button>
       </div>
+      <div class="line-toggle" style="display:flex;gap:6px;margin:8px 0 2px;">
+        <button class="default-btn active" id="lineDeepBtn" onclick="setApiLine('deepseek')">DeepSeek Pro</button>
+        <button class="custom-btn" id="lineGptBtn" onclick="setApiLine('gpt')">GPT-5.6</button>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">API 线路状态：默认 API 模式下生效，点击切换后端模型（deepseek → v4-pro 关思考 / gpt → gpt-5.6 关思考）</div>
       <div id="customFields" style="display:none;">
         <div class="settings-row"><label>API 地址</label><input id="customApi" placeholder="https://api.openai.com/v1/chat/completions"></div>
         <div class="settings-row"><label>API Key</label><input id="customKey" placeholder="sk-..."></div>
@@ -719,11 +724,11 @@ async function loadSupervisorPrompt() {
 loadSupervisorPrompt();
 
 // ==================== API ====================
-// 默认走 VPS 边缘函数代理（xinjingchat.online），前端不带任何 API key；
-// 代理在服务端注入 opencode go 的 deepseek-v4-flash 密钥。与 master-chat 同源。
+// 默认走 VPS 代理（xinjingchat.online），前端不带任何 API key；
+// 后端按 model 路由：deepseek 线路 → deepseek-v4-pro（关思考，opencode）；gpt 线路 → gpt-5.6（关思考，skyapi）。
 // 若代理不可用，可在 ⚙️ 设置中切到「自用 API」填入自己的 key（仅存本机 localStorage）。
 var TIERS = [
-  { api:'https://xinjingchat.online', key:'', model:'deepseek-v4-flash', name: '连通性检测' }
+  { api:'https://xinjingchat.online', key:'', model:'deepseek-v4-pro', name: 'DeepSeek Pro' }
 ];
 var apiTier = 0;
 var isLoading = false;
@@ -733,6 +738,15 @@ var apiMode = (customApi && customKey) ? 'custom' : 'default';  // 有自有API�
 var customApi = localStorage.getItem('sv_api') || '';
 var customKey = localStorage.getItem('sv_key') || '';
 var customModel = localStorage.getItem('sv_model') || '';
+// ====== API 线路（deepseek / gpt，全站共享选择；ai 督导默认 pro） ======
+var _apiLine = localStorage.getItem('chat_api_line') || 'deepseek';
+function setApiLine(line) {
+  _apiLine = line;
+  localStorage.setItem('chat_api_line', line);
+  var d = document.getElementById('lineDeepBtn'), g = document.getElementById('lineGptBtn');
+  if (d) { d.className = 'default-btn' + (line === 'deepseek' ? ' active' : ''); }
+  if (g) { g.className = 'custom-btn' + (line === 'gpt' ? ' active' : ''); }
+}
 
 function toggleSettings() {
   var sp = document.getElementById('settingsPanel');
@@ -772,7 +786,8 @@ function fillPreset(api, model) {
 }
 function getActiveConfig() {
   if (apiMode === 'custom' && customApi && customKey) return { api: customApi, key: customKey, model: customModel };
-  return TIERS[apiTier] || TIERS[0];
+  var t = TIERS[apiTier] || TIERS[0];
+  return Object.assign({}, t, { model: (_apiLine === 'gpt' ? 'gpt-5.6' : 'deepseek-v4-pro'), name: (_apiLine === 'gpt' ? 'GPT-5.6' : 'DeepSeek Pro') });
 }
 // Init restore
 restoreForm();
@@ -1427,8 +1442,37 @@ function closeSpvDiff() {
 setTimeout(function(){
   if(spvMode==='cangjie') switchSpvMode('cangjie');
 }, 100);
+// ====== 模型评测公告（一次性弹窗） ======
+function showEvalNotice(){ var el=document.getElementById('evalNoticeOverlay'); if(el) el.style.display='flex'; }
+function closeEvalNotice(){ var el=document.getElementById('evalNoticeOverlay'); if(el) el.style.display='none'; localStorage.setItem('chat_eval_notice_shown','1'); }
+if(!localStorage.getItem('chat_eval_notice_shown')){ setTimeout(showEvalNotice, 900); }
+function refreshLineBtns(){
+  var d=document.getElementById('lineDeepBtn'), g=document.getElementById('lineGptBtn');
+  if(d){ d.className = 'default-btn' + (_apiLine==='deepseek'?' active':''); }
+  if(g){ g.className = 'custom-btn' + (_apiLine==='gpt'?' active':''); }
+}
+refreshLineBtns();
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+<!-- 模型评测公告弹窗 -->
+<div id="evalNoticeOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center;padding:16px;">
+  <div style="background:#fff;border-radius:14px;max-width:540px;width:100%;padding:20px 22px;box-shadow:0 8px 40px rgba(0,0,0,.3);max-height:86vh;overflow-y:auto;color:#333;font-size:13px;line-height:1.75;">
+    <h3 style="margin:0 0 10px;font-size:17px;color:#4a3f35;">🔬 模型升级公告</h3>
+    <p style="margin:0 0 8px;">根据对三款模型的深入评测（deepseek-v4-flash、deepseek-v4-pro、gpt-5.6），我们决定<strong>不再使用 flash 模型</strong>，统一使用 <strong>pro</strong> 与 <strong>gpt</strong> 模型，回复成本大幅上升。如果你感觉回复质量有所提升，欢迎多多打赏支持 💖</p>
+    <p style="margin:0 0 10px;">现在可以在 <strong>设置 → API 线路状态</strong> 中切换模型线路（DeepSeek Pro / GPT-5.6）。</p>
+    <table style="width:100%;border-collapse:collapse;font-size:12px;text-align:center;">
+      <thead><tr style="background:#f4efe8;"><th style="padding:7px 4px;">模型</th><th>临床敏锐</th><th>理论一致</th><th>风格贴合</th><th>可操作</th><th>材料忠实</th><th>综合分</th></tr></thead>
+      <tbody>
+        <tr><td style="padding:7px 4px;">deepseek-v4-flash</td><td>72.5</td><td>67.5</td><td>76.3</td><td>56.3</td><td>90.0</td><td><b>71.5</b></td></tr>
+        <tr style="background:#faf6f0;"><td>deepseek-v4-pro</td><td>93.8</td><td>93.8</td><td>90.0</td><td>93.8</td><td>95.0</td><td><b>93.1</b></td></tr>
+        <tr><td>gpt-5.6</td><td>93.8</td><td>91.3</td><td>95.0</td><td>93.8</td><td>95.0</td><td><b>93.7</b></td></tr>
+      </tbody>
+    </table>
+    <p style="margin:8px 0 0;font-size:11px;color:#999;">评分口径：关闭思考模式下 5 个督导案例实测，单项满分 100 分；综合分按 临床 27.8% / 理论 22.2% / 风格 22.2% / 可操作 16.7% / 材料忠实 11.1% 加权。</p>
+    <button onclick="closeEvalNotice()" style="margin-top:14px;width:100%;padding:9px;border:none;border-radius:9px;background:#8a6f5d;color:#fff;font-size:13px;cursor:pointer;font-family:inherit;">知道了</button>
+  </div>
+</div>
 
 <!-- Supervisor mode diff overlay -->
 <div class="reward-overlay" id="spvDiffOverlay" style="display:none;" onclick="if(event.target===this)closeSpvDiff()">

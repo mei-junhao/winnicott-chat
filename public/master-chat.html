@@ -354,6 +354,10 @@
         <span>API 线路状态</span>
         <button onclick="checkAllAPIs()" style="background:none;border:none;font-size:10px;color:var(--accent);cursor:pointer;text-decoration:underline;font-family:inherit;">刷新</button>
       </div>
+      <div style="display:flex;gap:6px;margin-bottom:6px;">
+        <button id="lineDeepBtn" onclick="setApiLine('deepseek')" style="flex:1;padding:4px 0;border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer;background:var(--accent);color:#fff;font-family:inherit;">DeepSeek Pro</button>
+        <button id="lineGptBtn" onclick="setApiLine('gpt')" style="flex:1;padding:4px 0;border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer;background:none;color:var(--muted);font-family:inherit;">GPT-5.6</button>
+      </div>
       <div id="apiHealthRow" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
     </div>
 
@@ -742,7 +746,17 @@ function setMode(m) { apiMode=m; document.getElementById('defaultModeBtn').class
 function fillPreset(api,model) { document.getElementById('customApi').value=api; document.getElementById('customModel').value=model; if(apiMode!=='custom')setMode('custom'); showBanner('已填入，请填写 Key'); }
 function saveSettings() { customApi=document.getElementById('customApi').value.trim(); customKey=document.getElementById('customKey').value.trim(); customModel=document.getElementById('customModel').value.trim()||'gpt-4o'; if(customApi)localStorage.setItem('mc_custom_api_'+masterKey,customApi);else localStorage.removeItem('mc_custom_api_'+masterKey); if(customKey)localStorage.setItem('mc_custom_key_'+masterKey,customKey);else localStorage.removeItem('mc_custom_key_'+masterKey); localStorage.setItem('mc_custom_model_'+masterKey,customModel); showBanner('设置已保存'); }
 function restoreSettings() { customApi=localStorage.getItem('mc_custom_api_'+masterKey)||''; customKey=localStorage.getItem('mc_custom_key_'+masterKey)||''; customModel=localStorage.getItem('mc_custom_model_'+masterKey)||'gpt-4o'; document.getElementById('customApi').value=customApi; document.getElementById('customKey').value=customKey; document.getElementById('customModel').value=customModel; }
-function getActiveConfig() { if(apiMode==='custom'&&customApi&&customKey) return {api:customApi,key:customKey,model:customModel,name:'自定义'}; return {api:API_PROXY,key:'',model:'deepseek-v4-flash',name: '连通性检测'}; }
+// ====== API 线路（deepseek / gpt，全站共享选择） ======
+var _apiLine = localStorage.getItem('chat_api_line') || 'deepseek';
+function setApiLine(line) {
+  _apiLine = line;
+  localStorage.setItem('chat_api_line', line);
+  var d = document.getElementById('lineDeepBtn'), g = document.getElementById('lineGptBtn');
+  if (d) { d.style.background = line === 'deepseek' ? 'var(--accent)' : 'none'; d.style.color = line === 'deepseek' ? '#fff' : 'var(--muted)'; }
+  if (g) { g.style.background = line === 'gpt' ? 'var(--accent)' : 'none'; g.style.color = line === 'gpt' ? '#fff' : 'var(--muted)'; }
+  checkAllAPIs();
+}
+function getActiveConfig() { if(apiMode==='custom'&&customApi&&customKey) return {api:customApi,key:customKey,model:customModel,name:'自定义'}; return {api:API_PROXY,key:'',model:(_apiLine==='gpt'?'gpt-5.6':'deepseek-v4-pro'),name:(_apiLine==='gpt'?'GPT-5.6':'DeepSeek Pro')}; }
 
 function updateTemp(val) {
   var old=talkTemp; talkTemp=parseInt(val);
@@ -756,22 +770,38 @@ function updateLength(val) { var l=['简洁','适中','详细']; var t=[1024,0,4
 
 function checkAllAPIs() {
   var row=document.getElementById('apiHealthRow');
-  row.innerHTML='<span style="background:#eee;color:#999;padding:2px 8px;border-radius:8px;font-size:10px;">边缘函数代理 …</span>';
-  var ac=new AbortController(); var tm=setTimeout(function(){ac.abort();},8000);
+  row.innerHTML='<span style="background:#eee;color:#999;padding:2px 8px;border-radius:8px;font-size:10px;">DeepSeek Pro …</span><span style="background:#eee;color:#999;padding:2px 8px;border-radius:8px;font-size:10px;">GPT-5.6 …</span>';
+  var ac=new AbortController(); var tm=setTimeout(function(){ac.abort();},10000);
   fetch(API_PROXY,{
     method:'POST',
     headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({messages:[{role:'user',content:'hi'}],max_tokens:1}),
+    body:JSON.stringify({model:'deepseek-v4-pro',messages:[{role:'user',content:'hi'}],max_tokens:1}),
     signal:ac.signal
   })
   .then(function(r){
     clearTimeout(tm);
     var color=(r.ok||r.status<500)?'#4a9':'#c60';
-    updateBadge('边缘函数代理',color,r.ok?'✓':'⚡ '+r.status);
+    updateBadge('DeepSeek Pro',color,r.ok?'✓':'⚡ '+r.status);
   })
   .catch(function(){
     clearTimeout(tm);
-    updateBadge('边缘函数代理','#c33','✗ 离线');
+    updateBadge('DeepSeek Pro','#c33','✗ 离线');
+  });
+  var ac2=new AbortController(); var tm2=setTimeout(function(){ac2.abort();},15000);
+  fetch(API_PROXY,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({model:'gpt-5.6',messages:[{role:'user',content:'hi'}],max_tokens:1}),
+    signal:ac2.signal
+  })
+  .then(function(r){
+    clearTimeout(tm2);
+    var color=(r.ok||r.status<500)?'#4a9':'#c60';
+    updateBadge('GPT-5.6',color,r.ok?'✓':'⚡ '+r.status);
+  })
+  .catch(function(){
+    clearTimeout(tm2);
+    updateBadge('GPT-5.6','#c33','✗ 离线');
   });
 }
 function updateBadge(name,color,label) {
@@ -1380,7 +1410,37 @@ function showChangelog() {
   el.style.display = el.style.display === 'block' ? 'none' : 'block';
 }
 
+// ====== 模型评测公告（一次性弹窗） ======
+function showEvalNotice(){ var el=document.getElementById('evalNoticeOverlay'); if(el) el.style.display='flex'; }
+function closeEvalNotice(){ var el=document.getElementById('evalNoticeOverlay'); if(el) el.style.display='none'; localStorage.setItem('chat_eval_notice_shown','1'); }
+if(!localStorage.getItem('chat_eval_notice_shown')){ setTimeout(showEvalNotice, 900); }
+function refreshLineBtns(){
+  var d=document.getElementById('lineDeepBtn'), g=document.getElementById('lineGptBtn');
+  if(d){ d.style.background=_apiLine==='deepseek'?'var(--accent)':'none'; d.style.color=_apiLine==='deepseek'?'#fff':'var(--muted)'; }
+  if(g){ g.style.background=_apiLine==='gpt'?'var(--accent)':'none'; g.style.color=_apiLine==='gpt'?'#fff':'var(--muted)'; }
+}
+refreshLineBtns();
+
 </script>
+
+<!-- 模型评测公告弹窗 -->
+<div id="evalNoticeOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center;padding:16px;">
+  <div style="background:#fff;border-radius:14px;max-width:540px;width:100%;padding:20px 22px;box-shadow:0 8px 40px rgba(0,0,0,.3);max-height:86vh;overflow-y:auto;color:#333;font-size:13px;line-height:1.75;">
+    <h3 style="margin:0 0 10px;font-size:17px;color:#4a3f35;">🔬 模型升级公告</h3>
+    <p style="margin:0 0 8px;">根据对三款模型的深入评测（deepseek-v4-flash、deepseek-v4-pro、gpt-5.6），我们决定<strong>不再使用 flash 模型</strong>，统一使用 <strong>pro</strong> 与 <strong>gpt</strong> 模型，回复成本大幅上升。如果你感觉回复质量有所提升，欢迎多多打赏支持 💖</p>
+    <p style="margin:0 0 10px;">现在可以在 <strong>设置 → API 线路状态</strong> 中切换模型线路（DeepSeek Pro / GPT-5.6）。</p>
+    <table style="width:100%;border-collapse:collapse;font-size:12px;text-align:center;">
+      <thead><tr style="background:#f4efe8;"><th style="padding:7px 4px;">模型</th><th>临床敏锐</th><th>理论一致</th><th>风格贴合</th><th>可操作</th><th>材料忠实</th><th>综合分</th></tr></thead>
+      <tbody>
+        <tr><td style="padding:7px 4px;">deepseek-v4-flash</td><td>72.5</td><td>67.5</td><td>76.3</td><td>56.3</td><td>90.0</td><td><b>71.5</b></td></tr>
+        <tr style="background:#faf6f0;"><td>deepseek-v4-pro</td><td>93.8</td><td>93.8</td><td>90.0</td><td>93.8</td><td>95.0</td><td><b>93.1</b></td></tr>
+        <tr><td>gpt-5.6</td><td>93.8</td><td>91.3</td><td>95.0</td><td>93.8</td><td>95.0</td><td><b>93.7</b></td></tr>
+      </tbody>
+    </table>
+    <p style="margin:8px 0 0;font-size:11px;color:#999;">评分口径：关闭思考模式下 5 个督导案例实测，单项满分 100 分；综合分按 临床 27.8% / 理论 22.2% / 风格 22.2% / 可操作 16.7% / 材料忠实 11.1% 加权。</p>
+    <button onclick="closeEvalNotice()" style="margin-top:14px;width:100%;padding:9px;border:none;border-radius:9px;background:#8a6f5d;color:#fff;font-size:13px;cursor:pointer;font-family:inherit;">知道了</button>
+  </div>
+</div>
 
 <!-- Share card -->
 <div class="share-card" id="shareCard">
