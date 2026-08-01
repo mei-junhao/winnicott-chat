@@ -716,6 +716,7 @@ async function sendMessage() {
     cfg=getActiveConfig();
     try{
       removeTyping(); messagesEl.appendChild(div); scrollToBottom();
+      var _sb0=document.getElementById('streamBubble'+streamIdx); if(_sb0)_sb0.innerHTML='<div class="typing"><span></span><span></span><span></span></div>';
       var bodyStr=JSON.stringify({model:cfg.model,messages:ctxMessages,temperature:0.7,max_tokens:_maxTokens||undefined,stream:true});
       var hdrs={'Content-Type':'application/json'};
       if(cfg.key)hdrs['Authorization']='Bearer '+cfg.key;
@@ -729,7 +730,6 @@ async function sendMessage() {
 
       var reader=res.body.getReader(); var decoder=new TextDecoder();
       var sb=document.getElementById('streamBubble'+streamIdx); var buf='';
-      removeTyping();
       while(true){
         var chunk=await reader.read(); if(chunk.done)break;
         buf+=decoder.decode(chunk.value,{stream:true});
@@ -738,7 +738,7 @@ async function sendMessage() {
           var line=lines[li].trim();
           if(!line||line==='data: [DONE]')continue;
           if(line.startsWith('data: ')){
-            try{ var json=JSON.parse(line.slice(6)); var delta=json.choices&&json.choices[0]&&json.choices[0].delta; if(delta&&delta.content){fullReply+=delta.content; sb.innerHTML=escapeHtml(fullReply)+'<span class="stream-cursor"></span>'; scrollToBottom();} }catch(e){}
+            try{ var json=JSON.parse(line.slice(6)); var delta=json.choices&&json.choices[0]&&json.choices[0].delta; if(delta&&delta.content){ if(fullReply==='')sb.innerHTML=''; fullReply+=delta.content; sb.innerHTML=escapeHtml(fullReply)+'<span class="stream-cursor"></span>'; scrollToBottom();} }catch(e){}
           }
         }
       }
