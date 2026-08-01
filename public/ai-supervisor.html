@@ -727,6 +727,7 @@ loadSupervisorPrompt();
 // 默认走 VPS 代理（xinjingchat.online），前端不带任何 API key；
 // 后端按 model 路由：deepseek 线路 → deepseek-v4-pro（关思考，opencode）；gpt 线路 → gpt-5.6（关思考，skyapi）。
 // 若代理不可用，可在 ⚙️ 设置中切到「自用 API」填入自己的 key（仅存本机 localStorage）。
+var PROXY_TOKEN = '571df4e176aaee062770d4b756c168ab';   // 代理防护 token（与 VPS .env 一致）
 var TIERS = [
   { api:'https://xinjingchat.online', key:'', model:'deepseek-v4-pro', name: 'DeepSeek Pro' }
 ];
@@ -840,6 +841,7 @@ async function generateImpression() {
   var gotContent = false;
   var finalReply = '';
   var lastLineBreak = false;
+  var _rateLimited = false;
 
   while (!gotContent && (apiMode === 'custom' ? apiTier < 1 : apiTier < TIERS.length)) {
     var tier = apiMode === 'custom' ? getActiveConfig() : TIERS[apiTier];
@@ -852,9 +854,16 @@ async function generateImpression() {
     try {
       var res = await fetch(tier.api, {
         method: 'POST',
-        headers: Object.assign({'Content-Type':'application/json'}, (tier.key?{'Authorization':'Bearer '+tier.key}:{})),
+        headers: Object.assign({'Content-Type':'application/json'}, (tier.api.indexOf('xinjingchat.online')>=0?{'X-Proxy-Token':PROXY_TOKEN}:{}), (tier.key?{'Authorization':'Bearer '+tier.key}:{})),
         body: JSON.stringify({ model:tier.model, messages:messages, temperature:0.7, max_tokens:8192, stream:true })
       });
+
+      if (res.status === 429) {
+        var ej2; try { ej2 = await res.json(); } catch(e) { ej2 = {}; }
+        var ra = (ej2.error && ej2.error.retry_after_seconds) || 60;
+        showBanner('请求过于频繁，请等待约 ' + ra + ' 秒后重试');
+        _rateLimited = true; break;
+      }
 
       if (!res.ok) { apiTier++; continue; }
 
@@ -911,7 +920,7 @@ async function generateImpression() {
     }
   }
 
-  if (!gotContent && !finalReply) {
+  if (!_rateLimited && !gotContent && !finalReply) {
     outputBox.innerHTML = '<p style="color:var(--danger)">没事儿，API 没钱了，正在充，还不行发邮件 985729106@qq.com 问问</p>';
   } else if (!gotContent && finalReply) {
     outputBox.innerHTML = '<div class="ob-header"><h3>&#x1F50D; 整体印象（部分）</h3><button onclick="toggleImpression()" id="impressionToggle" class="toggle-btn">收起 &#x25B2;</button></div><div class="impression-body">' + escapeHtml(finalReply).replace(/\n/g,'<br>') + '<p style="color:var(--muted);margin-top:12px">&#x26A0;&#xFE0F; 所有线路均中断，以上为已获取的部分内容。</p></div>';
@@ -985,6 +994,7 @@ async function sendChat() {
   var gotContent = false;
   var finalReply = '';
   var msgDiv = null;
+  var _rateLimited = false;
 
   while (!gotContent && (apiMode === 'custom' ? apiTier < 1 : apiTier < TIERS.length)) {
     var tier = apiMode === 'custom' ? getActiveConfig() : TIERS[apiTier];
@@ -996,9 +1006,16 @@ async function sendChat() {
     try {
       var res = await fetch(tier.api, {
         method:'POST',
-        headers: Object.assign({'Content-Type':'application/json'}, (tier.key?{'Authorization':'Bearer '+tier.key}:{})),
+        headers: Object.assign({'Content-Type':'application/json'}, (tier.api.indexOf('xinjingchat.online')>=0?{'X-Proxy-Token':PROXY_TOKEN}:{}), (tier.key?{'Authorization':'Bearer '+tier.key}:{})),
         body:JSON.stringify({ model:tier.model, messages:apiMessages, temperature:0.7, max_tokens:(_maxTokens||undefined), stream:true })
       });
+
+      if (res.status === 429) {
+        var ej3; try { ej3 = await res.json(); } catch(e) { ej3 = {}; }
+        var ra3 = (ej3.error && ej3.error.retry_after_seconds) || 60;
+        showBanner('请求过于频繁，请等待约 ' + ra3 + ' 秒后重试');
+        _rateLimited = true; break;
+      }
 
       if (!res.ok) { apiTier++; continue; }
 
@@ -1059,7 +1076,7 @@ async function sendChat() {
     }
   }
 
-  if (!gotContent && !finalReply) {
+  if (!_rateLimited && !gotContent && !finalReply) {
     typingDiv.remove();
     chatDiv.innerHTML += '<div class="chat-msg ai" style="color:var(--danger)">没事儿，API 没钱了，正在充，还不行发邮件 985729106@qq.com 问问</div>';
   } else if (!gotContent && finalReply) {
