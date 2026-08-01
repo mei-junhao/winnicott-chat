@@ -1981,6 +1981,8 @@ async function sendMessage() {
     streamBubble.innerHTML = escapeHtml(fullReply);
     streamBubble.classList.remove('stream-cursor');
     conversation.push({ role: 'assistant', content: fullReply });
+    // 立即落盘：AI 回复一完整就先保存，后续逻辑异常也不影响（防止关闭页面后回复丢失）
+    saveConversation();
     // 话题检测：新话题转折时插入章节分隔
     checkChapterShift();
     // 兜底保存：超过 20 条消息未触发话题切换时强制保存
@@ -1988,7 +1990,6 @@ async function sendMessage() {
       saveToHistory();
       _lastHistorySave = conversation.length;
     }
-    saveConversation();
     saveConversation();
     scrollToBottom();
   } catch(e) {
