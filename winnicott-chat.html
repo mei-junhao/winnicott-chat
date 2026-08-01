@@ -1099,6 +1099,7 @@ var _chapterKeywords = {};
 
 // Chapter detection: keywords from user message
 function extractKeywords(text) {
+  if (typeof text !== 'string') return '';   // 防御：历史/异常数据可能缺 content
   var stops = '的了吗是我在也不就这有和都对这个吧被把让去很还会与及或是但而或者因为所以如果虽然可能应该可以需要觉得以为知道看到听到感到想到'.split('');
   var words = text.replace(/[^\u4e00-\u9fa5a-zA-Z0-9]/g, ' ').split(/\s+/).filter(function(w){return w.length>1;});
   var kw = {};
@@ -1107,30 +1108,32 @@ function extractKeywords(text) {
 }
 
 function checkChapterShift() {
-  // Check if a new chapter should be inserted based on user message topic shift
-  var lastIdx = conversation.length - 2; // last user message
-  if (lastIdx < 2) return; // Need at least 2 user messages
-  var prevUser = null;
-  for (var i = lastIdx - 2; i >= 0; i--) {
-    if (conversation[i].role === 'user') { prevUser = i; break; }
-  }
-  if (prevUser === null) return;
-  var currKw = extractKeywords(conversation[lastIdx].content);
-  var prevKw = extractKeywords(conversation[prevUser].content);
-  if (!currKw || !prevKw) return;
-  // Jaccard-like similarity on keyword sets
-  var currSet = {}; currKw.split(',').forEach(function(k){currSet[k]=1;});
-  var prevSet = {}; prevKw.split(',').forEach(function(k){prevSet[k]=1;});
-  var overlap = 0, total = 0;
-  Object.keys(currSet).forEach(function(k){ if(prevSet[k]) overlap++; total++; });
-  Object.keys(prevSet).forEach(function(k){ if(!currSet[k]) total++; });
-  var sim = total > 0 ? overlap / total : 0;
-  if (sim < 0.15 && _chapterCount < 50) { // topic shift threshold
-    _chapterCount++;
-    insertChapterDivider();
-    saveToHistory();
-    _lastHistorySave = conversation.length;
-  }
+  try {
+    // Check if a new chapter should be inserted based on user message topic shift
+    var lastIdx = conversation.length - 2; // last user message
+    if (lastIdx < 2) return; // Need at least 2 user messages
+    var prevUser = null;
+    for (var i = lastIdx - 2; i >= 0; i--) {
+      if (conversation[i].role === 'user') { prevUser = i; break; }
+    }
+    if (prevUser === null) return;
+    var currKw = extractKeywords(conversation[lastIdx].content);
+    var prevKw = extractKeywords(conversation[prevUser].content);
+    if (!currKw || !prevKw) return;
+    // Jaccard-like similarity on keyword sets
+    var currSet = {}; currKw.split(',').forEach(function(k){currSet[k]=1;});
+    var prevSet = {}; prevKw.split(',').forEach(function(k){prevSet[k]=1;});
+    var overlap = 0, total = 0;
+    Object.keys(currSet).forEach(function(k){ if(prevSet[k]) overlap++; total++; });
+    Object.keys(prevSet).forEach(function(k){ if(!currSet[k]) total++; });
+    var sim = total > 0 ? overlap / total : 0;
+    if (sim < 0.15 && _chapterCount < 50) { // topic shift threshold
+      _chapterCount++;
+      insertChapterDivider();
+      saveToHistory();
+      _lastHistorySave = conversation.length;
+    }
+  } catch(e) { /* 话题检测异常不影响对话 */ }
 }
 
 function insertChapterDivider() {
@@ -1825,11 +1828,19 @@ async function sendMessage() {
         fetchHeaders['X-Proxy-Token'] = PROXY_TOKEN;
         var sg = await proxySign(bodyStr); if (sg) { fetchHeaders['X-Proxy-Ts'] = sg.ts; fetchHeaders['X-Proxy-Sig'] = sg.sig; }
       }
-      var res = await fetch(cfg.api, {
-        method: 'POST',
-        headers: fetchHeaders,
-        body: bodyStr
-      });
+      var _ac = new AbortController();
+      var _acTm = setTimeout(function(){ _ac.abort(); }, 120000);   // 120s 无响应视为挂起，自动放弃避免永久卡死
+      var res;
+      try {
+        res = await fetch(cfg.api, {
+          method: 'POST',
+          headers: fetchHeaders,
+          body: bodyStr,
+          signal: _ac.signal
+        });
+      } finally {
+        clearTimeout(_acTm);
+      }
 
       if (res.status === 429) {
         removeTyping();
@@ -1966,19 +1977,24 @@ async function sendMessage() {
 
   // Remove cursor, set final content
   // 不自动切回更高优先级，同一次对话中使用已切换成功的线路
-  streamBubble.innerHTML = escapeHtml(fullReply);
-  streamBubble.classList.remove('stream-cursor');
-  conversation.push({ role: 'assistant', content: fullReply });
-  // 话题检测：新话题转折时插入章节分隔
-  checkChapterShift();
-  // 兜底保存：超过 20 条消息未触发话题切换时强制保存
-  if (conversation.length - _lastHistorySave > 20) {
-    saveToHistory();
-    _lastHistorySave = conversation.length;
+  try {
+    streamBubble.innerHTML = escapeHtml(fullReply);
+    streamBubble.classList.remove('stream-cursor');
+    conversation.push({ role: 'assistant', content: fullReply });
+    // 话题检测：新话题转折时插入章节分隔
+    checkChapterShift();
+    // 兜底保存：超过 20 条消息未触发话题切换时强制保存
+    if (conversation.length - _lastHistorySave > 20) {
+      saveToHistory();
+      _lastHistorySave = conversation.length;
+    }
+    saveConversation();
+    saveConversation();
+    scrollToBottom();
+  } catch(e) {
+    console.error('sendMessage 收尾异常(已忽略，避免按钮卡死):', e);
   }
-  saveConversation();
-  saveConversation();
-  scrollToBottom();
+  // 无论收尾是否异常，都必须复位输入状态，避免发送按钮永久变灰
   isLoading = false; sendBtn.disabled = false; inputEl.focus();
 }
 function askHint(btn) { inputEl.value = btn.textContent; sendMessage(); }
@@ -2170,26 +2186,28 @@ function getHistoryTitle(msgs) {
 }
 function saveToHistory() {
   if (conversation.length === 0) { showBanner('error', '暂无对话可保存'); return; }
-  var history = [];
-  try { history = JSON.parse(localStorage.getItem('winnicott_history')) || []; } catch(e) {}
-  var entry = {
-    id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
-    title: getHistoryTitle(conversation),
-    time: new Date().toISOString(),
-    msgCount: conversation.length,
-    messages: conversation
-  };
-  // avoid duplicates — same title within 5 min
-  var recent = history[0];
-  if (recent && recent.title === entry.title && (Date.now() - new Date(recent.time).getTime()) < 300000) {
-    history[0] = entry; // replace
-  } else {
-    history.unshift(entry);
-  }
-  // keep max 50
-  if (history.length > 50) history = history.slice(0, 50);
-  localStorage.setItem('winnicott_history', JSON.stringify(history));
-  showBanner('info', '已保存到历史');
+  try {
+    var history = [];
+    try { history = JSON.parse(localStorage.getItem('winnicott_history')) || []; } catch(e) {}
+    var entry = {
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+      title: getHistoryTitle(conversation),
+      time: new Date().toISOString(),
+      msgCount: conversation.length,
+      messages: conversation
+    };
+    // avoid duplicates — same title within 5 min
+    var recent = history[0];
+    if (recent && recent.title === entry.title && (Date.now() - new Date(recent.time).getTime()) < 300000) {
+      history[0] = entry; // replace
+    } else {
+      history.unshift(entry);
+    }
+    // keep max 50
+    if (history.length > 50) history = history.slice(0, 50);
+    localStorage.setItem('winnicott_history', JSON.stringify(history));
+    showBanner('info', '已保存到历史');
+  } catch(e) { /* 保存历史失败（如 localStorage 配额满）不阻断对话 */ }
 }
 function renderHistoryList() {
   var list = document.getElementById('historyList');
