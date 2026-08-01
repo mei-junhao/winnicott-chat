@@ -1885,6 +1885,7 @@ async function sendMessage() {
         messagesEl.appendChild(div);
         scrollToBottom();
       }
+      div.querySelector('.bubble').innerHTML = '<div class="typing"><span></span><span></span><span></span></div>';   // 等待提示：动画持续到首个内容块到达
       var streamBubble = document.getElementById('streamBubble' + streamIdx);
 
       var buffer = '';
@@ -1906,6 +1907,7 @@ async function sendMessage() {
               var delta = parsed.choices && parsed.choices[0] && parsed.choices[0].delta;
               var content = delta && delta.content ? delta.content : '';
               if (content) {
+                if (fullReply === '') div.querySelector('.bubble').innerHTML = '';
                 fullReply += content;
                 streamBubble.innerHTML = escapeHtml(fullReply) + '<span class="stream-cursor"></span>';
                 scrollToBottom();
