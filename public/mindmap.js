@@ -177,10 +177,16 @@
       return;
     }
     try {
-      var t = new mm.Transformer({ htmlParser: { html: false } });
+      // markmap-lib@0.18 构造器签名: Transformer(plugins=[]) — 无 options 参数
+      var t = new mm.Transformer();
       var root = t.transform(md).root;
       mindmapEl.innerHTML = '';
-      mm.Markmap.create(mindmapEl, { autoFit: true, duration: 300 }, root);
+      // markmap-view 的 Markmap.create 需要 <svg> 容器（官方签名: create(svg, opts, data)）
+      var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('width', '100%');
+      svg.setAttribute('height', '100%');
+      mindmapEl.appendChild(svg);
+      mm.Markmap.create(svg, { autoFit: true, duration: 300 }, root);
     } catch (e) {
       showError('渲染失败：' + (e && e.message ? e.message : String(e)));
     }
@@ -201,17 +207,45 @@
 
   // ---------- 导出 ----------
   function exportPng() {
-    if (!window.html2canvas) { toast('html2canvas 未加载，请检查网络'); return; }
+    if (!lastMd) { toast('暂无可导出的导图'); return; }
+    var svg = mindmapEl.querySelector('svg');
+    if (!svg) { toast('暂无可导出的导图'); return; }
     toast('正在生成 PNG…');
-    html2canvas(mindmapEl, { scale: 2, useCORS: true, backgroundColor: '#fafafa' })
-      .then(function (canvas) {
-        var a = document.createElement('a');
-        a.download = 'mindmap-' + cfg.pageKey + '-' + Date.now() + '.png';
-        a.href = canvas.toDataURL('image/png');
-        a.click();
-        toast('✅ PNG 已导出');
-      })
-      .catch(function () { toast('PNG 生成失败，请重试'); });
+    try {
+      // 方案：SVG 序列化 → Image → canvas 绘制（html2canvas 1.4 不支持内联 SVG）
+      var xml = new XMLSerializer().serializeToString(svg);
+      var blob = new Blob([xml], { type: 'image/svg+xml;charset=utf-8' });
+      var url = URL.createObjectURL(blob);
+      var img = new Image();
+      img.onload = function () {
+        try {
+          var canvas = document.createElement('canvas');
+          var scale = 2;
+          canvas.width = img.width * scale;
+          canvas.height = img.height * scale;
+          var ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#fafafa';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          var a = document.createElement('a');
+          a.download = 'mindmap-' + cfg.pageKey + '-' + Date.now() + '.png';
+          a.href = canvas.toDataURL('image/png');
+          a.click();
+          toast('✅ PNG 已导出');
+        } catch (e2) {
+          toast('PNG 生成失败，请改用 MD 导出');
+        } finally {
+          URL.revokeObjectURL(url);
+        }
+      };
+      img.onerror = function () {
+        URL.revokeObjectURL(url);
+        toast('PNG 生成失败，请改用 MD 导出');
+      };
+      img.src = url;
+    } catch (e) {
+      toast('PNG 生成失败，请改用 MD 导出');
+    }
   }
 
   function exportMd() {
