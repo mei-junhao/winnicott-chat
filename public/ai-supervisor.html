@@ -733,8 +733,10 @@ loadSupervisorPrompt();
 // 若代理不可用，可在 ⚙️ 设置中切到「自用 API」填入自己的 key（仅存本机 localStorage）。
 // 2026-08-02 security: PROXY_TOKEN/proxySign removed (proxy uses Referer whitelist + per-IP rate limit)
 var TIERS = [
-  { api:'https://xinjingchat.online', key:'', model:'deepseek-v4-pro', name: 'DeepSeek Pro' }
+  { api:'https://xinjingchat.online', key:'', model:'deepseek-v4-pro', name: 'DeepSeek Pro' },
+  { api:'https://xinjingchat.online', key:'', model:'gpt-5.6', name: 'GPT-5.6' }
 ];
+// 2026-08-02: 默认 gpt（chat_api_line_v2），失败自动回退 deepseek（TIERS 递增兜底）
 var apiTier = 0;
 var isLoading = false;
 var chatMessages = [];
@@ -744,10 +746,10 @@ var customApi = localStorage.getItem('sv_api') || '';
 var customKey = localStorage.getItem('sv_key') || '';
 var customModel = localStorage.getItem('sv_model') || '';
 // ====== API 线路（deepseek / gpt，全站共享选择；ai 督导默认 pro） ======
-var _apiLine = localStorage.getItem('chat_api_line') || 'deepseek';
+var _apiLine = localStorage.getItem('chat_api_line_v2') || 'gpt';  // 2026-08-02 默认 gpt（chat_api_line_v2 新键，旧键作废）
 function setApiLine(line) {
   _apiLine = line;
-  localStorage.setItem('chat_api_line', line);
+  localStorage.setItem('chat_api_line_v2', line);
   var d = document.getElementById('lineDeepBtn'), g = document.getElementById('lineGptBtn');
   if (d) { d.className = 'default-btn' + (line === 'deepseek' ? ' active' : ''); }
   if (g) { g.className = 'custom-btn' + (line === 'gpt' ? ' active' : ''); }
@@ -848,7 +850,7 @@ async function generateImpression() {
   var _rateLimited = false;
 
   while (!gotContent && (apiMode === 'custom' ? apiTier < 1 : apiTier < TIERS.length)) {
-    var tier = apiMode === 'custom' ? getActiveConfig() : TIERS[apiTier];
+    var tier = apiMode === 'custom' ? getActiveConfig() : (Object.assign({}, TIERS[apiTier], { model: (_apiLine === 'gpt' ? 'gpt-5.6' : 'deepseek-v4-pro'), name: (_apiLine === 'gpt' ? 'GPT-5.6' : 'DeepSeek Pro') }));
 
     if (apiTier > 0 && finalReply) {
       var switchNote = '\n\n<span style="color:var(--muted);font-size:11px;">&#x26A0;&#xFE0F; 线路 ' + apiTier + ' 中断，切换至 ' + tier.name + '……</span>\n';
@@ -874,7 +876,7 @@ async function generateImpression() {
         _rateLimited = true; break;
       }
 
-      if (!res.ok) { apiTier++; continue; }
+      if (!res.ok) { if (_apiLine === 'gpt') { _apiLine = 'deepseek'; showBanner('GPT 线路异常，自动切换 DeepSeek Pro 重试'); continue; } apiTier++; continue; }
 
       var reader = res.body.getReader();
       var decoder = new TextDecoder();
@@ -1006,7 +1008,7 @@ async function sendChat() {
   var _rateLimited = false;
 
   while (!gotContent && (apiMode === 'custom' ? apiTier < 1 : apiTier < TIERS.length)) {
-    var tier = apiMode === 'custom' ? getActiveConfig() : TIERS[apiTier];
+    var tier = apiMode === 'custom' ? getActiveConfig() : (Object.assign({}, TIERS[apiTier], { model: (_apiLine === 'gpt' ? 'gpt-5.6' : 'deepseek-v4-pro'), name: (_apiLine === 'gpt' ? 'GPT-5.6' : 'DeepSeek Pro') }));
 
     if (apiTier > 0 && msgDiv && finalReply) {
       msgDiv.innerHTML = escapeHtml(finalReply).replace(/\n/g,'<br>') + '<div style="color:var(--muted);font-size:11px;margin-top:6px">&#x26A0;&#xFE0F; 切换至 ' + tier.name + '……</div>';
@@ -1031,7 +1033,7 @@ async function sendChat() {
         _rateLimited = true; break;
       }
 
-      if (!res.ok) { apiTier++; continue; }
+      if (!res.ok) { if (_apiLine === 'gpt') { _apiLine = 'deepseek'; showBanner('GPT 线路异常，自动切换 DeepSeek Pro 重试'); continue; } apiTier++; continue; }
 
       var reader = res.body.getReader();
       var decoder = new TextDecoder();

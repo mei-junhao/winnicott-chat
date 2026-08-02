@@ -1568,10 +1568,10 @@ function closeSharePreview() {
 }
 
 // ====== API 线路（deepseek / gpt，全站共享选择） ======
-var _apiLine = localStorage.getItem('chat_api_line') || 'deepseek';
+var _apiLine = localStorage.getItem('chat_api_line_v2') || 'gpt';  // 2026-08-02 默认 gpt（chat_api_line_v2 新键，旧键作废）
 function setApiLine(line) {
   _apiLine = line;
-  localStorage.setItem('chat_api_line', line);
+  localStorage.setItem('chat_api_line_v2', line);
   var d = document.getElementById('lineDeepBtn'), g = document.getElementById('lineGptBtn');
   if (d) { d.style.background = line === 'deepseek' ? 'var(--accent)' : 'none'; d.style.color = line === 'deepseek' ? '#fff' : 'var(--muted)'; }
   if (g) { g.style.background = line === 'gpt' ? 'var(--accent)' : 'none'; g.style.color = line === 'gpt' ? '#fff' : 'var(--muted)'; }
@@ -1855,6 +1855,13 @@ async function sendMessage() {
           }
         } else if (errMsg.indexOf('token') >= 0 || errMsg.indexOf('too long') >= 0) {
           showBanner('error', '对话较长，建议点击设置→新对话后重试。');
+        } else if (_apiLine === 'gpt') {
+          // 2026-08-02: GPT 线路异常自动回退 DeepSeek Pro
+          _apiLine = 'deepseek';
+          cfg = getActiveConfig();  // 刷新 cfg 使重试使用 deepseek-v4-pro
+          showBanner('GPT 线路异常，自动切换 DeepSeek Pro 重试');
+          _retry = 0; _maxRetries = TIERS.length - _tierLevel;
+          continue;
         } else if (retryable && _retry < _maxRetries) {
           // Retry on transient server errors
           _retry++; continue;
