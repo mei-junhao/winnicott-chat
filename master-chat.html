@@ -749,10 +749,10 @@ function fillPreset(api,model) { document.getElementById('customApi').value=api;
 function saveSettings() { customApi=document.getElementById('customApi').value.trim(); customKey=document.getElementById('customKey').value.trim(); customModel=document.getElementById('customModel').value.trim()||'gpt-4o'; if(customApi)localStorage.setItem('mc_custom_api_'+masterKey,customApi);else localStorage.removeItem('mc_custom_api_'+masterKey); if(customKey)localStorage.setItem('mc_custom_key_'+masterKey,customKey);else localStorage.removeItem('mc_custom_key_'+masterKey); localStorage.setItem('mc_custom_model_'+masterKey,customModel); showBanner('设置已保存'); }
 function restoreSettings() { customApi=localStorage.getItem('mc_custom_api_'+masterKey)||''; customKey=localStorage.getItem('mc_custom_key_'+masterKey)||''; customModel=localStorage.getItem('mc_custom_model_'+masterKey)||'gpt-4o'; document.getElementById('customApi').value=customApi; document.getElementById('customKey').value=customKey; document.getElementById('customModel').value=customModel; }
 // ====== API 线路（deepseek / gpt，全站共享选择） ======
-var _apiLine = localStorage.getItem('chat_api_line') || 'deepseek';
+var _apiLine = localStorage.getItem('chat_api_line_v2') || 'gpt';  // 2026-08-02 默认 gpt（chat_api_line_v2 新键，旧键作废）
 function setApiLine(line) {
   _apiLine = line;
-  localStorage.setItem('chat_api_line', line);
+  localStorage.setItem('chat_api_line_v2', line);
   var d = document.getElementById('lineDeepBtn'), g = document.getElementById('lineGptBtn');
   if (d) { d.style.background = line === 'deepseek' ? 'var(--accent)' : 'none'; d.style.color = line === 'deepseek' ? '#fff' : 'var(--muted)'; }
   if (g) { g.style.background = line === 'gpt' ? 'var(--accent)' : 'none'; g.style.color = line === 'gpt' ? '#fff' : 'var(--muted)'; }
@@ -971,7 +971,7 @@ async function sendMessage() {
       // 2026-08-02: xinjingchat.online proxy no longer needs token (Referer whitelist + IP rate limit)
       var res=await fetch(cfg.api,{method:'POST',headers:hdrs,body:bodyStr});
       if(res.status===429){_rateLimited=true;try{var ej=await res.json();var ra=(ej.error&&ej.error.retry_after_seconds)||60;showBanner('请求过于频繁，请等待约 '+ra+' 秒后重试');}catch(_e){showBanner('请求过于频繁，请等待约 60 秒后重试');}break;}
-      if(!res.ok){showBanner(cfg.name+' 返回 '+res.status+'，重试中'); continue;}
+      if(!res.ok){ if(_apiLine==='gpt'){_apiLine='deepseek'; showBanner('GPT 线路异常，自动切换 DeepSeek Pro 重试'); continue;} showBanner(cfg.name+' 返回 '+res.status+'，重试中'); continue;}
 
       var reader=res.body.getReader(); var decoder=new TextDecoder();
       var sb=document.getElementById('streamBubble'+streamIdx); var buf='';
@@ -989,7 +989,7 @@ async function sendMessage() {
       }
       if(fullReply){success=true; break;}
     }catch(e){
-      removeTyping(); showBanner(cfg.name+' 连接失败，重试中');
+      removeTyping(); if(_apiLine==='gpt'){_apiLine='deepseek'; showBanner('GPT 线路异常，自动切换 DeepSeek Pro 重试'); continue;} showBanner(cfg.name+' 连接失败，重试中');
     }
   }
 

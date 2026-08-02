@@ -583,10 +583,10 @@ var customModel = localStorage.getItem('rt_model') || '';
 var apiMode = (customApi && customKey) ? 'custom' : 'default';
 
 // ====== API 线路（deepseek / gpt，全站共享选择） ======
-var _apiLine = localStorage.getItem('chat_api_line') || 'deepseek';
+var _apiLine = localStorage.getItem('chat_api_line_v2') || 'gpt';  // 2026-08-02 默认 gpt（chat_api_line_v2 新键，旧键作废）
 function setApiLine(line) {
   _apiLine = line;
-  localStorage.setItem('chat_api_line', line);
+  localStorage.setItem('chat_api_line_v2', line);
   var d = document.getElementById('lineDeepBtn'), g = document.getElementById('lineGptBtn');
   if (d) { d.style.background = line === 'deepseek' ? 'var(--accent)' : 'none'; d.style.color = line === 'deepseek' ? '#fff' : 'var(--muted)'; }
   if (g) { g.style.background = line === 'gpt' ? 'var(--accent)' : 'none'; g.style.color = line === 'gpt' ? '#fff' : 'var(--muted)'; }
@@ -1131,7 +1131,14 @@ async function callMasterAPI(key, activeNames, history, userMsg, isReactMode) {
       showBanner('请求过于频繁，请等待约 ' + ra + ' 秒后重试');
       return '';
     }
-    if (!apiRes.ok) return '';
+    if (!apiRes.ok) {
+      if (_apiLine === 'gpt') {
+        _apiLine = 'deepseek';
+        showBanner('GPT 线路异常，自动切换 DeepSeek Pro 重试');
+        return callMasterAPI(key, activeNames, history, userMsg, isReactMode);  // 递归重试一次（deepseek）
+      }
+      return '';
+    }
     var data = await apiRes.json();
     var reply = data.choices && data.choices[0] && data.choices[0].message ? data.choices[0].message.content.trim() : '';
     if (reply === ' ' || reply === '') return '';  // nothing to say
