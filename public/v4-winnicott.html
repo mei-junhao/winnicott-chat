@@ -945,17 +945,7 @@ function setApiLine(line) {
   checkAllAPIs();
 }
 
-var PROXY_TOKEN = '571df4e176aaee062770d4b756c168ab';   // 代理防护 token（与 VPS .env 一致）
-async function proxySign(rawBody){   // HMAC-SHA256 请求签名（与后端 verifyProxySig 对应）
-  try{
-    var ts=String(Math.floor(Date.now()/1000));
-    var enc=new TextEncoder();
-    var key=await crypto.subtle.importKey('raw',enc.encode(PROXY_TOKEN),{name:'HMAC',hash:'SHA-256'},false,['sign']);
-    var sb=await crypto.subtle.sign('HMAC',key,enc.encode(ts+'\n'+rawBody));
-    var hex=''; new Uint8Array(sb).forEach(function(b){hex+=b.toString(16).padStart(2,'0');});
-    return {ts:ts,sig:hex};
-  }catch(e){return null;}
-}
+// 2026-08-02 security: PROXY_TOKEN/proxySign removed (proxy uses Referer whitelist + per-IP rate limit)
 function getActiveConfig() {
   if (apiMode === 'custom' && customApi && customKey) {
     return { api: customApi, key: customKey, model: customModel };
@@ -1361,16 +1351,12 @@ async function checkAllAPIs() {
   var ac=new AbortController(); var tm=setTimeout(function(){ac.abort();},10000);
   try{
     var b1=JSON.stringify({model:'deepseek-v4-pro',messages:[{role:'user',content:'hi'}],max_tokens:1});
-    var h1={'Content-Type':'application/json','X-Proxy-Token':PROXY_TOKEN};
-    var s1=await proxySign(b1); if(s1){h1['X-Proxy-Ts']=s1.ts;h1['X-Proxy-Sig']=s1.sig;}
     var r1=await fetch(proxy,{method:'POST',headers:h1,body:b1,signal:ac.signal});
     clearTimeout(tm); updateTierBadge('DeepSeek Pro',r1.ok?'#4a9':'#c60',r1.ok?'✓':'⚡ '+r1.status);
   }catch(e){ clearTimeout(tm); updateTierBadge('DeepSeek Pro','#c33','✗ 离线'); }
   var ac2=new AbortController(); var tm2=setTimeout(function(){ac2.abort();},15000);
   try{
     var b2=JSON.stringify({model:'gpt-5.6',messages:[{role:'user',content:'hi'}],max_tokens:1});
-    var h2={'Content-Type':'application/json','X-Proxy-Token':PROXY_TOKEN};
-    var s2=await proxySign(b2); if(s2){h2['X-Proxy-Ts']=s2.ts;h2['X-Proxy-Sig']=s2.sig;}
     var r2=await fetch(proxy,{method:'POST',headers:h2,body:b2,signal:ac2.signal});
     clearTimeout(tm2); updateTierBadge('GPT-5.6',r2.ok?'#4a9':'#c60',r2.ok?'✓':'⚡ '+r2.status);
   }catch(e){ clearTimeout(tm2); updateTierBadge('GPT-5.6','#c33','✗ 离线'); }
@@ -1572,8 +1558,6 @@ async function sendMessage() {
       if (cfg.key) fetchHeaders['Authorization'] = 'Bearer ' + cfg.key;
       var bodyStr = JSON.stringify({ model: cfg.model, messages: ctxMessages, temperature: 0.7, max_tokens: _maxTokens || undefined, stream: true });
       if (cfg.api.indexOf('xinjingchat.online') >= 0) {
-        fetchHeaders['X-Proxy-Token'] = PROXY_TOKEN;
-        var sg = await proxySign(bodyStr); if (sg) { fetchHeaders['X-Proxy-Ts'] = sg.ts; fetchHeaders['X-Proxy-Sig'] = sg.sig; }
       }
       var res = await fetch(cfg.api, {
         method: 'POST',

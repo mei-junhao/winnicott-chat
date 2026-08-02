@@ -778,17 +778,7 @@ function setApiLine(line) {
   if (g) { g.style.background = line === 'gpt' ? 'var(--accent)' : 'none'; g.style.color = line === 'gpt' ? '#fff' : 'var(--muted)'; }
   checkAllAPIs();
 }
-var PROXY_TOKEN = '571df4e176aaee062770d4b756c168ab';   // 代理防护 token（与 VPS .env 一致）
-async function proxySign(rawBody){   // HMAC-SHA256 请求签名（与后端 verifyProxySig 对应）
-  try{
-    var ts=String(Math.floor(Date.now()/1000));
-    var enc=new TextEncoder();
-    var key=await crypto.subtle.importKey('raw',enc.encode(PROXY_TOKEN),{name:'HMAC',hash:'SHA-256'},false,['sign']);
-    var sb=await crypto.subtle.sign('HMAC',key,enc.encode(ts+'\n'+rawBody));
-    var hex=''; new Uint8Array(sb).forEach(function(b){hex+=b.toString(16).padStart(2,'0');});
-    return {ts:ts,sig:hex};
-  }catch(e){return null;}
-}
+// 2026-08-02 security: PROXY_TOKEN/proxySign removed (proxy uses Referer whitelist + per-IP rate limit)
 function getActiveConfig() { if(apiMode==='custom'&&customApi&&customKey) return {api:customApi,key:customKey,model:customModel}; if(_tierLevel>0){ var t=TIERS[Math.min(_tierLevel,TIERS.length-1)]; return {api:t.api,key:t.key,model:t.model}; } return {api:'https://xinjingchat.online',key:'',model:(_apiLine==='gpt'?'gpt-5.6':'deepseek-v4-pro')}; }
 
 function updateTemp(val) {
@@ -806,16 +796,12 @@ async function checkAllAPIs() {
   var acp=new AbortController(); var tmp=setTimeout(function(){acp.abort();},10000);
   try{
     var b1=JSON.stringify({model:'deepseek-v4-pro',messages:[{role:'user',content:'hi'}],max_tokens:1});
-    var h1={'Content-Type':'application/json','X-Proxy-Token':PROXY_TOKEN};
-    var s1=await proxySign(b1); if(s1){h1['X-Proxy-Ts']=s1.ts;h1['X-Proxy-Sig']=s1.sig;}
     var r1=await fetch('https://xinjingchat.online',{method:'POST',headers:h1,body:b1,signal:acp.signal});
     clearTimeout(tmp); updateBadge('DeepSeek Pro',r1.ok?'#4a9':'#c60',r1.ok?'✓':'⚡ '+r1.status);
   }catch(e){ clearTimeout(tmp); updateBadge('DeepSeek Pro','#c33','✗ 离线'); }
   var acg=new AbortController(); var tmg=setTimeout(function(){acg.abort();},15000);
   try{
     var b2=JSON.stringify({model:'gpt-5.6',messages:[{role:'user',content:'hi'}],max_tokens:1});
-    var h2={'Content-Type':'application/json','X-Proxy-Token':PROXY_TOKEN};
-    var s2=await proxySign(b2); if(s2){h2['X-Proxy-Ts']=s2.ts;h2['X-Proxy-Sig']=s2.sig;}
     var r2=await fetch('https://xinjingchat.online',{method:'POST',headers:h2,body:b2,signal:acg.signal});
     clearTimeout(tmg); updateBadge('GPT-5.6',r2.ok?'#4a9':'#c60',r2.ok?'✓':'⚡ '+r2.status);
   }catch(e){ clearTimeout(tmg); updateBadge('GPT-5.6','#c33','✗ 离线'); }
@@ -1012,8 +998,6 @@ async function sendMessage() {
       var hdrs={'Content-Type':'application/json'};
       if(cfg.key)hdrs['Authorization']='Bearer '+cfg.key;
       if(cfg.api.indexOf('xinjingchat.online')>=0){
-        hdrs['X-Proxy-Token']=PROXY_TOKEN;
-        var sg=await proxySign(bodyStr); if(sg){hdrs['X-Proxy-Ts']=sg.ts;hdrs['X-Proxy-Sig']=sg.sig;}
       }
       var res=await fetch(cfg.api,{method:'POST',headers:hdrs,body:bodyStr});
       if(res.status===429){_rateLimited=true;try{var ej=await res.json();var ra=(ej.error&&ej.error.retry_after_seconds)||60;showBanner('请求过于频繁，请等待约 '+ra+' 秒后重试');}catch(_e){showBanner('请求过于频繁，请等待约 60 秒后重试');}break;}
