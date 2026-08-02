@@ -696,7 +696,7 @@
       </div>
       <div style="display:flex;gap:6px;margin-bottom:6px;">
         <button id="lineDeepBtn" onclick="setApiLine('deepseek')" style="flex:1;padding:4px 0;border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer;background:var(--accent);color:#fff;font-family:inherit;">DeepSeek Pro</button>
-        <button id="lineGptBtn" onclick="setApiLine('gpt')" style="flex:1;padding:4px 0;border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer;background:none;color:var(--muted);font-family:inherit;">GPT-5.6</button><button id="lineGemBtn" onclick="setApiLine('gemini')" style="flex:1;padding:4px 0;border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer;background:none;color:var(--muted);font-family:inherit;">Gemini</button>
+        <button id="lineGptBtn" onclick="setApiLine('gpt')" style="flex:1;padding:4px 0;border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer;background:none;color:var(--muted);font-family:inherit;">GPT-5.6</button><button id="lineGemBtn" onclick="setApiLine('gemini')" style="flex:1;padding:4px 0;border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer;background:none;color:var(--muted);font-family:inherit;">Gemini</button><button id="lineClBtn" onclick="setApiLine('claude')" style="flex:1;padding:4px 0;border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer;background:none;color:var(--muted);font-family:inherit;">Claude</button>
       </div>
       <div id="apiHealthRow" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
     </div>
@@ -1076,7 +1076,7 @@ function getActiveConfig() {
     return { api: customApi, key: customKey, model: customModel };
   }
   if (SCF_URL) {
-    return { api: SCF_URL.replace(/\/+$/, ''), key: '', model: (_apiLine === 'gpt' ? 'gpt-5.6' : (_apiLine === 'gemini' ? 'gemini-3.5-flash' : 'deepseek-v4-pro')) };
+    return { api: SCF_URL.replace(/\/+$/, ''), key: '', model: (_apiLine === 'gpt' ? 'gpt-5.6' : (_apiLine === 'gemini' ? 'gemini-3.5-flash' : (_apiLine === 'claude' ? 'claude-sonnet-5' : 'deepseek-v4-pro'))) };
   }
   var level = Math.min(_tierLevel, TIERS.length - 1);
   var t = TIERS[level];
@@ -1572,10 +1572,11 @@ var _apiLine = localStorage.getItem('chat_api_line_v2') || 'gemini';  // 2026-08
 function setApiLine(line) {
   _apiLine = line;
   localStorage.setItem('chat_api_line_v2', line);
-  var d = document.getElementById('lineDeepBtn'), g = document.getElementById('lineGptBtn'), gm = document.getElementById('lineGemBtn');
+  var d = document.getElementById('lineDeepBtn'), g = document.getElementById('lineGptBtn'), gm = document.getElementById('lineGemBtn'), cl = document.getElementById('lineClBtn');
   if (d) { d.style.background = line === 'deepseek' ? 'var(--accent)' : 'none'; d.style.color = line === 'deepseek' ? '#fff' : 'var(--muted)'; }
   if (g) { g.style.background = line === 'gpt' ? 'var(--accent)' : 'none'; g.style.color = line === 'gpt' ? '#fff' : 'var(--muted)'; }
   if (gm) { gm.style.background = line === 'gemini' ? 'var(--accent)' : 'none'; gm.style.color = line === 'gemini' ? '#fff' : 'var(--muted)'; }
+  if (cl) { cl.style.background = line === 'claude' ? 'var(--accent)' : 'none'; cl.style.color = line === 'claude' ? '#fff' : 'var(--muted)'; }
   checkAllAPIs();
 }
 
@@ -1868,6 +1869,13 @@ async function sendMessage() {
           _apiLine = 'deepseek';
           cfg = getActiveConfig();
           showBanner('Gemini 线路异常，自动切换 DeepSeek Pro 重试');
+          _retry = 0; _maxRetries = TIERS.length - _tierLevel;
+          continue;
+        } else if (_apiLine === 'claude') {
+          // 2026-08-02: Claude 线路异常自动回退 DeepSeek Pro
+          _apiLine = 'deepseek';
+          cfg = getActiveConfig();
+          showBanner('Claude 线路异常，自动切换 DeepSeek Pro 重试');
           _retry = 0; _maxRetries = TIERS.length - _tierLevel;
           continue;
         } else if (retryable && _retry < _maxRetries) {
@@ -2301,6 +2309,7 @@ function refreshLineBtns(){
   if(d){ d.style.background=_apiLine==='deepseek'?'var(--accent)':'none'; d.style.color=_apiLine==='deepseek'?'#fff':'var(--muted)'; }
   if(g){ g.style.background=_apiLine==='gpt'?'var(--accent)':'none'; g.style.color=_apiLine==='gpt'?'#fff':'var(--muted)'; }
   if(gm){ gm.style.background=_apiLine==='gemini'?'var(--accent)':'none'; gm.style.color=_apiLine==='gemini'?'#fff':'var(--muted)'; }
+  if(cl){ cl.style.background=_apiLine==='claude'?'var(--accent)':'none'; cl.style.color=_apiLine==='claude'?'#fff':'var(--muted)'; }
 }
 refreshLineBtns();
 </script>
@@ -2318,6 +2327,7 @@ refreshLineBtns();
         <tr style="background:#faf6f0;"><td>deepseek-v4-pro</td><td>93.8</td><td>93.8</td><td>90.0</td><td>93.8</td><td>95.0</td><td><b>93.1</b></td></tr>
         <tr><td>gpt-5.6-luna(max)</td><td>90.0</td><td>88.0</td><td>90.0</td><td>88.0</td><td>88.0</td><td><b>88.9</b></td></tr>
         <tr style="background:#faf6f0;"><td>gemini-3.5-flash</td><td>93.0</td><td>92.0</td><td>95.0</td><td>93.0</td><td>93.0</td><td><b>93.2</b></td></tr>
+        <tr><td>claude-sonnet-5</td><td>95.0</td><td>96.0</td><td>97.0</td><td>92.0</td><td>94.0</td><td><b>95.1</b></td></tr>
       </tbody>
     </table>
     <p style="margin:8px 0 0;font-size:11px;color:#999;">评分口径：5 个督导案例实测（2026-08-02），单项满分 100 分；综合分按 临床 27.8% / 理论 22.2% / 风格 22.2% / 可操作 16.7% / 材料忠实 11.1% 加权。gpt 为 5.6-luna(max) 思考模式。</p>
