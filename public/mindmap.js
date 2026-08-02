@@ -23,6 +23,7 @@
   var cfg = null;
   var lastMd = '';
   var isGenerating = false;
+  var lastConvFingerprint = '';  // 2026-08-02: 上次生成时的对话指纹（防重复生成浪费 token）
 
   // ---------- 弹层 DOM（一次性构建） ----------
   var overlay, loadingEl, mindmapEl, histPanel, histList;
@@ -96,6 +97,16 @@
       '对话内容（最近 ' + messages.length + ' 条）：\n' + lines.join('\n');
   }
 
+  // 2026-08-02: 对话指纹（消息数 + 末条内容哈希），判断会话是否变化
+  function convFingerprint(messages) {
+    if (!messages || !messages.length) return '';
+    var last = messages[messages.length - 1];
+    var lastContent = (last && last.content ? last.content : '');
+    var h = 0;
+    for (var i = 0; i < lastContent.length; i++) { h = ((h << 5) - h + lastContent.charCodeAt(i)) | 0; }
+    return messages.length + ':' + h;
+  }
+
   function generate() {
     if (!cfg) return;
     if (isGenerating) { toast('正在生成中，请稍候…'); return; }
@@ -104,6 +115,19 @@
       toast('对话至少需要 ' + cfg.minMessages + ' 条消息才能生成思维导图');
       return;
     }
+    var fp = convFingerprint(messages);
+    // 2026-08-02: 对话未变化（含新会话后无新增）→ 复用已生成的图，不重复调 AI
+    if (lastMd && fp === lastConvFingerprint) {
+      buildDOM();
+      overlay.style.display = 'flex';
+      loadingEl.style.display = 'none';
+      mindmapEl.innerHTML = '';
+      histPanel.style.transform = 'translateX(100%)';
+      renderMap(lastMd);
+      toast('✅ 已复用当前对话的思维导图');
+      return;
+    }
+    lastConvFingerprint = fp;
     var slice = messages.slice(-50); // 成本控制：最近 50 条
     var ac = cfg.getActiveConfig();
     if (!ac || !ac.api) { toast('当前未配置可用 API 线路'); return; }
