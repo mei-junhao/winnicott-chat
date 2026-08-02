@@ -1485,7 +1485,7 @@ refreshLineBtns();
   <div style="background:#fff;border-radius:14px;max-width:540px;width:100%;padding:20px 22px;box-shadow:0 8px 40px rgba(0,0,0,.3);max-height:86vh;overflow-y:auto;color:#333;font-size:13px;line-height:1.75;">
     <h3 style="margin:0 0 10px;font-size:17px;color:#4a3f35;">🔬 模型升级公告</h3>
     <p style="margin:0 0 8px;">根据对多款模型的深入评测，我们统一使用 <strong>Gemini / DeepSeek Pro / GPT-5.6</strong> 模型（默认 Gemini），回复成本大幅上升。如果你感觉回复质量有所提升，欢迎多多打赏支持 💖</p>
-    <p style="margin:0 0 10px;">现在可以在 <strong>设置 → API 线路状态</strong> 中切换模型线路（DeepSeek Pro / GPT-5.6）。</p>
+    <p style="margin:0 0 10px;">现在可以在 <strong>设置 → API 线路状态</strong> 中切换模型线路（DeepSeek Pro / GPT-5.6 / Gemini）。</p>
     <table style="width:100%;border-collapse:collapse;font-size:12px;text-align:center;">
       <thead><tr style="background:#f4efe8;"><th style="padding:7px 4px;">模型</th><th>临床敏锐</th><th>理论一致</th><th>风格贴合</th><th>可操作</th><th>材料忠实</th><th>综合分</th></tr></thead>
       <tbody>
@@ -1495,7 +1495,7 @@ refreshLineBtns();
         <tr style="background:#faf6f0;"><td>gemini-3.5-flash</td><td>93.0</td><td>92.0</td><td>95.0</td><td>93.0</td><td>93.0</td><td><b>93.2</b></td></tr>
       </tbody>
     </table>
-    <p style="margin:8px 0 0;font-size:11px;color:#999;">评分口径：关闭思考模式下 5 个督导案例实测，单项满分 100 分；综合分按 临床 27.8% / 理论 22.2% / 风格 22.2% / 可操作 16.7% / 材料忠实 11.1% 加权。</p>
+    <p style="margin:8px 0 0;font-size:11px;color:#999;">评分口径：5 个督导案例实测（2026-08-02），单项满分 100 分；综合分按 临床 27.8% / 理论 22.2% / 风格 22.2% / 可操作 16.7% / 材料忠实 11.1% 加权。gpt 为 5.6-luna(max) 思考模式。</p>
     <button onclick="closeEvalNotice()" style="margin-top:14px;width:100%;padding:9px;border:none;border-radius:9px;background:#8a6f5d;color:#fff;font-size:13px;cursor:pointer;font-family:inherit;">知道了</button>
   </div>
 </div>
