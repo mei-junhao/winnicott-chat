@@ -731,17 +731,7 @@ loadSupervisorPrompt();
 // 默认走 VPS 代理（xinjingchat.online），前端不带任何 API key；
 // 后端按 model 路由：deepseek 线路 → deepseek-v4-pro（关思考，opencode）；gpt 线路 → gpt-5.6（关思考，skyapi）。
 // 若代理不可用，可在 ⚙️ 设置中切到「自用 API」填入自己的 key（仅存本机 localStorage）。
-var PROXY_TOKEN = '571df4e176aaee062770d4b756c168ab';   // 代理防护 token（与 VPS .env 一致）
-async function proxySign(rawBody){   // HMAC-SHA256 请求签名（与后端 verifyProxySig 对应）
-  try{
-    var ts=String(Math.floor(Date.now()/1000));
-    var enc=new TextEncoder();
-    var key=await crypto.subtle.importKey('raw',enc.encode(PROXY_TOKEN),{name:'HMAC',hash:'SHA-256'},false,['sign']);
-    var sb=await crypto.subtle.sign('HMAC',key,enc.encode(ts+'\n'+rawBody));
-    var hex=''; new Uint8Array(sb).forEach(function(b){hex+=b.toString(16).padStart(2,'0');});
-    return {ts:ts,sig:hex};
-  }catch(e){return null;}
-}
+// 2026-08-02 security: PROXY_TOKEN/proxySign removed (proxy uses Referer whitelist + per-IP rate limit)
 var TIERS = [
   { api:'https://xinjingchat.online', key:'', model:'deepseek-v4-pro', name: 'DeepSeek Pro' }
 ];
@@ -869,8 +859,6 @@ async function generateImpression() {
       var bodyStr = JSON.stringify({ model:tier.model, messages:messages, temperature:0.7, max_tokens:8192, stream:true });
       var hdrBase = {'Content-Type':'application/json'};
       if (tier.api.indexOf('xinjingchat.online')>=0) {
-        hdrBase['X-Proxy-Token']=PROXY_TOKEN;
-        var sg = await proxySign(bodyStr); if (sg) { hdrBase['X-Proxy-Ts']=sg.ts; hdrBase['X-Proxy-Sig']=sg.sig; }
       }
       if (tier.key) hdrBase['Authorization']='Bearer '+tier.key;
       var res = await fetch(tier.api, {
@@ -1028,8 +1016,6 @@ async function sendChat() {
       var bodyStr2 = JSON.stringify({ model:tier.model, messages:apiMessages, temperature:0.7, max_tokens:(_maxTokens||undefined), stream:true });
       var hdrBase2 = {'Content-Type':'application/json'};
       if (tier.api.indexOf('xinjingchat.online')>=0) {
-        hdrBase2['X-Proxy-Token']=PROXY_TOKEN;
-        var sg2 = await proxySign(bodyStr2); if (sg2) { hdrBase2['X-Proxy-Ts']=sg2.ts; hdrBase2['X-Proxy-Sig']=sg2.sig; }
       }
       if (tier.key) hdrBase2['Authorization']='Bearer '+tier.key;
       var res = await fetch(tier.api, {
