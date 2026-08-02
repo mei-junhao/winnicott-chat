@@ -414,6 +414,7 @@
         <button class="default-btn active" id="lineDeepBtn" onclick="setApiLine('deepseek')">DeepSeek Pro</button>
         <button class="custom-btn" id="lineGptBtn" onclick="setApiLine('gpt')">GPT-5.6</button>
         <button class="custom-btn" id="lineGemBtn" onclick="setApiLine('gemini')">Gemini</button>
+        <button class="custom-btn" id="lineClBtn" onclick="setApiLine('claude')">Claude</button>
       </div>
       <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">API 线路状态：默认 API 模式下生效，点击切换后端模型（deepseek → v4-pro 关思考 / gpt → gpt-5.6 关思考）</div>
       <div id="customFields" style="display:none;">
@@ -751,10 +752,11 @@ var _apiLine = localStorage.getItem('chat_api_line_v2') || 'gemini';  // 2026-08
 function setApiLine(line) {
   _apiLine = line;
   localStorage.setItem('chat_api_line_v2', line);
-  var d = document.getElementById('lineDeepBtn'), g = document.getElementById('lineGptBtn'), gm = document.getElementById('lineGemBtn');
+  var d = document.getElementById('lineDeepBtn'), g = document.getElementById('lineGptBtn'), gm = document.getElementById('lineGemBtn'), cl = document.getElementById('lineClBtn');
   if (d) { d.className = 'default-btn' + (line === 'deepseek' ? ' active' : ''); }
   if (g) { g.className = 'custom-btn' + (line === 'gpt' ? ' active' : ''); }
   if (gm) { gm.className = 'custom-btn' + (line === 'gemini' ? ' active' : ''); }
+  if (cl) { cl.className = 'custom-btn' + (line === 'claude' ? ' active' : ''); }
 }
 
 function toggleSettings() {
@@ -796,7 +798,7 @@ function fillPreset(api, model) {
 function getActiveConfig() {
   if (apiMode === 'custom' && customApi && customKey) return { api: customApi, key: customKey, model: customModel };
   var t = TIERS[apiTier] || TIERS[0];
-  return Object.assign({}, t, { model: (_apiLine === 'gpt' ? 'gpt-5.6' : (_apiLine === 'gemini' ? 'gemini-3.5-flash' : 'deepseek-v4-pro')), name: (_apiLine === 'gpt' ? 'GPT-5.6' : (_apiLine === 'gemini' ? 'Gemini' : 'DeepSeek Pro')) });
+  return Object.assign({}, t, { model: (_apiLine === 'gpt' ? 'gpt-5.6' : (_apiLine === 'gemini' ? 'gemini-3.5-flash' : (_apiLine === 'claude' ? 'claude-sonnet-5' : 'deepseek-v4-pro'))), name: (_apiLine === 'gpt' ? 'GPT-5.6' : (_apiLine === 'gemini' ? 'Gemini' : (_apiLine === 'claude' ? 'Claude' : 'DeepSeek Pro'))) });
 }
 // Init restore
 restoreForm();
@@ -852,7 +854,7 @@ async function generateImpression() {
   var _rateLimited = false;
 
   while (!gotContent && (apiMode === 'custom' ? apiTier < 1 : apiTier < TIERS.length)) {
-    var tier = apiMode === 'custom' ? getActiveConfig() : (Object.assign({}, TIERS[apiTier], { model: (_apiLine === 'gpt' ? 'gpt-5.6' : (_apiLine === 'gemini' ? 'gemini-3.5-flash' : 'deepseek-v4-pro')), name: (_apiLine === 'gpt' ? 'GPT-5.6' : (_apiLine === 'gemini' ? 'Gemini' : 'DeepSeek Pro')) }));
+    var tier = apiMode === 'custom' ? getActiveConfig() : (Object.assign({}, TIERS[apiTier], { model: (_apiLine === 'gpt' ? 'gpt-5.6' : (_apiLine === 'gemini' ? 'gemini-3.5-flash' : (_apiLine === 'claude' ? 'claude-sonnet-5' : 'deepseek-v4-pro'))), name: (_apiLine === 'gpt' ? 'GPT-5.6' : (_apiLine === 'gemini' ? 'Gemini' : (_apiLine === 'claude' ? 'Claude' : 'DeepSeek Pro'))) }));
 
     if (apiTier > 0 && finalReply) {
       var switchNote = '\n\n<span style="color:var(--muted);font-size:11px;">&#x26A0;&#xFE0F; 线路 ' + apiTier + ' 中断，切换至 ' + tier.name + '……</span>\n';
@@ -878,7 +880,7 @@ async function generateImpression() {
         _rateLimited = true; break;
       }
 
-      if (!res.ok) { if (_apiLine === 'gpt') { _apiLine = 'deepseek'; showBanner('GPT 线路异常，自动切换 DeepSeek Pro 重试'); continue; } if (_apiLine === 'gemini') { _apiLine = 'deepseek'; showBanner('Gemini 线路异常，自动切换 DeepSeek Pro 重试'); continue; } apiTier++; continue; }
+      if (!res.ok) { if (_apiLine === 'gpt') { _apiLine = 'deepseek'; showBanner('GPT 线路异常，自动切换 DeepSeek Pro 重试'); continue; } if (_apiLine === 'gemini') { _apiLine = 'deepseek'; showBanner('Gemini 线路异常，自动切换 DeepSeek Pro 重试'); continue; } if (_apiLine === 'claude') { _apiLine = 'deepseek'; showBanner('Claude 线路异常，自动切换 DeepSeek Pro 重试'); continue; } apiTier++; continue; }
 
       var reader = res.body.getReader();
       var decoder = new TextDecoder();
@@ -1010,7 +1012,7 @@ async function sendChat() {
   var _rateLimited = false;
 
   while (!gotContent && (apiMode === 'custom' ? apiTier < 1 : apiTier < TIERS.length)) {
-    var tier = apiMode === 'custom' ? getActiveConfig() : (Object.assign({}, TIERS[apiTier], { model: (_apiLine === 'gpt' ? 'gpt-5.6' : (_apiLine === 'gemini' ? 'gemini-3.5-flash' : 'deepseek-v4-pro')), name: (_apiLine === 'gpt' ? 'GPT-5.6' : (_apiLine === 'gemini' ? 'Gemini' : 'DeepSeek Pro')) }));
+    var tier = apiMode === 'custom' ? getActiveConfig() : (Object.assign({}, TIERS[apiTier], { model: (_apiLine === 'gpt' ? 'gpt-5.6' : (_apiLine === 'gemini' ? 'gemini-3.5-flash' : (_apiLine === 'claude' ? 'claude-sonnet-5' : 'deepseek-v4-pro'))), name: (_apiLine === 'gpt' ? 'GPT-5.6' : (_apiLine === 'gemini' ? 'Gemini' : (_apiLine === 'claude' ? 'Claude' : 'DeepSeek Pro'))) }));
 
     if (apiTier > 0 && msgDiv && finalReply) {
       msgDiv.innerHTML = escapeHtml(finalReply).replace(/\n/g,'<br>') + '<div style="color:var(--muted);font-size:11px;margin-top:6px">&#x26A0;&#xFE0F; 切换至 ' + tier.name + '……</div>';
@@ -1035,7 +1037,7 @@ async function sendChat() {
         _rateLimited = true; break;
       }
 
-      if (!res.ok) { if (_apiLine === 'gpt') { _apiLine = 'deepseek'; showBanner('GPT 线路异常，自动切换 DeepSeek Pro 重试'); continue; } if (_apiLine === 'gemini') { _apiLine = 'deepseek'; showBanner('Gemini 线路异常，自动切换 DeepSeek Pro 重试'); continue; } apiTier++; continue; }
+      if (!res.ok) { if (_apiLine === 'gpt') { _apiLine = 'deepseek'; showBanner('GPT 线路异常，自动切换 DeepSeek Pro 重试'); continue; } if (_apiLine === 'gemini') { _apiLine = 'deepseek'; showBanner('Gemini 线路异常，自动切换 DeepSeek Pro 重试'); continue; } if (_apiLine === 'claude') { _apiLine = 'deepseek'; showBanner('Claude 线路异常，自动切换 DeepSeek Pro 重试'); continue; } apiTier++; continue; }
 
       var reader = res.body.getReader();
       var decoder = new TextDecoder();
@@ -1482,10 +1484,11 @@ function showEvalNotice(){ var el=document.getElementById('evalNoticeOverlay'); 
 function closeEvalNotice(){ var el=document.getElementById('evalNoticeOverlay'); if(el) el.style.display='none'; localStorage.setItem('chat_eval_notice_shown','1'); }
 if(!localStorage.getItem('chat_eval_notice_shown')){ setTimeout(showEvalNotice, 900); }
 function refreshLineBtns(){
-  var d=document.getElementById('lineDeepBtn'), g=document.getElementById('lineGptBtn'), gm=document.getElementById('lineGemBtn');
+  var d=document.getElementById('lineDeepBtn'), g=document.getElementById('lineGptBtn'), gm=document.getElementById('lineGemBtn'), cl=document.getElementById('lineClBtn');
   if(d){ d.className = 'default-btn' + (_apiLine==='deepseek'?' active':''); }
   if(g){ g.className = 'custom-btn' + (_apiLine==='gpt'?' active':''); }
   if(gm){ gm.className = 'custom-btn' + (_apiLine==='gemini'?' active':''); }
+  if(cl){ cl.className = 'custom-btn' + (_apiLine==='claude'?' active':''); }
 }
 refreshLineBtns();
 </script>
@@ -1504,6 +1507,7 @@ refreshLineBtns();
         <tr style="background:#faf6f0;"><td>deepseek-v4-pro</td><td>93.8</td><td>93.8</td><td>90.0</td><td>93.8</td><td>95.0</td><td><b>93.1</b></td></tr>
         <tr><td>gpt-5.6-luna(max)</td><td>90.0</td><td>88.0</td><td>90.0</td><td>88.0</td><td>88.0</td><td><b>88.9</b></td></tr>
         <tr style="background:#faf6f0;"><td>gemini-3.5-flash</td><td>93.0</td><td>92.0</td><td>95.0</td><td>93.0</td><td>93.0</td><td><b>93.2</b></td></tr>
+        <tr><td>claude-sonnet-5</td><td>95.0</td><td>96.0</td><td>97.0</td><td>92.0</td><td>94.0</td><td><b>95.1</b></td></tr>
       </tbody>
     </table>
     <p style="margin:8px 0 0;font-size:11px;color:#999;">评分口径：5 个督导案例实测（2026-08-02），单项满分 100 分；综合分按 临床 27.8% / 理论 22.2% / 风格 22.2% / 可操作 16.7% / 材料忠实 11.1% 加权。gpt 为 5.6-luna(max) 思考模式。</p>
