@@ -127,7 +127,6 @@
       toast('✅ 已复用当前对话的思维导图');
       return;
     }
-    lastConvFingerprint = fp;
     var slice = messages.slice(-50); // 成本控制：最近 50 条
     var ac = cfg.getActiveConfig();
     if (!ac || !ac.api) { toast('当前未配置可用 API 线路'); return; }
@@ -173,6 +172,7 @@
         // 确保有 # 标题
         if (content.indexOf('#') !== 0) content = '# 对话思维导图\n' + content;
         lastMd = content;
+        lastConvFingerprint = fp;  // 2026-08-02: 仅成功生成后才更新指纹（失败保持旧指纹避免误复用）
         isGenerating = false;
         if (cfg.buttonEl) refreshButton();
         loadingEl.style.display = 'none';
