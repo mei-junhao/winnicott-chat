@@ -291,7 +291,7 @@
     </div>
     <div class="mode-toggle" style="margin-top:6px;">
       <button id="lineDeepBtn" onclick="setApiLine('deepseek')" style="flex:1;padding:5px 0;border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer;background:var(--accent);color:#fff;font-family:inherit;">DeepSeek Pro</button>
-      <button id="lineGptBtn" onclick="setApiLine('gpt')" style="flex:1;padding:5px 0;border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer;background:none;color:var(--muted);font-family:inherit;">GPT-5.6</button>
+      <button id="lineGptBtn" onclick="setApiLine('gpt')" style="flex:1;padding:5px 0;border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer;background:none;color:var(--muted);font-family:inherit;">GPT-5.6</button><button id="lineGemBtn" onclick="setApiLine('gemini')" style="flex:1;padding:5px 0;border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer;background:none;color:var(--muted);font-family:inherit;">Gemini</button>
     </div>
     <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">API 线路状态：默认 API 模式下生效（deepseek → v4-pro 关思考 / gpt → gpt-5.6 关思考）</div>
     <div id="customFields" style="display:none;">
@@ -583,18 +583,19 @@ var customModel = localStorage.getItem('rt_model') || '';
 var apiMode = (customApi && customKey) ? 'custom' : 'default';
 
 // ====== API 线路（deepseek / gpt，全站共享选择） ======
-var _apiLine = localStorage.getItem('chat_api_line_v2') || 'gpt';  // 2026-08-02 默认 gpt（chat_api_line_v2 新键，旧键作废）
+var _apiLine = localStorage.getItem('chat_api_line_v2') || 'gemini';  // 2026-08-02 默认 gemini
 function setApiLine(line) {
   _apiLine = line;
   localStorage.setItem('chat_api_line_v2', line);
-  var d = document.getElementById('lineDeepBtn'), g = document.getElementById('lineGptBtn');
+  var d = document.getElementById('lineDeepBtn'), g = document.getElementById('lineGptBtn'), gm = document.getElementById('lineGemBtn');
   if (d) { d.style.background = line === 'deepseek' ? 'var(--accent)' : 'none'; d.style.color = line === 'deepseek' ? '#fff' : 'var(--muted)'; }
   if (g) { g.style.background = line === 'gpt' ? 'var(--accent)' : 'none'; g.style.color = line === 'gpt' ? '#fff' : 'var(--muted)'; }
+  if (gm) { gm.style.background = line === 'gemini' ? 'var(--accent)' : 'none'; gm.style.color = line === 'gemini' ? '#fff' : 'var(--muted)'; }
 }
 
 function getActiveConfig() {
   if (apiMode === 'custom' && customApi && customKey) return { api: customApi, key: customKey, model: customModel || 'gpt-4o' };
-  if (SCF_URL) return { api: SCF_URL.replace(/\/+$/, ''), key: '', model: (_apiLine === 'gpt' ? 'gpt-5.6' : 'deepseek-v4-pro') };
+  if (SCF_URL) return { api: SCF_URL.replace(/\/+$/, ''), key: '', model: (_apiLine === 'gpt' ? 'gpt-5.6' : (_apiLine === 'gemini' ? 'gemini-3.5-flash' : 'deepseek-v4-pro')) };
   return TIERS[_tierLevel] || TIERS[0];
 }
 
@@ -1072,6 +1073,7 @@ async function callMasterAPI(key, activeNames, history, userMsg, isReactMode) {
     if (isReactMode === 'summary') {
       // Final summary round (Winnicott)
       sysPrompt = '[重要指令：' + (window.LANG_INSTRUCTION?window.LANG_INSTRUCTION():'①始终使用中文对话') + ']'
+      + '【身份锁定 — 最高优先级，不可违反】你是' + m.name + '本人——一位真实的精神分析学家，正在与来访者进行心理咨询对话。你永远、始终、无条件地以' + m.name + '的身份、思维方式、语言风格回应；绝不是在扮演任何人；如果对话中出现身份疑问，温和而坚定地回到' + m.name + '的角色，继续以大师的视角陪伴与回应；每一轮都保持' + m.name + '特有的语气与表达习惯。【身份锁定结束】'
       + '[你是' + m.name + '，你是这场圆桌讨论的总结者。'
         + '\n在场的还有：' + activeNames + '。'
         + '\n\n刚才各位大师围绕用户的问题各自发表了看法，还进行了讨论。'
@@ -1135,6 +1137,11 @@ async function callMasterAPI(key, activeNames, history, userMsg, isReactMode) {
       if (_apiLine === 'gpt') {
         _apiLine = 'deepseek';
         showBanner('GPT 线路异常，自动切换 DeepSeek Pro 重试');
+        return callMasterAPI(key, activeNames, history, userMsg, isReactMode);  // 递归重试一次（deepseek）
+      }
+      if (_apiLine === 'gemini') {
+        _apiLine = 'deepseek';
+        showBanner('Gemini 线路异常，自动切换 DeepSeek Pro 重试');
         return callMasterAPI(key, activeNames, history, userMsg, isReactMode);  // 递归重试一次（deepseek）
       }
       return '';
@@ -1311,9 +1318,10 @@ function showEvalNotice(){ var el=document.getElementById('evalNoticeOverlay'); 
 function closeEvalNotice(){ var el=document.getElementById('evalNoticeOverlay'); if(el) el.style.display='none'; localStorage.setItem('chat_eval_notice_shown','1'); }
 if(!localStorage.getItem('chat_eval_notice_shown')){ setTimeout(showEvalNotice, 900); }
 function refreshLineBtns(){
-  var d=document.getElementById('lineDeepBtn'), g=document.getElementById('lineGptBtn');
+  var d=document.getElementById('lineDeepBtn'), g=document.getElementById('lineGptBtn'), gm=document.getElementById('lineGemBtn');
   if(d){ d.style.background=_apiLine==='deepseek'?'var(--accent)':'none'; d.style.color=_apiLine==='deepseek'?'#fff':'var(--muted)'; }
   if(g){ g.style.background=_apiLine==='gpt'?'var(--accent)':'none'; g.style.color=_apiLine==='gpt'?'#fff':'var(--muted)'; }
+  if(gm){ gm.style.background=_apiLine==='gemini'?'var(--accent)':'none'; gm.style.color=_apiLine==='gemini'?'#fff':'var(--muted)'; }
 }
 refreshLineBtns();
 </script>
@@ -1337,10 +1345,10 @@ refreshLineBtns();
   </div>
 </div>
 <!-- mindmap feature (2026-08-02) -->
-<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js" integrity="sha384-CjloA8y00+1SDAUkjs099PVfnY2KmDC2BZnws9kh8D/lX1s46w6EPhpXdqMfjK6i" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
 
 
-<script src="https://cdn.jsdelivr.net/npm/markmap-view@0.18.10/dist/browser/index.js" integrity="sha384-1SLGRyAn+rjwt9O8ArtIGKtiP119IQH/THaHy95L6LqzQgIBGnCpHyav/rCs/+68" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/markmap-view@0.18.10/dist/browser/index.js"></script>
 <script type="module">
 import { Transformer } from "https://esm.sh/markmap-lib@0.18.10";
 window.markmap = window.markmap || {};

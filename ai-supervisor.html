@@ -413,6 +413,7 @@
       <div class="line-toggle" style="display:flex;gap:6px;margin:8px 0 2px;">
         <button class="default-btn active" id="lineDeepBtn" onclick="setApiLine('deepseek')">DeepSeek Pro</button>
         <button class="custom-btn" id="lineGptBtn" onclick="setApiLine('gpt')">GPT-5.6</button>
+        <button class="custom-btn" id="lineGemBtn" onclick="setApiLine('gemini')">Gemini</button>
       </div>
       <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">API 线路状态：默认 API 模式下生效，点击切换后端模型（deepseek → v4-pro 关思考 / gpt → gpt-5.6 关思考）</div>
       <div id="customFields" style="display:none;">
@@ -746,13 +747,14 @@ var customApi = localStorage.getItem('sv_api') || '';
 var customKey = localStorage.getItem('sv_key') || '';
 var customModel = localStorage.getItem('sv_model') || '';
 // ====== API 线路（deepseek / gpt，全站共享选择；ai 督导默认 pro） ======
-var _apiLine = localStorage.getItem('chat_api_line_v2') || 'gpt';  // 2026-08-02 默认 gpt（chat_api_line_v2 新键，旧键作废）
+var _apiLine = localStorage.getItem('chat_api_line_v2') || 'gemini';  // 2026-08-02 默认 gemini
 function setApiLine(line) {
   _apiLine = line;
   localStorage.setItem('chat_api_line_v2', line);
-  var d = document.getElementById('lineDeepBtn'), g = document.getElementById('lineGptBtn');
+  var d = document.getElementById('lineDeepBtn'), g = document.getElementById('lineGptBtn'), gm = document.getElementById('lineGemBtn');
   if (d) { d.className = 'default-btn' + (line === 'deepseek' ? ' active' : ''); }
   if (g) { g.className = 'custom-btn' + (line === 'gpt' ? ' active' : ''); }
+  if (gm) { gm.className = 'custom-btn' + (line === 'gemini' ? ' active' : ''); }
 }
 
 function toggleSettings() {
@@ -794,7 +796,7 @@ function fillPreset(api, model) {
 function getActiveConfig() {
   if (apiMode === 'custom' && customApi && customKey) return { api: customApi, key: customKey, model: customModel };
   var t = TIERS[apiTier] || TIERS[0];
-  return Object.assign({}, t, { model: (_apiLine === 'gpt' ? 'gpt-5.6' : 'deepseek-v4-pro'), name: (_apiLine === 'gpt' ? 'GPT-5.6' : 'DeepSeek Pro') });
+  return Object.assign({}, t, { model: (_apiLine === 'gpt' ? 'gpt-5.6' : (_apiLine === 'gemini' ? 'gemini-3.5-flash' : 'deepseek-v4-pro')), name: (_apiLine === 'gpt' ? 'GPT-5.6' : (_apiLine === 'gemini' ? 'Gemini' : 'DeepSeek Pro')) });
 }
 // Init restore
 restoreForm();
@@ -850,7 +852,7 @@ async function generateImpression() {
   var _rateLimited = false;
 
   while (!gotContent && (apiMode === 'custom' ? apiTier < 1 : apiTier < TIERS.length)) {
-    var tier = apiMode === 'custom' ? getActiveConfig() : (Object.assign({}, TIERS[apiTier], { model: (_apiLine === 'gpt' ? 'gpt-5.6' : 'deepseek-v4-pro'), name: (_apiLine === 'gpt' ? 'GPT-5.6' : 'DeepSeek Pro') }));
+    var tier = apiMode === 'custom' ? getActiveConfig() : (Object.assign({}, TIERS[apiTier], { model: (_apiLine === 'gpt' ? 'gpt-5.6' : (_apiLine === 'gemini' ? 'gemini-3.5-flash' : 'deepseek-v4-pro')), name: (_apiLine === 'gpt' ? 'GPT-5.6' : (_apiLine === 'gemini' ? 'Gemini' : 'DeepSeek Pro')) }));
 
     if (apiTier > 0 && finalReply) {
       var switchNote = '\n\n<span style="color:var(--muted);font-size:11px;">&#x26A0;&#xFE0F; 线路 ' + apiTier + ' 中断，切换至 ' + tier.name + '……</span>\n';
@@ -859,7 +861,7 @@ async function generateImpression() {
 
     try {
       var bodyStr = JSON.stringify({ model:tier.model, messages:messages, temperature:0.7, max_tokens:8192, stream:true });
-      var hdrBase = {'Content-Type':'application/json'};
+      var hdrBase = {'Content-Type':'application/json','X-App':'supervisor'};  // 2026-08-02 督导页标记
       if (tier.api.indexOf('xinjingchat.online')>=0) {
       }
       if (tier.key) hdrBase['Authorization']='Bearer '+tier.key;
@@ -876,7 +878,7 @@ async function generateImpression() {
         _rateLimited = true; break;
       }
 
-      if (!res.ok) { if (_apiLine === 'gpt') { _apiLine = 'deepseek'; showBanner('GPT 线路异常，自动切换 DeepSeek Pro 重试'); continue; } apiTier++; continue; }
+      if (!res.ok) { if (_apiLine === 'gpt') { _apiLine = 'deepseek'; showBanner('GPT 线路异常，自动切换 DeepSeek Pro 重试'); continue; } if (_apiLine === 'gemini') { _apiLine = 'deepseek'; showBanner('Gemini 线路异常，自动切换 DeepSeek Pro 重试'); continue; } apiTier++; continue; }
 
       var reader = res.body.getReader();
       var decoder = new TextDecoder();
@@ -1008,7 +1010,7 @@ async function sendChat() {
   var _rateLimited = false;
 
   while (!gotContent && (apiMode === 'custom' ? apiTier < 1 : apiTier < TIERS.length)) {
-    var tier = apiMode === 'custom' ? getActiveConfig() : (Object.assign({}, TIERS[apiTier], { model: (_apiLine === 'gpt' ? 'gpt-5.6' : 'deepseek-v4-pro'), name: (_apiLine === 'gpt' ? 'GPT-5.6' : 'DeepSeek Pro') }));
+    var tier = apiMode === 'custom' ? getActiveConfig() : (Object.assign({}, TIERS[apiTier], { model: (_apiLine === 'gpt' ? 'gpt-5.6' : (_apiLine === 'gemini' ? 'gemini-3.5-flash' : 'deepseek-v4-pro')), name: (_apiLine === 'gpt' ? 'GPT-5.6' : (_apiLine === 'gemini' ? 'Gemini' : 'DeepSeek Pro')) }));
 
     if (apiTier > 0 && msgDiv && finalReply) {
       msgDiv.innerHTML = escapeHtml(finalReply).replace(/\n/g,'<br>') + '<div style="color:var(--muted);font-size:11px;margin-top:6px">&#x26A0;&#xFE0F; 切换至 ' + tier.name + '……</div>';
@@ -1016,7 +1018,7 @@ async function sendChat() {
 
     try {
       var bodyStr2 = JSON.stringify({ model:tier.model, messages:apiMessages, temperature:0.7, max_tokens:(_maxTokens||undefined), stream:true });
-      var hdrBase2 = {'Content-Type':'application/json'};
+      var hdrBase2 = {'Content-Type':'application/json','X-App':'supervisor'};  // 2026-08-02 督导页标记
       if (tier.api.indexOf('xinjingchat.online')>=0) {
       }
       if (tier.key) hdrBase2['Authorization']='Bearer '+tier.key;
@@ -1033,7 +1035,7 @@ async function sendChat() {
         _rateLimited = true; break;
       }
 
-      if (!res.ok) { if (_apiLine === 'gpt') { _apiLine = 'deepseek'; showBanner('GPT 线路异常，自动切换 DeepSeek Pro 重试'); continue; } apiTier++; continue; }
+      if (!res.ok) { if (_apiLine === 'gpt') { _apiLine = 'deepseek'; showBanner('GPT 线路异常，自动切换 DeepSeek Pro 重试'); continue; } if (_apiLine === 'gemini') { _apiLine = 'deepseek'; showBanner('Gemini 线路异常，自动切换 DeepSeek Pro 重试'); continue; } apiTier++; continue; }
 
       var reader = res.body.getReader();
       var decoder = new TextDecoder();
@@ -1480,9 +1482,10 @@ function showEvalNotice(){ var el=document.getElementById('evalNoticeOverlay'); 
 function closeEvalNotice(){ var el=document.getElementById('evalNoticeOverlay'); if(el) el.style.display='none'; localStorage.setItem('chat_eval_notice_shown','1'); }
 if(!localStorage.getItem('chat_eval_notice_shown')){ setTimeout(showEvalNotice, 900); }
 function refreshLineBtns(){
-  var d=document.getElementById('lineDeepBtn'), g=document.getElementById('lineGptBtn');
+  var d=document.getElementById('lineDeepBtn'), g=document.getElementById('lineGptBtn'), gm=document.getElementById('lineGemBtn');
   if(d){ d.className = 'default-btn' + (_apiLine==='deepseek'?' active':''); }
   if(g){ g.className = 'custom-btn' + (_apiLine==='gpt'?' active':''); }
+  if(gm){ gm.className = 'custom-btn' + (_apiLine==='gemini'?' active':''); }
 }
 refreshLineBtns();
 </script>
@@ -1528,10 +1531,10 @@ refreshLineBtns();
     <button onclick="closeReward()" style="margin-top:12px;background:none;border:1px solid var(--border);border-radius:8px;padding:8px 20px;font-size:12px;cursor:pointer;color:var(--muted);font-family:inherit;">收到，关掉</button>
   </div>
 </div><!-- mindmap feature (2026-08-02) -->
-<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js" integrity="sha384-CjloA8y00+1SDAUkjs099PVfnY2KmDC2BZnws9kh8D/lX1s46w6EPhpXdqMfjK6i" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
 
 
-<script src="https://cdn.jsdelivr.net/npm/markmap-view@0.18.10/dist/browser/index.js" integrity="sha384-1SLGRyAn+rjwt9O8ArtIGKtiP119IQH/THaHy95L6LqzQgIBGnCpHyav/rCs/+68" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/markmap-view@0.18.10/dist/browser/index.js"></script>
 <script type="module">
 import { Transformer } from "https://esm.sh/markmap-lib@0.18.10";
 window.markmap = window.markmap || {};

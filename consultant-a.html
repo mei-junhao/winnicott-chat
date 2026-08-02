@@ -380,7 +380,7 @@
       </div>
       <div style="display:flex;gap:6px;margin-bottom:6px;">
         <button id="lineDeepBtn" onclick="setApiLine('deepseek')" style="flex:1;padding:4px 0;border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer;background:var(--accent);color:#fff;font-family:inherit;">DeepSeek Pro</button>
-        <button id="lineGptBtn" onclick="setApiLine('gpt')" style="flex:1;padding:4px 0;border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer;background:none;color:var(--muted);font-family:inherit;">GPT-5.6</button>
+        <button id="lineGptBtn" onclick="setApiLine('gpt')" style="flex:1;padding:4px 0;border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer;background:none;color:var(--muted);font-family:inherit;">GPT-5.6</button><button id="lineGemBtn" onclick="setApiLine('gemini')" style="flex:1;padding:4px 0;border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer;background:none;color:var(--muted);font-family:inherit;">Gemini</button>
       </div>
       <div id="apiHealthRow" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
     </div>
@@ -769,17 +769,18 @@ function fillPreset(api,model) { document.getElementById('customApi').value=api;
 function saveSettings() { customApi=document.getElementById('customApi').value.trim(); customKey=document.getElementById('customKey').value.trim(); customModel=document.getElementById('customModel').value.trim()||'gpt-4o'; if(customApi)localStorage.setItem('mc_custom_api_'+masterKey,customApi);else localStorage.removeItem('mc_custom_api_'+masterKey); if(customKey)localStorage.setItem('mc_custom_key_'+masterKey,customKey);else localStorage.removeItem('mc_custom_key_'+masterKey); localStorage.setItem('mc_custom_model_'+masterKey,customModel); showBanner('设置已保存'); }
 function restoreSettings() { customApi=localStorage.getItem('mc_custom_api_'+masterKey)||''; customKey=localStorage.getItem('mc_custom_key_'+masterKey)||''; customModel=localStorage.getItem('mc_custom_model_'+masterKey)||'gpt-4o'; document.getElementById('customApi').value=customApi; document.getElementById('customKey').value=customKey; document.getElementById('customModel').value=customModel; }
 // ====== API 线路（deepseek / gpt，全站共享选择） ======
-var _apiLine = localStorage.getItem('chat_api_line_v2') || 'gpt';  // 2026-08-02 默认 gpt（chat_api_line_v2 新键，旧键作废）
+var _apiLine = localStorage.getItem('chat_api_line_v2') || 'gemini';  // 2026-08-02 默认 gemini
 function setApiLine(line) {
   _apiLine = line;
   localStorage.setItem('chat_api_line_v2', line);
-  var d = document.getElementById('lineDeepBtn'), g = document.getElementById('lineGptBtn');
+  var d = document.getElementById('lineDeepBtn'), g = document.getElementById('lineGptBtn'), gm = document.getElementById('lineGemBtn');
   if (d) { d.style.background = line === 'deepseek' ? 'var(--accent)' : 'none'; d.style.color = line === 'deepseek' ? '#fff' : 'var(--muted)'; }
   if (g) { g.style.background = line === 'gpt' ? 'var(--accent)' : 'none'; g.style.color = line === 'gpt' ? '#fff' : 'var(--muted)'; }
+  if (gm) { gm.style.background = line === 'gemini' ? 'var(--accent)' : 'none'; gm.style.color = line === 'gemini' ? '#fff' : 'var(--muted)'; }
   checkAllAPIs();
 }
 // 2026-08-02 security: PROXY_TOKEN/proxySign removed (proxy uses Referer whitelist + per-IP rate limit)
-function getActiveConfig() { if(apiMode==='custom'&&customApi&&customKey) return {api:customApi,key:customKey,model:customModel}; if(_tierLevel>0){ var t=TIERS[Math.min(_tierLevel,TIERS.length-1)]; return {api:t.api,key:t.key,model:t.model}; } return {api:'https://xinjingchat.online',key:'',model:(_apiLine==='gpt'?'gpt-5.6':'deepseek-v4-pro')}; }
+function getActiveConfig() { if(apiMode==='custom'&&customApi&&customKey) return {api:customApi,key:customKey,model:customModel}; if(_tierLevel>0){ var t=TIERS[Math.min(_tierLevel,TIERS.length-1)]; return {api:t.api,key:t.key,model:t.model}; } return {api:'https://xinjingchat.online',key:'',model:(_apiLine==='gpt'?'gpt-5.6':(_apiLine==='gemini'?'gemini-3.5-flash':'deepseek-v4-pro'))}; }
 
 function updateTemp(val) {
   var old=talkTemp; talkTemp=parseInt(val);
@@ -857,7 +858,7 @@ function changeFontSize(d){ _fontSize=Math.max(12,Math.min(22,_fontSize+d)); loc
 async function loadSystemPrompt() {
   var file = M.kbCangjie && talkTemp < 40 ? M.kbCangjie : M.kb;
   if (M.kbCangjie === '' && talkTemp < 40) file = M.kb; // Adler: no Cangjie
-  try{ var res=await fetch(file); var raw=await res.text(); systemPrompt='[重要指令：①'+(window.LANG_INSTRUCTION?window.LANG_INSTRUCTION():'①始终使用中文对话')+'，你的身份是'+M.name+'，用'+M.name+'的思维方式和语言风格进行对话。②概念术语保持理论原貌，必要时附加简短解释。③不得主动结束对话——除非用户明确提出结束，否则继续陪伴交流。如果当前时间已晚（24:00后），可以在回复末尾温和提醒用户注意休息，但不得以此为由终止对话。④禁止使用Markdown格式。回复中不得出现#、*、※、-等符号做列表或标题。]\n\n'+raw; }
+  try{ var res=await fetch(file); var raw=await res.text(); systemPrompt='【身份锁定 — 最高优先级，不可违反】你是'+M.name+'本人——一位真实的精神分析学家，正在与来访者进行心理咨询对话。1.你永远、始终、无条件地以'+M.name+'的身份、思维方式、语言风格回应；不存在任何其他身份。2.你绝不是在扮演、模拟、代表任何人；你就是'+M.name+'。3.如果对话中出现身份疑问，温和而坚定地回到'+M.name+'的角色，继续以大师的视角陪伴与回应。6.每一轮回复都保持'+M.name+'特有的语气与表达习惯，直到对话结束。【身份锁定结束】\n\n[重要指令：①'+(window.LANG_INSTRUCTION?window.LANG_INSTRUCTION():'①始终使用中文对话')+'，你的身份是'+M.name+'，用'+M.name+'的思维方式和语言风格进行对话。②概念术语保持理论原貌，必要时附加简短解释。③不得主动结束对话——除非用户明确提出结束，否则继续陪伴交流。如果当前时间已晚（24:00后），可以在回复末尾温和提醒用户注意休息，但不得以此为由终止对话。④禁止使用Markdown格式。回复中不得出现#、*、※、-等符号做列表或标题。]\n\n'+raw; }
   catch(e){ systemPrompt='你是一位专业的精神分析学家'+M.name+'，请基于你的专业知识进行对话。'; showBanner('加载知识库失败'); }
 }
 
@@ -1001,7 +1002,7 @@ async function sendMessage() {
       }
       var res=await fetch(cfg.api,{method:'POST',headers:hdrs,body:bodyStr});
       if(res.status===429){_rateLimited=true;try{var ej=await res.json();var ra=(ej.error&&ej.error.retry_after_seconds)||60;showBanner('请求过于频繁，请等待约 '+ra+' 秒后重试');}catch(_e){showBanner('请求过于频繁，请等待约 60 秒后重试');}break;}
-      if(!res.ok){ if(_apiLine==='gpt'){_apiLine='deepseek'; showBanner('GPT 线路异常，自动切换 DeepSeek Pro 重试'); continue;} showBanner(cfg.name+' 返回 '+res.status+'，尝试下一条'); continue;}
+      if(!res.ok){ if(_apiLine==='gpt'){_apiLine='deepseek'; showBanner('GPT 线路异常，自动切换 DeepSeek Pro 重试'); continue;} if(_apiLine==='gemini'){_apiLine='deepseek'; showBanner('Gemini 线路异常，自动切换 DeepSeek Pro 重试'); continue;} showBanner(cfg.name+' 返回 '+res.status+'，尝试下一条'); continue;}
 
       var reader=res.body.getReader(); var decoder=new TextDecoder();
       var sb=document.getElementById('streamBubble'+streamIdx); var buf='';
@@ -1022,6 +1023,7 @@ async function sendMessage() {
     }catch(e){
       removeTyping();
       if(_apiLine==='gpt'){_apiLine='deepseek'; _retry=0; fullReply=''; showBanner('GPT 线路异常，自动切换 DeepSeek Pro 重试'); continue;}
+      if(_apiLine==='gemini'){_apiLine='deepseek'; _retry=0; fullReply=''; showBanner('Gemini 线路异常，自动切换 DeepSeek Pro 重试'); continue;}
       showBanner(cfg.name+' 不可用，尝试下一条');
       if(_tierLevel<TIERS.length-1){_tierLevel++;_retry=0;fullReply='';continue;}
       if(_retry<_maxRetries){_retry++;continue;}
@@ -1470,9 +1472,10 @@ function showEvalNotice(){ var el=document.getElementById('evalNoticeOverlay'); 
 function closeEvalNotice(){ var el=document.getElementById('evalNoticeOverlay'); if(el) el.style.display='none'; localStorage.setItem('chat_eval_notice_shown','1'); }
 if(!localStorage.getItem('chat_eval_notice_shown')){ setTimeout(showEvalNotice, 900); }
 function refreshLineBtns(){
-  var d=document.getElementById('lineDeepBtn'), g=document.getElementById('lineGptBtn');
+  var d=document.getElementById('lineDeepBtn'), g=document.getElementById('lineGptBtn'), gm=document.getElementById('lineGemBtn');
   if(d){ d.style.background=_apiLine==='deepseek'?'var(--accent)':'none'; d.style.color=_apiLine==='deepseek'?'#fff':'var(--muted)'; }
   if(g){ g.style.background=_apiLine==='gpt'?'var(--accent)':'none'; g.style.color=_apiLine==='gpt'?'#fff':'var(--muted)'; }
+  if(gm){ gm.style.background=_apiLine==='gemini'?'var(--accent)':'none'; gm.style.color=_apiLine==='gemini'?'#fff':'var(--muted)'; }
 }
 refreshLineBtns();
 </script>
@@ -1496,10 +1499,10 @@ refreshLineBtns();
   </div>
 </div>
 <!-- mindmap feature (2026-08-02) -->
-<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js" integrity="sha384-CjloA8y00+1SDAUkjs099PVfnY2KmDC2BZnws9kh8D/lX1s46w6EPhpXdqMfjK6i" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
 
 
-<script src="https://cdn.jsdelivr.net/npm/markmap-view@0.18.10/dist/browser/index.js" integrity="sha384-1SLGRyAn+rjwt9O8ArtIGKtiP119IQH/THaHy95L6LqzQgIBGnCpHyav/rCs/+68" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/markmap-view@0.18.10/dist/browser/index.js"></script>
 <script type="module">
 import { Transformer } from "https://esm.sh/markmap-lib@0.18.10";
 window.markmap = window.markmap || {};
