@@ -341,7 +341,7 @@
   <div class="input-area">
     <div class="input-row">
       <textarea id="inputEl" placeholder="输入你的问题…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg()}" rows="1"></textarea>
-      <button class="send-btn" id="sendBtn" onclick="sendMsg()">发送</button>
+      <button class="send-btn" id="sendBtn" onclick="sendMsg()">发送</button><button id="mmBtn" title="对话至少需要 10 条消息" disabled style="flex-shrink:0;margin-left:6px;padding:6px 10px;border-radius:9px;border:1px solid var(--border);background:var(--card);color:var(--muted);font-size:12px;cursor:pointer;font-family:inherit;">🧠 思维导图</button>
     </div>
   </div>
 </div>
@@ -1329,6 +1329,25 @@ refreshLineBtns();
     <button onclick="closeEvalNotice()" style="margin-top:14px;width:100%;padding:9px;border:none;border-radius:9px;background:#8a6f5d;color:#fff;font-size:13px;cursor:pointer;font-family:inherit;">知道了</button>
   </div>
 </div>
+<!-- mindmap feature (2026-08-02) -->
+<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js" integrity="sha384-CjloA8y00+1SDAUkjs099PVfnY2KmDC2BZnws9kh8D/lX1s46w6EPhpXdqMfjK6i" crossorigin="anonymous"></script>
 
+
+<script src="https://cdn.jsdelivr.net/npm/markmap-view@0.18.10/dist/browser/index.js" integrity="sha384-1SLGRyAn+rjwt9O8ArtIGKtiP119IQH/THaHy95L6LqzQgIBGnCpHyav/rCs/+68" crossorigin="anonymous"></script>
+<script type="module">
+import { Transformer } from "https://esm.sh/markmap-lib@0.18.10";
+window.markmap = window.markmap || {};
+window.markmap.Transformer = Transformer;
+</script>
+<script src="mindmap.js"></script>
+<script>
+MindmapFeature.init({
+  pageKey: 'roundtable',
+  getConversation: function () { return conversation || []; },
+  getActiveConfig: getActiveConfig,
+  minMessages: 10,
+  buttonEl: document.getElementById('mmBtn')
+});
+</script>
 </body>
 </html>
