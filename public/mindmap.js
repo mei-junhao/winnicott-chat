@@ -15,7 +15,7 @@
  *   </script>
  *
  * 依赖（CDN，页面需引入）：
- *   d3 + markmap-view（渲染）；html2canvas（PNG 导出，项目已有）
+ *   d3 + markmap-view（渲染）；PNG 导出走 SVG 序列化 → canvas（无需 html2canvas）
  * ============================================================ */
 (function () {
   'use strict';
