@@ -1024,7 +1024,7 @@ async function sendMessage() {
     }catch(e){
       removeTyping();
       if(_apiLine==='gpt'){_apiLine='deepseek'; _retry=0; fullReply=''; showBanner('GPT 线路异常，自动切换 DeepSeek Pro 重试'); continue;}
-      if(_apiLine==='gemini'){_apiLine='deepseek'; _retry=0; fullReply=''; showBanner('Gemini 线路异常，自动切换 DeepSeek Pro 重试'); continue;} if(_apiLine==='claude'){_apiLine='deepseek'; showBanner('Claude 线路异常，自动切换 DeepSeek Pro 重试'); continue;}
+      if(_apiLine==='gemini'){_apiLine='deepseek'; _retry=0; fullReply=''; showBanner('Gemini 线路异常，自动切换 DeepSeek Pro 重试'); continue;} if(_apiLine==='claude'){_apiLine='deepseek'; _retry=0; fullReply=''; showBanner('Claude 线路异常，自动切换 DeepSeek Pro 重试'); continue;}
       showBanner(cfg.name+' 不可用，尝试下一条');
       if(_tierLevel<TIERS.length-1){_tierLevel++;_retry=0;fullReply='';continue;}
       if(_retry<_maxRetries){_retry++;continue;}
@@ -1473,7 +1473,7 @@ function showEvalNotice(){ var el=document.getElementById('evalNoticeOverlay'); 
 function closeEvalNotice(){ var el=document.getElementById('evalNoticeOverlay'); if(el) el.style.display='none'; localStorage.setItem('chat_eval_notice_shown','1'); }
 if(!localStorage.getItem('chat_eval_notice_shown')){ setTimeout(showEvalNotice, 900); }
 function refreshLineBtns(){
-  var d=document.getElementById('lineDeepBtn'), g=document.getElementById('lineGptBtn'), gm=document.getElementById('lineGemBtn');
+  var d=document.getElementById('lineDeepBtn'), g=document.getElementById('lineGptBtn'), gm=document.getElementById('lineGemBtn'), cl=document.getElementById('lineClBtn');
   if(d){ d.style.background=_apiLine==='deepseek'?'var(--accent)':'none'; d.style.color=_apiLine==='deepseek'?'#fff':'var(--muted)'; }
   if(g){ g.style.background=_apiLine==='gpt'?'var(--accent)':'none'; g.style.color=_apiLine==='gpt'?'#fff':'var(--muted)'; }
   if(gm){ gm.style.background=_apiLine==='gemini'?'var(--accent)':'none'; gm.style.color=_apiLine==='gemini'?'#fff':'var(--muted)'; }

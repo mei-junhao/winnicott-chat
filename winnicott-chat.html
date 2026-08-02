@@ -2305,7 +2305,7 @@ function showEvalNotice(){ var el=document.getElementById('evalNoticeOverlay'); 
 function closeEvalNotice(){ var el=document.getElementById('evalNoticeOverlay'); if(el) el.style.display='none'; }
 setTimeout(showEvalNotice, 900);  // 2026-08-02: 每次进入都弹（移除一次性限制）
 function refreshLineBtns(){
-  var d=document.getElementById('lineDeepBtn'), g=document.getElementById('lineGptBtn'), gm=document.getElementById('lineGemBtn');
+  var d=document.getElementById('lineDeepBtn'), g=document.getElementById('lineGptBtn'), gm=document.getElementById('lineGemBtn'), cl=document.getElementById('lineClBtn');
   if(d){ d.style.background=_apiLine==='deepseek'?'var(--accent)':'none'; d.style.color=_apiLine==='deepseek'?'#fff':'var(--muted)'; }
   if(g){ g.style.background=_apiLine==='gpt'?'var(--accent)':'none'; g.style.color=_apiLine==='gpt'?'#fff':'var(--muted)'; }
   if(gm){ gm.style.background=_apiLine==='gemini'?'var(--accent)':'none'; gm.style.color=_apiLine==='gemini'?'#fff':'var(--muted)'; }
