@@ -70,6 +70,8 @@
     idx_m_adler_desc: { zh: '个体心理学 · 自卑与超越 · 勇气 · 社会兴趣 · 目的论', en: 'Individual psychology · Inferiority and superiority · Courage · Social interest · Teleology', pt: 'Psicologia individual · Inferioridade e superação · Coragem · Interesse social · Teleologia' },
     idx_m_sj_name: { zh: '苏珊·约翰逊', en: 'Susan Johnson', pt: 'Susan Johnson' },
     idx_m_sj_desc: { zh: 'EFT创始人 · 情感聚焦 · 依恋联结 · 爱的修复', en: 'Founder of EFT · Emotion-focused · Attachment bonds · Repairing love', pt: 'Fundadora da EFT · Focada nas emoções · Vínculos de apego · Reparação do amor' },
+    idx_m_horney_name: { zh: '卡伦·霍妮', en: 'Karen Horney', pt: 'Karen Horney' },
+    idx_m_horney_desc: { zh: '文化精神分析 · 基本焦虑 · 人际防御 · 理想化自我 · 真实成长', en: 'Cultural psychoanalysis · Basic anxiety · Interpersonal defenses · Idealized self · Authentic growth', pt: 'Psicanálise cultural · Ansiedade básica · Defesas interpessoais · Self idealizado · Crescimento autêntico' },
 
     idx_suggest_prompt: { zh: '你还想与哪位大师对话？写下名字发送给我们', en: 'Which master would you like to talk with next? Write a name and send it to us', pt: 'Com que mestre gostaria de conversar a seguir? Escreva um nome e envie-nos' },
     idx_suggest_ph: { zh: '输入大师姓名', en: 'Enter a master’s name', pt: 'Digite o nome de um mestre' },

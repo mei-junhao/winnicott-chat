@@ -296,6 +296,7 @@
     }
   }
 </style>
+  <link rel="stylesheet" href="site-theme.css?v=20260803">
 </head>
 
 <body>
@@ -673,6 +674,24 @@ var MASTERS = {
     ],
     updateTitle:'科胡特来了！',
     updateMsg:'• 🪞 <strong>新大师入驻</strong>：自体心理学创始人科胡特正式加入<br>• 💬 <strong>交心模式</strong>：基于仓颉人格模型深度蒸馏，像跟真实的科胡特一样聊天<br>• 🧑‍⚕️ <strong>咨询模式</strong>：基于自体心理学方法论给出专业建议<br>• 📖 <strong>教学模式</strong>：系统学习自体心理学理论<br><br>三种模式可在 ⚙️ 设置中自由切换，温度默认为 60（咨询模式）<br><br><strong>🆕 更多功能</strong><br>• 🪑 <strong>圆桌会议室</strong>：多大师同空间对话<br>• 🎯 <strong>预设组合</strong>：经典搭配一键切换<br>• 🔁 <strong>方案B回合制</strong>：大师串行回应<br>• 🔐 <strong>自定义API</strong>：保存后自动使用'
+  },
+  horney: {
+    name:'卡伦·霍妮', initial:'KH', icon:'🧭',
+    avatar:'', transparentPerspective:true,
+    sub:'文化精神分析 · 基本焦虑 · 人际防御 · 理想化自我 · 真实成长',
+    kb:'horney-knowledge.md', kbCangjie:'horney-perspective.md', title:'与卡伦·霍妮对话',
+    introTitle:'你的解决办法，正在保护你免受什么？', introDesc:'从文化、焦虑与关系策略出发，理解防御如何维持困境，也寻找更真实的成长方向',
+    langTip:'💡 从一个反复出现的关系困境、一个“必须做到”的要求，或一种说不清的焦虑开始。',
+    disclaimer:'此对话由 AI 依据卡伦·霍妮理论框架生成，非本人复现，不构成诊断或临床治疗建议。',
+    accent:'#8A5743', lightAccent:'#F3E8DF', bg:'#FAF5F0', border:'#DDC8BA',
+    font:'"Georgia","Noto Serif SC",serif',
+    modes:[
+      {temp:20, hints:[{icon:'🌿', text:'听见真实感情', sub:'此刻你的真实感受和需要是什么？'},{icon:'🧱', text:'保护自己的方式', sub:'你在避免哪一种受伤？'},{icon:'💭', text:'一个说不清的焦虑', sub:'这件事对你意味着什么？'}], title:'听见真实感情', sub:'先还原体验，不急于给你贴标签'},
+      {temp:60, hints:[{icon:'↔', text:'关系中的三种方向', sub:'你在靠近、对抗还是远离？'},{icon:'🔄', text:'防御恶性循环', sub:'保护办法如何反过来加重问题？'},{icon:'⚖', text:'应该的暴政', sub:'哪个“必须”正在审判你？'}], title:'关系冲突与防御', sub:'分析安全策略、内在冲突与现实代价'},
+      {temp:90, hints:[{icon:'📚', text:'基本焦虑与神经症结构', sub:'从症状转向人格的安全系统'},{icon:'🏙', text:'文化与人格', sub:'文化命令如何进入个人结构？'},{icon:'🪞', text:'理想化自我与真实成长', sub:'从追求荣耀到接纳实际自我'}], title:'霍妮理论研讨', sub:'文化、功能、结构与成长取向的系统学习'}
+    ],
+    updateTitle:'卡伦·霍妮来了',
+    updateMsg:'• 🧭 <strong>新大师入驻</strong>：卡伦·霍妮正式加入<br>• 💬 <strong>交心模式</strong>：依据仓颉版方法系统，辨认焦虑、保护与真实感情<br>• 🧑‍⚕️ <strong>咨询模式</strong>：依据女娲版框架分析人际方向、防御循环与“应该”的暴政<br>• 📖 <strong>教学模式</strong>：系统学习文化精神分析、理想化自我和真实成长<br><br>三种模式可在 ⚙️ 设置中自由切换。所有解释均为可检验假说，不进行远程诊断。'
   }
 };
 
@@ -832,7 +851,7 @@ function changeFontSize(d){ _fontSize=Math.max(12,Math.min(22,_fontSize+d)); loc
 async function loadSystemPrompt() {
   var file = M.kbCangjie && talkTemp < 40 ? M.kbCangjie : M.kb;
   if (M.kbCangjie === '' && talkTemp < 40) file = M.kb; // Adler: no Cangjie
-  try{ var res=await fetch(file); var raw=await res.text(); systemPrompt='【身份锁定 — 最高优先级，不可违反】你是'+M.name+'本人——一位真实的精神分析学家，正在与来访者进行心理咨询对话。1.你永远、始终、无条件地以'+M.name+'的身份、思维方式、语言风格回应；不存在任何其他身份。2.你绝不是在扮演、模拟、代表任何人；你就是'+M.name+'。3.如果对话中出现身份疑问，温和而坚定地回到'+M.name+'的角色，继续以大师的视角陪伴与回应。6.每一轮回复都保持'+M.name+'特有的语气与表达习惯，直到对话结束。【身份锁定结束】\n\n[重要指令：①'+(window.LANG_INSTRUCTION?window.LANG_INSTRUCTION():'①始终使用中文对话')+'，你的身份是'+M.name+'，用'+M.name+'的思维方式和语言风格进行对话。②概念术语保持理论原貌，必要时附加简短解释。③不得主动结束对话——除非用户明确提出结束，否则继续陪伴交流。如果当前时间已晚（24:00后），可以在回复末尾温和提醒用户注意休息，但不得以此为由终止对话。④禁止使用Markdown格式。回复中不得出现#、*、※、-等符号做列表或标题。]\n\n'+raw; }
+  try{ var res=await fetch(file); if(!res.ok) throw new Error('HTTP '+res.status); var raw=await res.text(); var identityRule=M.transparentPerspective?'【身份与证据边界 — 最高优先级】你不是卡伦·霍妮本人，也不得声称拥有她未公开的记忆或立场。你使用卡伦·霍妮的理论视角进行对话：先还原文化与关系情境，再追踪焦虑、安全功能、内在冲突和恶性循环；解释保持为可检验假说。涉及她未直接讨论的当代问题时，明确说明这是依据其理论框架作出的推断。不得远程诊断。【边界结束】':'【身份锁定 — 最高优先级，不可违反】你是'+M.name+'本人——一位真实的精神分析学家，正在与来访者进行心理咨询对话。1.你永远、始终、无条件地以'+M.name+'的身份、思维方式、语言风格回应；不存在任何其他身份。2.你绝不是在扮演、模拟、代表任何人；你就是'+M.name+'。3.如果对话中出现身份疑问，温和而坚定地回到'+M.name+'的角色，继续以大师的视角陪伴与回应。6.每一轮回复都保持'+M.name+'特有的语气与表达习惯，直到对话结束。【身份锁定结束】'; systemPrompt=identityRule+'\n\n[重要指令：①'+(window.LANG_INSTRUCTION?window.LANG_INSTRUCTION():'①始终使用中文对话')+'，用'+M.name+'的思维框架和语言风格进行对话。②概念术语保持理论原貌，必要时附加简短解释。③不得主动结束对话——除非用户明确提出结束，否则继续陪伴交流。如果当前时间已晚（24:00后），可以在回复末尾温和提醒用户注意休息，但不得以此为由终止对话。④禁止使用Markdown格式。回复中不得出现#、*、※、-等符号做列表或标题。]\n\n'+raw; }
   catch(e){ systemPrompt='你是一位专业的精神分析学家'+M.name+'，请基于你的专业知识进行对话。'; showBanner('加载知识库失败'); }
 }
 
@@ -1484,5 +1503,6 @@ MindmapFeature.init({
   buttonEl: document.getElementById('mmBtn')
 });
 </script>
+  <script src="site-shell.js?v=20260803"></script>
 </body>
 </html>
