@@ -3,6 +3,8 @@
 <head>
   <script src="proxy.js"></script>
   <script src="i18n.js?v=5"></script>
+  <script src="safety.js?v=20260803"></script>
+  <script src="storage.js?v=20260803"></script>
 
   <script>
   /* ===== 对话页界面三语化（由 i18n.js 在每次切语言时调用） ===== */
@@ -45,7 +47,7 @@
 <link rel="icon" href="data:,">
 
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AI 临床督导</title>
 <style>
   :root {
@@ -464,8 +466,9 @@ P（来访者）：是的，我一直在想上周你说的话……"></textarea>
         </select>
       </div>
       <button class="btn-aux" onclick="showHistory()">📂 历史</button>
-      <button class="btn-aux" onclick="saveToHistory()">💾 保存到历史</button>
-      <button class="btn-aux danger" onclick="clearAll()">清空</button>
+      <button class="btn-aux" onclick="saveToHistory()">💾 主动保存</button>
+      <button class="btn-aux danger" onclick="clearAll()">清空当前材料</button>
+      <button class="btn-aux danger" onclick="deleteAllSupervisorData()">删除全部督导数据</button>
       <button class="btn-aux" onclick="exportConversation()">📥 导出对话</button>
       <button class="btn-aux" onclick="emailConversation()">📧 发送到邮箱</button>
       <button class="btn-aux" onclick="toggleSettings()" id="settingsBtn">⚙️ API 设置</button>
@@ -478,13 +481,13 @@ P（来访者）：是的，我一直在想上周你说的话……"></textarea>
     <div class="chat-area" id="chatArea">
       <div class="chat-messages" id="chatMessages"></div>
       <div class="chat-input-wrap">
-        <textarea id="chatInput" rows="1" placeholder="就整体印象中的内容继续讨论……" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat()}"></textarea>
+        <textarea id="chatInput" rows="1" placeholder="就整体印象中的内容继续讨论……" onkeydown="if(!event.isComposing&&event.keyCode!==229&&event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat()}"></textarea>
         <button id="chatSendBtn" onclick="sendChat()">发送</button><button id="mmBtn" title="对话至少需要 10 条消息" disabled style="flex-shrink:0;margin-left:6px;padding:6px 10px;border-radius:9px;border:1px solid var(--border);background:var(--card);color:var(--muted);font-size:12px;cursor:pointer;font-family:inherit;">🧠 导图</button>
       </div>
     </div>
 
     <div class="disclaimer">
-      &#x26A0;&#xFE0F; 此 AI 督导为辅助工具，不能替代真人督导。如涉及危机情境，请立即寻求专业支持。
+      &#x26A0;&#xFE0F; 此 AI 督导为辅助工具，不能替代真人督导。材料会发送到当前所选 AI 服务处理；系统默认不自动保存临床材料，只有点击“主动保存”才会写入此浏览器。提交前请删除姓名、电话、地址、单位、病历号等可识别信息。如涉及危机情境，请立即寻求现场专业支持。
     </div>
 
     <!-- History overlay -->
@@ -539,6 +542,16 @@ function updateLength(val) {
 }
 
 // ==================== FILE HANDLING ====================
+function setFileInfo(file, textLength, isStyleDoc) {
+  var fi = document.getElementById('fileInfo');
+  fi.style.display = 'block';
+  var base = (isStyleDoc ? '已加载督导风格：' : '已选择：') + file.name + ' (' + Math.round(file.size / 1024) + ' KB)';
+  if (isStyleDoc) base += ' · 已应用至 AI 行为';
+  else if (textLength > 10000) base += ' · 文字过多（' + textLength + ' 字），可能降低回答质量，请精简并甄别输出';
+  else if (textLength > 4000) base += ' · 共 ' + textLength + ' 字，建议控制在 4000 字以内';
+  fi.textContent = base;
+  fi.style.color = (!isStyleDoc && textLength > 4000) ? 'var(--danger)' : 'var(--muted)';
+}
 function handleFile(e) {
   // Auto-open upload zone when file chosen
   document.getElementById('uploadZone').classList.add('open');
@@ -546,6 +559,11 @@ function handleFile(e) {
 
   var file = e.target.files[0];
   if (!file) return;
+  if (file.size > 2 * 1024 * 1024) {
+    alert('文件不能超过 2MB，请先精简并脱敏后再上传');
+    e.target.value = '';
+    return;
+  }
   var ext = file.name.split('.').pop().toLowerCase();
   if (['txt','md','docx'].indexOf(ext) === -1) {
     alert('仅支持 .txt / .md / .docx 文件');
@@ -569,19 +587,11 @@ function handleFile(e) {
       // 督导风格文档：更新 SYSTEM_PROMPT + 存入 textarea 作为参考
       setSupervisionStyle(text);
       document.getElementById('materialText').value = text;
-      fi.style.display = 'block';
-      fi.innerHTML = '已加载督导风格: <strong>' + file.name + '</strong> (' + Math.round(file.size/1024) + ' KB) <span style="color:var(--accent);">&#x2705; 已应用至 AI 行为</span>';
+      setFileInfo(file, text.length, true);
     } else {
       // 普通临床材料
       document.getElementById('materialText').value = text;
-      fi.style.display = 'block';
-      if (text.length > 10000) {
-        fi.innerHTML = '已选择: ' + file.name + ' (' + Math.round(file.size/1024) + ' KB) <span style="color:var(--danger);">&#x26A0;&#xFE0F; 文字过多（' + text.length + ' 字），可能导致回答质量大幅下降，甚至可能会出现虚构案例内容的情况，请注意甄别</span>';
-      } else if (text.length > 4000) {
-        fi.innerHTML = '已选择: ' + file.name + ' (' + Math.round(file.size/1024) + ' KB) <span style="color:var(--danger);">&#x26A0;&#xFE0F; 文件共 ' + text.length + ' 字，建议控制在 4000 字以内以确保分析质量</span>';
-      } else {
-        fi.textContent = '已选择: ' + file.name + ' (' + Math.round(file.size/1024) + ' KB)';
-      }
+      setFileInfo(file, text.length, false);
     }
   };
 
@@ -607,17 +617,10 @@ function readDocx(file, isStyleDoc) {
         if (isStyleDoc) {
           setSupervisionStyle(text);
           document.getElementById('materialText').value = text;
-          fi.style.display = 'block';
-          fi.innerHTML = '已加载督导风格: <strong>' + file.name + '</strong> (' + Math.round(file.size/1024) + ' KB) <span style="color:var(--accent);">&#x2705; 已应用至 AI 行为</span>';
+          setFileInfo(file, text.length, true);
         } else {
           document.getElementById('materialText').value = text;
-          if (text.length > 10000) {
-            fi.innerHTML = '已选择: ' + file.name + ' (' + Math.round(file.size/1024) + ' KB) <span style="color:var(--danger);">&#x26A0;&#xFE0F; 文字过多（' + text.length + ' 字），可能导致回答质量大幅下降，甚至可能会出现虚构案例内容的情况，请注意甄别</span>';
-          } else if (text.length > 4000) {
-            fi.innerHTML = '已选择: ' + file.name + ' (' + Math.round(file.size/1024) + ' KB) <span style="color:var(--danger);">&#x26A0;&#xFE0F; 文件共 ' + text.length + ' 字，建议控制在 4000 字以内以确保分析质量</span>';
-          } else {
-            fi.textContent = '已选择: ' + file.name + ' (' + Math.round(file.size/1024) + ' KB)';
-          }
+          setFileInfo(file, text.length, false);
         }
       }).catch(function() {
         document.getElementById('materialText').value = '[无法解析 .docx 文件，请尝试粘贴文本]';
@@ -641,6 +644,15 @@ function clearAll() {
   document.getElementById('uploadToggleBtn').innerHTML = '&plus; 上传文件';
   _currentHistoryId = null;
   sessionStorage.removeItem('supervisor_current_id');
+}
+
+function detectIdentifiers(text) {
+  var found = [];
+  if (/(?:1[3-9]\d{9})/.test(text)) found.push('手机号码');
+  if (/(?:\d{17}[\dXx])/.test(text)) found.push('身份证号码');
+  if (/(?:病历号|住院号|门诊号|身份证|手机号|联系电话|家庭住址|工作单位)\s*[:：]?\s*\S{3,}/.test(text)) found.push('身份字段');
+  if (/(?:[\w.+-]+@[\w.-]+\.[A-Za-z]{2,})/.test(text)) found.push('邮箱');
+  return found;
 }
 
 document.getElementById('materialText').addEventListener('input', function() {
@@ -743,10 +755,10 @@ var apiTier = 0;
 var isLoading = false;
 var chatMessages = [];
 var _currentHistoryId = null;
-var apiMode = (customApi && customKey) ? 'custom' : 'default';  // 有自有API则默认使用
 var customApi = localStorage.getItem('sv_api') || '';
 var customKey = localStorage.getItem('sv_key') || '';
 var customModel = localStorage.getItem('sv_model') || '';
+var apiMode = (customApi && customKey) ? 'custom' : 'default';  // 有自有API则默认使用
 // ====== API 线路（deepseek / gpt，全站共享选择；ai 督导默认 pro） ======
 var _apiLine = localStorage.getItem('chat_api_line_v2') || 'gemini';  // 2026-08-02 默认 gemini
 function setApiLine(line) {
@@ -813,6 +825,17 @@ async function generateImpression() {
   if (/^\[(无法解析|文件读取失败)/.test(text)) {
     alert('文件解析失败，请直接将文本粘贴到材料框后再生成整体印象'); return;
   }
+  if (window.ChatSafety && window.ChatSafety.guard(text, {
+    container: document.getElementById('outputBox'),
+    className: 'chat-msg ai safety-response',
+    onBlocked: function() { document.getElementById('outputBox').style.display = 'block'; }
+  })) return;
+  var identifiers = detectIdentifiers(text);
+  if (identifiers.length > 0) {
+    alert('材料中可能包含可识别信息（' + identifiers.join('、') + '）。请先脱敏后再提交；系统没有上传本次材料。');
+    return;
+  }
+  if (!confirm('材料将发送到当前所选 AI 服务处理，系统不会自动保存。请确认材料已脱敏，并已获得适当授权。是否继续？')) return;
 
   isGenerating = true;
   var btn = document.getElementById('analyzeBtn');
@@ -968,6 +991,11 @@ async function sendChat() {
   var input = document.getElementById('chatInput');
   var text = input.value.trim();
   if (!text || isLoading) return;
+  if (window.ChatSafety && window.ChatSafety.guard(text, {
+    container: document.getElementById('chatMessages'),
+    className: 'chat-msg ai safety-response',
+    onBlocked: function() { input.value = ''; }
+  })) return;
 
   autoCollapseImpression();
 
@@ -1110,7 +1138,7 @@ async function sendChat() {
 }
 
 function exportConversation() {
-  var impressionText = (document.getElementById('outputBox').textContent || '').trim();
+  var impressionText = getImpressionText();
   var hasImpression = impressionText && impressionText.indexOf('阅读材料中') === -1;
   var chatMsgs = chatMessages.filter(function(m){return m.role==='user'||m.role==='assistant';});
   if (!hasImpression && chatMsgs.length === 0) { alert('暂无对话可导出'); return; }
@@ -1173,7 +1201,7 @@ function exportConversation() {
   URL.revokeObjectURL(url);
 }
 function emailConversation() {
-  var impressionText = (document.getElementById('outputBox').textContent || '').trim();
+  var impressionText = getImpressionText();
   var hasImpression = impressionText && impressionText.indexOf('阅读材料中') === -1;
   var chatMsgs = chatMessages.filter(function(m){return m.role==='user'||m.role==='assistant';});
   if (!hasImpression && chatMsgs.length === 0) { alert('暂无对话可发送'); return; }
@@ -1303,8 +1331,38 @@ function autoCollapseImpression() {
 }
 
 // ==================== SAVE TO HISTORY ====================
+function sanitizeChatMessages(messages) {
+  return (Array.isArray(messages) ? messages : []).filter(function(m) {
+    return m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string';
+  }).map(function(m) { return { role: m.role, content: m.content }; });
+}
+function supervisorStorageNotice(message) { showBanner(message); }
+function readSupervisorHistory() {
+  return window.ChatStorage.read('supervisor_history_v2', {
+    kind: 'supervisorHistory',
+    legacyKeys: ['supervisor_history'],
+    onError: supervisorStorageNotice,
+    onMigrated: function() { showBanner('旧版督导历史已迁移为纯文本结构'); }
+  });
+}
+function writeSupervisorHistory(history) {
+  return window.ChatStorage.write('supervisor_history_v2', history, { onError: supervisorStorageNotice });
+}
+function renderStoredImpression(outputBox, text) {
+  outputBox.innerHTML = '';
+  var header = document.createElement('div'); header.className = 'ob-header';
+  var title = document.createElement('h3'); title.textContent = '整体印象';
+  var button = document.createElement('button'); button.id = 'impressionToggle'; button.className = 'toggle-btn'; button.textContent = '收起 ▲'; button.onclick = toggleImpression;
+  header.appendChild(title); header.appendChild(button);
+  var body = document.createElement('div'); body.className = 'impression-body'; body.style.whiteSpace = 'pre-wrap'; body.textContent = String(text || '');
+  outputBox.appendChild(header); outputBox.appendChild(body);
+}
+function getImpressionText() {
+  var body = document.getElementById('outputBox').querySelector('.impression-body');
+  return body ? (body.textContent || '').trim() : '';
+}
 function saveToHistory() {
-  var impressionText = (document.getElementById('outputBox').textContent || '').trim();
+  var impressionText = getImpressionText();
   if (!impressionText || impressionText.indexOf('阅读材料中') !== -1) {
     alert('请先生成整体印象后再保存');
     return;
@@ -1316,7 +1374,8 @@ function saveToHistory() {
   }
 
   var title = material.replace(/\s+/g, ' ').substring(0, 30);
-  var history = JSON.parse(localStorage.getItem('supervisor_history') || '[]');
+  if (!confirm('将把已脱敏的临床材料、整体印象和后续对话保存到当前浏览器。共享设备上的其他使用者可能看到这些内容。是否继续保存？')) return;
+  var history = readSupervisorHistory();
 
   // Always create a new entry for manual save
   var newId = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
@@ -1324,59 +1383,27 @@ function saveToHistory() {
     id: newId,
     time: new Date().toISOString(),
     title: title,
+    schemaVersion: 2,
     material: material,
-    impression: document.getElementById('outputBox').innerHTML,
-    chatMessages: chatMessages.slice()
+    impressionText: impressionText,
+    chatMessages: sanitizeChatMessages(chatMessages)
   });
   if (history.length > 50) history = history.slice(-50);
-  localStorage.setItem('supervisor_history', JSON.stringify(history));
+  if (!writeSupervisorHistory(history)) return;
 
   _currentHistoryId = newId;
   sessionStorage.setItem('supervisor_current_id', newId);
   alert('已保存到历史（共 ' + history.length + ' 条记录）');
 }
 
-// ==================== AUTO SAVE & HISTORY ====================
-function autoSave() {
-  var impressionText = (document.getElementById('outputBox').textContent || '').trim();
-  if (!impressionText || impressionText.indexOf('阅读材料中') !== -1) return;
-  var material = document.getElementById('materialText').value.trim();
-  if (!material) return;
-
-  var title = material.replace(/\s+/g, ' ').substring(0, 30);
-  var history = JSON.parse(localStorage.getItem('supervisor_history') || '[]');
-
-  if (_currentHistoryId) {
-    for (var i = 0; i < history.length; i++) {
-      if (history[i].id === _currentHistoryId) {
-        history[i].time = new Date().toISOString();
-        history[i].title = title;
-        history[i].material = material;
-        history[i].impression = document.getElementById('outputBox').innerHTML;
-        history[i].chatMessages = chatMessages.slice();
-        break;
-      }
-    }
-  } else {
-    _currentHistoryId = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-    sessionStorage.setItem('supervisor_current_id', _currentHistoryId);
-    history.push({
-      id: _currentHistoryId,
-      time: new Date().toISOString(),
-      title: title,
-      material: material,
-      impression: document.getElementById('outputBox').innerHTML,
-      chatMessages: chatMessages.slice()
-    });
-  }
-  if (history.length > 50) history = history.slice(-50);
-  localStorage.setItem('supervisor_history', JSON.stringify(history));
-}
+// ==================== MANUAL SAVE & HISTORY ====================
+// 安全策略：临床材料默认不自动落盘。保留空函数兼容旧调用点，避免生成流程异常。
+function autoSave() { return false; }
 
 function showHistory() {
   var overlay = document.getElementById('historyOverlay');
   var list = document.getElementById('historyList');
-  var history = JSON.parse(localStorage.getItem('supervisor_history') || '[]');
+  var history = readSupervisorHistory();
   history.reverse();
   if (history.length === 0) {
     list.innerHTML = '<div class="history-empty"><div class="he-icon">&#x1F4ED;</div>暂无历史记录</div>';
@@ -1402,20 +1429,21 @@ function showHistory() {
 }
 
 function loadHistory(id) {
-  var history = JSON.parse(localStorage.getItem('supervisor_history') || '[]');
+  var history = readSupervisorHistory();
   var record = null;
   for (var i = 0; i < history.length; i++) {
     if (history[i].id === id) { record = history[i]; break; }
   }
   if (!record) return;
 
-  document.getElementById('materialText').value = record.material;
-  document.getElementById('charCount').textContent = record.material.length + ' 字';
-  document.getElementById('charCount').style.color = record.material.length > 4000 ? 'var(--danger)' : 'var(--muted)';
+  var storedMaterial = typeof record.material === 'string' ? record.material : '';
+  document.getElementById('materialText').value = storedMaterial;
+  document.getElementById('charCount').textContent = storedMaterial.length + ' 字';
+  document.getElementById('charCount').style.color = storedMaterial.length > 4000 ? 'var(--danger)' : 'var(--muted)';
 
   var outputBox = document.getElementById('outputBox');
   outputBox.style.display = 'block';
-  outputBox.innerHTML = record.impression;
+  renderStoredImpression(outputBox, record.impressionText || '旧格式记录未迁移：为避免执行历史 HTML，请重新生成整体印象。');
   outputBox.classList.remove('collapsed');
   var btn = document.getElementById('impressionToggle');
   if (btn) btn.textContent = '收起 \u25B2';
@@ -1441,10 +1469,10 @@ function loadHistory(id) {
 }
 
 function deleteHistory(id) {
-  if (!confirm('确定删除这条历史记录？')) return;
-  var history = JSON.parse(localStorage.getItem('supervisor_history') || '[]');
+  if (!confirm('确定删除这条历史记录？删除后无法恢复。')) return;
+  var history = readSupervisorHistory();
   history = history.filter(function(h){ return h.id !== id; });
-  localStorage.setItem('supervisor_history', JSON.stringify(history));
+  if (!writeSupervisorHistory(history)) return;
   if (_currentHistoryId === id) {
     _currentHistoryId = null;
     sessionStorage.removeItem('supervisor_current_id');
@@ -1452,6 +1480,20 @@ function deleteHistory(id) {
   showHistory();
 }
 
+function deleteAllSupervisorData() {
+  if (!confirm('确定删除此浏览器中的全部 AI 督导历史、当前材料和自定义 API 设置？删除后无法恢复。')) return;
+  localStorage.removeItem('supervisor_history_v2');
+  localStorage.removeItem('supervisor_history');
+  localStorage.removeItem('sv_api');
+  localStorage.removeItem('sv_key');
+  localStorage.removeItem('sv_model');
+  sessionStorage.removeItem('supervisor_current_id');
+  _currentHistoryId = null;
+  customApi = ''; customKey = ''; customModel = ''; apiMode = 'default';
+  clearAll();
+  restoreForm();
+  alert('全部 AI 督导本地数据已删除');
+}
 function closeHistory() {
   document.getElementById('historyOverlay').classList.remove('show');
 }

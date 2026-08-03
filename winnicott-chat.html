@@ -3,6 +3,8 @@
 <head>
   <!-- proxy.js 仅本地开发，线上无需加载 -->
   <script src="i18n.js?v=5"></script>
+  <script src="safety.js?v=20260803"></script>
+  <script src="storage.js?v=20260803"></script>
 
   <script>
   /* ===== 对话页界面三语化（由 i18n.js 在每次切语言时调用） ===== */
@@ -1192,10 +1194,6 @@ if (_urlTemp && !isNaN(_urlTemp)) {
 }
 // Dark mode restore
 if (localStorage.getItem('winnicott_dark') === '1') { document.body.classList.add('dark'); document.getElementById('darkBtn').textContent = '☀️ 浅色'; }
-function saveConversation() {
-  if (conversation.length > 0) localStorage.setItem('winnicott_conversation', JSON.stringify(conversation));
-  else localStorage.removeItem('winnicott_conversation');
-}
 function toggleDark() {
   document.body.classList.toggle('dark');
   var isDark = document.body.classList.contains('dark');
@@ -1680,14 +1678,21 @@ function removeTyping() { var el = document.getElementById('typing'); if (el) el
 function scrollToBottom() { messagesEl.scrollTop = messagesEl.scrollHeight; }
 
 // Auto-save conversation
+function storageNotice(message) { showBanner('error', message); }
 function saveConversation() {
-  var toSave = conversation.slice(-100); // keep last 100 messages
-  try { localStorage.setItem('winnicott_conv', JSON.stringify(toSave)); } catch(e) {}
+  var toSave = window.ChatStorage.normalizeChatMessages(conversation).slice(-100);
+  var ok = window.ChatStorage.write('winnicott_conv', toSave, { onError: storageNotice });
+  if (ok) localStorage.removeItem('winnicott_conversation');
+  return ok;
 }
 function restoreConversation() {
-  var saved;
-  try { saved = JSON.parse(localStorage.getItem('winnicott_conv')); } catch(e) {}
-  if (saved && saved.length) {
+  var saved = window.ChatStorage.read('winnicott_conv', {
+    kind: 'chatMessages',
+    legacyKeys: ['winnicott_conversation'],
+    onError: storageNotice,
+    onMigrated: function() { showBanner('info', '旧版对话已安全迁移'); }
+  });
+  if (saved.length) {
     conversation = saved;
     messagesEl.innerHTML = '';
     for (var i = 0; i < conversation.length; i++) {
@@ -1707,7 +1712,7 @@ function newChat() {
   });
 }
 function escapeHtml(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>'); }
-function handleKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }
+function handleKey(e) { if (e.isComposing || e.keyCode === 229) return; if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }
 
 async function sendMessage() {
   // Save any unsaved settings changes
@@ -1718,6 +1723,14 @@ async function sendMessage() {
 
   var text = inputEl.value.trim();
   if (!text || isLoading) return;
+  if (window.ChatSafety && window.ChatSafety.guard(text, {
+    container: messagesEl,
+    className: 'msg ai safety-response',
+    render: function(el, message) {
+      var bubble = document.createElement('div'); bubble.className = 'bubble'; bubble.style.whiteSpace = 'pre-wrap'; bubble.textContent = message; el.appendChild(bubble);
+    },
+    onBlocked: function() { inputEl.value = ''; inputEl.style.height = 'auto'; }
+  })) return;
   if (!systemPrompt) { showBanner('info', '知识库加载中，请稍等……'); loadSystemPrompt(); setTimeout(function(){showBanner('info', '请重试发送消息');},3000); return; }
 
   var cfg = getActiveConfig();
@@ -1730,7 +1743,6 @@ async function sendMessage() {
   inputEl.value = ''; inputEl.style.height = 'auto';
   appendMessage('user', text);
   conversation.push({ role: 'user', content: text });
-  saveConversation();
   saveConversation();
 
   // Reward trigger: 15 user messages, once per session
@@ -1833,7 +1845,7 @@ async function sendMessage() {
         var ej2; try { ej2 = await res.json(); } catch(e) { ej2 = {}; }
         var ra = (ej2.error && ej2.error.retry_after_seconds) || 60;
         showBanner('info', '请求过于频繁，请等待约 ' + ra + ' 秒后重试');
-        conversation.pop(); _fatalError = true; _retry = _maxRetries + 1; break;
+        /* 保留本轮用户消息；线路降级不得修改 canonical conversation */ _fatalError = true; _retry = _maxRetries + 1; break;
       }
 
       if (!res.ok || !res.body) {
@@ -1849,7 +1861,7 @@ async function sendMessage() {
           showBanner('info', window.T('banner-retry'));
           if (_tierLevel < TIERS.length - 1 && apiMode !== 'custom') {
             _tierLevel++;
-            conversation.pop();
+            /* 保留本轮用户消息；线路降级不得修改 canonical conversation */
             await new Promise(r => setTimeout(r, 1000));
             _retry = 0; _maxRetries = TIERS.length - _tierLevel;
             cfg = getActiveConfig();
@@ -1885,14 +1897,14 @@ async function sendMessage() {
           showBanner('info', window.T('banner-retry'));
           if (_tierLevel < TIERS.length - 1 && apiMode !== 'custom') {
             _tierLevel++;
-            conversation.pop();
+            /* 保留本轮用户消息；线路降级不得修改 canonical conversation */
             await new Promise(r => setTimeout(r, 2000));
             _retry = 0; _maxRetries = TIERS.length - _tierLevel;
             cfg = getActiveConfig();
             continue;
           }
         }
-        conversation.pop(); _fatalError = true; _retry = _maxRetries + 1; break;
+        /* 保留本轮用户消息；线路降级不得修改 canonical conversation */ _fatalError = true; _retry = _maxRetries + 1; break;
       }
 
       // --- SSE streaming ---
@@ -1910,7 +1922,7 @@ async function sendMessage() {
       while (true) {
         var done = false;
         var chunk;
-        try { var result = await reader.read(); done = result.done; chunk = result.value; } catch(e) { break; }
+        try { var result = await reader.read(); done = result.done; chunk = result.value; } catch(e) { throw new Error('STREAM_INTERRUPTED'); }
         if (done) break;
         buffer += decoder.decode(chunk, { stream: true });
         var lines = buffer.split('\n');
@@ -1967,18 +1979,18 @@ async function sendMessage() {
         continue;
       }
       showBanner('info', '没事儿，API 没钱了，正在充，还不行发邮件 985729106@qq.com 问问');
-      conversation.pop(); _fatalError = true;
+      /* 保留本轮用户消息；线路降级不得修改 canonical conversation */ _fatalError = true;
       _retry = _maxRetries + 1; break;
     }
   }
 
   if (!fullReply && !_fatalError) {
     showBanner('info', '没事儿，API 没钱了，正在充，还不行发邮件 985729106@qq.com 问问');
-    div.remove(); conversation.pop();
+    div.remove(); /* 保留本轮用户消息；线路降级不得修改 canonical conversation */
     isLoading = false; sendBtn.disabled = false; return;
   }
   if (!fullReply) {
-    div.remove(); if (!_fatalError) conversation.pop();
+    div.remove(); // 保留本轮用户消息，用户可直接重试
     isLoading = false; sendBtn.disabled = false; return;
   }
 
@@ -2192,17 +2204,20 @@ function getHistoryTitle(msgs) {
   }
   return '未命名对话';
 }
+function readWinnicottHistory() {
+  return window.ChatStorage.read('winnicott_history', { kind: 'chatHistory', onError: storageNotice });
+}
 function saveToHistory() {
   if (conversation.length === 0) { showBanner('error', '暂无对话可保存'); return; }
   try {
-    var history = [];
-    try { history = JSON.parse(localStorage.getItem('winnicott_history')) || []; } catch(e) {}
+    var history = readWinnicottHistory();
     var entry = {
       id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
       title: getHistoryTitle(conversation),
       time: new Date().toISOString(),
       msgCount: conversation.length,
-      messages: conversation
+      schemaVersion: 2,
+      messages: window.ChatStorage.normalizeChatMessages(conversation)
     };
     // avoid duplicates — same title within 5 min
     var recent = history[0];
@@ -2213,15 +2228,13 @@ function saveToHistory() {
     }
     // keep max 50
     if (history.length > 50) history = history.slice(0, 50);
-    localStorage.setItem('winnicott_history', JSON.stringify(history));
-    showBanner('info', '已保存到历史');
-  } catch(e) { /* 保存历史失败（如 localStorage 配额满）不阻断对话 */ }
+    if (window.ChatStorage.write('winnicott_history', history, { onError: storageNotice })) showBanner('info', '已保存到历史');
+  } catch(e) { storageNotice('保存历史失败，请先导出或清理旧历史。'); }
 }
 function renderHistoryList() {
   var list = document.getElementById('historyList');
   var empty = document.getElementById('historyEmpty');
-  var history = [];
-  try { history = JSON.parse(localStorage.getItem('winnicott_history')) || []; } catch(e) {}
+  var history = readWinnicottHistory();
   list.innerHTML = '';
   if (history.length === 0) {
     empty.style.display = 'block';
@@ -2248,8 +2261,7 @@ function loadFromHistory(id) {
     var shouldSave = confirm('当前对话未保存，是否保存后再加载历史？');
     if (shouldSave) saveToHistory();
   }
-  var history = [];
-  try { history = JSON.parse(localStorage.getItem('winnicott_history')) || []; } catch(e) {}
+  var history = readWinnicottHistory();
   for (var i = 0; i < history.length; i++) {
     if (history[i].id === id) {
       conversation = history[i].messages;
@@ -2269,12 +2281,11 @@ function loadFromHistory(id) {
 }
 function deleteFromHistory(id) {
   if (!confirm('确定删除此对话历史？')) return;
-  var history = [];
-  try { history = JSON.parse(localStorage.getItem('winnicott_history')) || []; } catch(e) {}
+  var history = readWinnicottHistory();
   for (var i = 0; i < history.length; i++) {
     if (history[i].id === id) { history.splice(i, 1); break; }
   }
-  localStorage.setItem('winnicott_history', JSON.stringify(history));
+  if (!window.ChatStorage.write('winnicott_history', history, { onError: storageNotice })) return;
   renderHistoryList();
   showBanner('info', '已删除历史记录');
 }

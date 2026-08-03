@@ -3,6 +3,8 @@
 <head>
   <!-- proxy.js 仅本地开发，线上无需加载 -->
   <script src="i18n.js?v=5"></script>
+  <script src="safety.js?v=20260803"></script>
+  <script src="storage.js?v=20260803"></script>
 
   <script>
   /* ===== 对话页界面三语化（由 i18n.js 在每次切语言时调用） ===== */
@@ -340,7 +342,7 @@
   <!-- Input area -->
   <div class="input-area">
     <div class="input-row">
-      <textarea id="inputEl" placeholder="输入你的问题…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg()}" rows="1"></textarea>
+      <textarea id="inputEl" placeholder="输入你的问题…" onkeydown="if(!event.isComposing&&event.keyCode!==229&&event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg()}" rows="1"></textarea>
       <button class="send-btn" id="sendBtn" onclick="sendMsg()">发送</button><button id="mmBtn" title="对话至少需要 10 条消息" disabled style="flex-shrink:0;margin-left:6px;padding:6px 10px;border-radius:9px;border:1px solid var(--border);background:var(--card);color:var(--muted);font-size:12px;cursor:pointer;font-family:inherit;">🧠 导图</button>
     </div>
   </div>
@@ -853,6 +855,12 @@ async function sendMsg() {
   var input = document.getElementById('inputEl');
   var text = input.value.trim();
   if (!text || isLoading) return;
+  if (window.ChatSafety && window.ChatSafety.guard(text, {
+    container: document.getElementById('chatArea'),
+    className: 'msg system safety-response',
+    render: function(el, message) { var body = document.createElement('div'); body.className = 'msg-text'; body.style.whiteSpace = 'pre-wrap'; body.textContent = message; el.appendChild(body); },
+    onBlocked: function() { input.value = ''; input.style.height = 'auto'; }
+  })) return;
 
   // Parse @mentions
   var mentioned = parseAtMentions(text);
@@ -882,11 +890,13 @@ async function sendMsg() {
     }, 200);
   }
 
-  // Determine which masters respond
+  // Determine which masters respond. Mention-only mode never falls back to all.
+  var activeMentioned = mentioned.filter(function(k) { return activeMasters.indexOf(k) !== -1; });
   var responders = [];
-  if (respondMode === 'mention' && mentioned.length > 0) {
-    // Only mention-targeted masters
-    responders = mentioned.filter(function(k) { return activeMasters.indexOf(k) !== -1; });
+  if (respondMode === 'mention') {
+    if (mentioned.length === 0) { showBanner('当前为“仅@回应”，请先输入 @大师名'); return; }
+    if (activeMentioned.length === 0) { showBanner('被@的大师尚未加入圆桌'); return; }
+    responders = activeMentioned.slice();
   } else {
     // All auto-respond masters
     responders = activeMasters.filter(function(k) { return autoRespond[k]; });
@@ -905,6 +915,7 @@ async function sendMsg() {
   isLoading = true;
   document.getElementById('sendBtn').disabled = true;
 
+  try {
   // Show typing indicators
   responders.forEach(function(key) {
     var m = MASTERS[key];
@@ -919,11 +930,11 @@ async function sendMsg() {
   document.getElementById('chatArea').scrollTop = document.getElementById('chatArea').scrollHeight;
 
   // Build conversation history
-  var convHistory = conversation.map(function(msg) {
+  var convHistory = conversation.slice(0, -1).map(function(msg) {
     var caller = getCallName(); var prefix = msg.name === 'user' ? caller : MASTERS[msg.name] ? MASTERS[msg.name].name : msg.name;
-    return { role: msg.name === 'user' ? 'user' : 'assistant', content: '[' + prefix + '] ' + msg.text };
+    return { role: msg.name === 'user' ? 'user' : 'assistant', content: '[' + prefix + '] ' + msg.text, speakerId: msg.name };
   });
-  var userMsg = { role: 'user', content: '用户：' + text };
+  var userMsg = { role: 'user', content: '用户：' + text, speakerId: 'user' };
   var activeNames = activeMasters.map(function(k) { return MASTERS[k].name; }).join('、');
 
   // Round 1: parallel API calls for all responders
@@ -958,35 +969,30 @@ async function sendMsg() {
   }
 
   // ====== Round 2+ : Plan B - Sequential reactions ======
-  var isMention = mentioned.length > 0;
+  // The special hand-off flow is only valid for exactly one active @ target.
+  // Multiple @ targets keep their independent first-round replies and do not collapse to mentioned[0].
+  var isSingleMention = activeMentioned.length === 1;
 
   // Build the base history including Round 0 results
   var convHistory2 = conversation.map(function(msg) {
     var caller = getCallName(); var prefix = msg.name === 'user' ? caller : MASTERS[msg.name] ? MASTERS[msg.name].name : msg.name;
-    return { role: msg.name === 'user' ? 'user' : 'assistant', content: '[' + prefix + '] ' + msg.text };
+    return { role: msg.name === 'user' ? 'user' : 'assistant', content: '[' + prefix + '] ' + msg.text, speakerId: msg.name };
   });
 
-  if (respondRounds > 1 && repliedKeys.length >= 2) {
-    addSystemMsg(isMention ? '大师们正在回应……' : '大师之间正在交流…');
+  if (respondRounds > 1 && repliedKeys.length >= 2 && activeMentioned.length <= 1) {
+    addSystemMsg(isSingleMention ? '大师们正在回应……' : '大师之间正在交流…');
 
-    if (isMention && mentioned.length > 0) {
-      // === @mention flow ===
-      // Round 1: Others respond to the @-ed master in parallel
-      var targetKey = mentioned[0];  // the @-ed master
+    if (isSingleMention) {
+      // === single @mention flow ===
+      // Round 1: Others respond to the single active @ target in parallel
+      var targetKey = activeMentioned[0];
       var others = repliedKeys.filter(function(k) { return k !== targetKey; });
       if (others.length > 0) {
         var mentionPromises = others.map(function(key) {
           // Only see: user + the @-ed master's Round 0
           var filtered = convHistory2.filter(function(msg) {
-            var selfPrefix = MASTERS[key].name + '：';
-            var targetPrefix = MASTERS[targetKey].name + '：';
-            var raw = msg.content || '';
-            // Don't see own, DO see the @-ed master
-            if (raw.indexOf(selfPrefix) === 0) return false;
-            // See only user and the target master
-            if (raw.indexOf(targetPrefix) === 0) return true;
-            if (msg.role === 'user') return true;
-            return false;
+            if (msg.speakerId === key) return false;
+            return msg.speakerId === 'user' || msg.speakerId === targetKey;
           });
           return callMasterAPI(key, activeNames, filtered, null, true);
         });
@@ -1002,7 +1008,7 @@ async function sendMsg() {
       // Round 2: @-ed master does summary
       var finalHistory = conversation.map(function(msg) {
         var caller = getCallName(); var prefix = msg.name === 'user' ? caller : MASTERS[msg.name] ? MASTERS[msg.name].name : msg.name;
-        return { role: msg.name === 'user' ? 'user' : 'assistant', content: '[' + prefix + '] ' + msg.text };
+        return { role: msg.name === 'user' ? 'user' : 'assistant', content: '[' + prefix + '] ' + msg.text, speakerId: msg.name };
       });
       var finalReply = await callMasterAPI(targetKey, activeNames, finalHistory, null, true);
       if (finalReply) {
@@ -1021,13 +1027,11 @@ async function sendMsg() {
         // Build current history: exclude all messages from this master
         var currentHistory = conversation.map(function(msg) {
           var caller = getCallName(); var prefix = msg.name === 'user' ? caller : MASTERS[msg.name] ? MASTERS[msg.name].name : msg.name;
-          return { role: msg.name === 'user' ? 'user' : 'assistant', content: '[' + prefix + '] ' + msg.text };
+          return { role: msg.name === 'user' ? 'user' : 'assistant', content: '[' + prefix + '] ' + msg.text, speakerId: msg.name };
         });
-        // Filter out this master's own messages
+        // Filter out this master's own messages by structured speaker id
         var filtered = currentHistory.filter(function(msg) {
-          var selfPrefix = MASTERS[sKey].name + '：';
-          var raw = msg.content || '';
-          return raw.indexOf(selfPrefix) !== 0;
+          return msg.speakerId !== sKey;
         });
 
         // Add a typing indicator for this master
@@ -1056,9 +1060,15 @@ async function sendMsg() {
     }
   }
 
-  isLoading = false;
-  document.getElementById('sendBtn').disabled = false;
-  input.focus();
+  } catch (e) {
+    console.error('圆桌对话失败:', e);
+    showBanner(e && e.name === 'AbortError' ? '请求超时，请稍后重试' : '圆桌对话中断，已保留完成的回答');
+  } finally {
+    document.querySelectorAll('.typing').forEach(function(el) { el.remove(); });
+    isLoading = false;
+    document.getElementById('sendBtn').disabled = false;
+    input.focus();
+  }
 }
 
 // ====== Call API for a single master ======
@@ -1114,8 +1124,13 @@ async function callMasterAPI(key, activeNames, history, userMsg, isReactMode) {
     }
 
     var msgs = [{ role: 'system', content: sysPrompt }];
-    history.forEach(function(h) { msgs.push(h); });
-    if (userMsg) msgs.push(userMsg);
+    history.forEach(function(h) {
+      if (!h || typeof h.content !== 'string') return;
+      msgs.push({ role: h.role === 'assistant' ? 'assistant' : 'user', content: h.content });
+    });
+    if (userMsg && typeof userMsg.content === 'string') {
+      msgs.push({ role: 'user', content: userMsg.content });
+    }
 
     var cfg = getActiveConfig();
     var hdrs = { 'Content-Type': 'application/json' };
@@ -1123,11 +1138,19 @@ async function callMasterAPI(key, activeNames, history, userMsg, isReactMode) {
     var bodyStr = JSON.stringify({ model: cfg.model, messages: msgs, temperature: isReactMode ? 0.6 : 0.7, max_tokens: isReactMode === 'summary' ? 600 : (isReactMode ? 400 : 512), stream: false });
     if (cfg.api.indexOf('xinjingchat.online') >= 0) {
     }
-    var apiRes = await fetch(cfg.api, {
-      method: 'POST',
-      headers: hdrs,
-      body: bodyStr
-    });
+    var controller = new AbortController();
+    var timeoutId = setTimeout(function() { controller.abort(); }, 60000);
+    var apiRes;
+    try {
+      apiRes = await fetch(cfg.api, {
+        method: 'POST',
+        headers: hdrs,
+        body: bodyStr,
+        signal: controller.signal
+      });
+    } finally {
+      clearTimeout(timeoutId);
+    }
     if (apiRes.status === 429) {
       var ej2; try { ej2 = await apiRes.json(); } catch(e) { ej2 = {}; }
       var ra = (ej2.error && ej2.error.retry_after_seconds) || 60;
@@ -1157,6 +1180,7 @@ async function callMasterAPI(key, activeNames, history, userMsg, isReactMode) {
     if (reply === ' ' || reply === '') return '';  // nothing to say
     return reply;
   } catch(e) {
+    if (e && e.name === 'AbortError') throw e;
     return '';
   }
 }
@@ -1226,10 +1250,12 @@ function showBanner(text) {
 
 // ====== History ======
 var HISTORY_KEY = 'rt_history';
+function roundStorageNotice(message) { showBanner(message); }
+function readRoundHistory() { return window.ChatStorage.read(HISTORY_KEY, { kind:'roundHistory', onError:roundStorageNotice }); }
 
 function saveHistory() {
   if (conversation.length === 0) { showBanner('没有对话内容可保存'); return; }
-  var h = []; try { h = JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; } catch(e) {}
+  var h = readRoundHistory();
   var title = '圆桌·' + new Date().toLocaleString('zh-CN', {month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
   var firstMsg = '';
   for (var i = 0; i < conversation.length; i++) {
@@ -1241,17 +1267,17 @@ function saveHistory() {
     title: title,
     time: Date.now(),
     msgCount: conversation.length,
+    schemaVersion: 2,
     masters: activeMasters.slice(),
-    messages: JSON.parse(JSON.stringify(conversation))
+    messages: window.ChatStorage.normalizeRoundMessages(conversation)
   };
   h.unshift(entry);
   if (h.length > 30) h = h.slice(0, 30);
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(h));
-  showBanner('对话已保存');
+  if (window.ChatStorage.write(HISTORY_KEY, h, { onError:roundStorageNotice })) showBanner('对话已保存');
 }
 
 function showHistory() {
-  var h = []; try { h = JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; } catch(e) {}
+  var h = readRoundHistory();
   var list = document.getElementById('historyList');
   if (h.length === 0) {
     list.innerHTML = '<div class="history-empty">暂无保存的对话</div>';
@@ -1274,14 +1300,14 @@ function showHistory() {
 }
 
 function loadHistory(id) {
-  var h = []; try { h = JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; } catch(e) {}
+  var h = readRoundHistory();
   var entry = null;
   for (var i = 0; i < h.length; i++) { if (h[i].id === id) { entry = h[i]; break; } }
   if (!entry) { showBanner('未找到历史记录'); return; }
   // Restore masters
   if (entry.masters) { activeMasters = entry.masters; renderAvatarBar(); }
-  // Restore conversation
-  conversation = JSON.parse(JSON.stringify(entry.messages));
+  // Restore normalized plain-text conversation only.
+  conversation = window.ChatStorage.normalizeRoundMessages(entry.messages);
   // Clear chat area
   var area = document.getElementById('chatArea');
   area.innerHTML = '';
@@ -1298,9 +1324,9 @@ function loadHistory(id) {
 }
 
 function deleteHistory(id) {
-  var h = []; try { h = JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; } catch(e) {}
+  var h = readRoundHistory();
   h = h.filter(function(e) { return e.id !== id; });
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(h));
+  if (!window.ChatStorage.write(HISTORY_KEY, h, { onError:roundStorageNotice })) return;
   showHistory();
 }
 
