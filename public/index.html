@@ -156,6 +156,7 @@
   }
 </style>
 
+  <link rel="stylesheet" href="site-theme.css?v=20260803">
 </head>
 <body>
 <div class="app">
@@ -274,6 +275,15 @@
     <span class="arrow">前往 →</span>
   </div>
 
+  <div class="card" onclick="openModeOverlay('horney')" data-master="horney">
+    <div class="circle" style="background:#F3E8DF;color:#8A5743;">KH</div>
+    <div class="info">
+      <div class="name" data-i18n="idx_m_horney_name">卡伦·霍妮</div>
+      <div class="desc" data-i18n="idx_m_horney_desc">文化精神分析 · 基本焦虑 · 人际防御 · 理想化自我 · 真实成长</div>
+    </div>
+    <span class="arrow" data-i18n="idx_go">前往 →</span>
+  </div>
+
   <div class="msg-section">
     <p data-i18n="idx_suggest_prompt">你还想与哪位大师对话？写下名字发送给我们</p>
     <div class="msg-row">
@@ -287,7 +297,7 @@
     <div style="display:flex;gap:12px;justify-content:center;">
       <a href="https://mei-junhao.github.io/mei-personal-site/" target="_blank" style="color:var(--accent);text-decoration:none;" data-i18n="idx_author">📖 了解作者</a>
       <a href="#" onclick="showRewardMS();return false;" style="color:var(--muted);text-decoration:none;" data-i18n="idx_reward">☕ 打赏</a>
-      <a href="#" onclick="showChangelog();return false;" style="color:var(--muted);text-decoration:none;font-size:11px;">v5.2</a>
+      <a href="#" onclick="showChangelog();return false;" style="color:var(--muted);text-decoration:none;font-size:11px;">v5.4</a>
     </div>
   </div>
 
@@ -434,6 +444,15 @@ var MODE_OPTIONS = {
       {temp:60, title:'自体结构探索', sub:'自体心理学视角的临床对话'},
       {temp:90, title:'自体心理学论争', sub:'镜映、自体客体、转换性内化的系统探讨'}
     ]
+  },
+  horney: {
+    name: '卡伦·霍妮',
+    url: 'master-chat.html?master=horney',
+    modes: [
+      {temp:20, title:'听见真实感情', sub:'从焦虑与保护背后，辨认真正的需要'},
+      {temp:60, title:'关系冲突与防御', sub:'分析趋向、对抗与远离之间的安全循环'},
+      {temp:90, title:'霍妮理论研讨', sub:'文化、神经症结构、理想化自我与成长'}
+    ]
   }
 };
 
@@ -469,6 +488,11 @@ function closeModeOverlay() {
 <div class="changelog-overlay" id="changelogOverlay" onclick="if(event.target===this)closeChangelog()">
   <div class="changelog-box">
     <h3 data-i18n="idx_changelog_title">更新日志</h3>
+    <div class="cl-version">v5.4</div>
+    <div class="cl-date">2026-08-03</div>
+    <div class="cl-item">新增卡伦·霍妮：低温交心读取仓颉版，中高温咨询与教学读取女娲版</div>
+    <div class="cl-item">首页、单聊、圆桌、AI 督导等九页统一全量体验层与移动端布局</div>
+    <div class="cl-item">危机分流、圆桌消息结构与本地存储迁移完成发布门禁回归</div>
     <div class="cl-version">v5.2</div>
     <div class="cl-date">2026-07-06</div>
     <div class="cl-item">💞 新增大师：苏珊·约翰逊（EFT创始人，情感聚焦疗法）</div>
@@ -532,5 +556,6 @@ function closeModeOverlay() {
   </div>
 </div>
 
+  <script src="site-shell.js?v=20260803"></script>
 </body>
 </html>

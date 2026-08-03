@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <!-- proxy.js 仅本地开发，线上无需加载 -->
@@ -273,6 +273,7 @@
   }
 </style>
 
+  <link rel="stylesheet" href="site-theme.css?v=20260803">
 </head>
 <body>
 <div class="app">
@@ -462,11 +463,17 @@ var MASTERS = {
     kb:'sue-johnson-perspective.md', accent:'#D4537E', light:'#FBEAF0',
     font:'"Segoe UI","PingFang SC",sans-serif',
     hint:'她的理论来自看伴侣关系中的情绪循环——不是谁对谁错的问题',
-    intro:'我是苏珊·约翰逊。我花了四十年看人在爱里怎么受伤、怎么修复。我不是来告诉你谁对谁错的——我是来看你和你的重要他人之间那个循环是怎么转的。' }
+    intro:'我是苏珊·约翰逊。我花了四十年看人在爱里怎么受伤、怎么修复。我不是来告诉你谁对谁错的——我是来看你和你的重要他人之间那个循环是怎么转的。' },
+  horney: { name:'卡伦·霍妮', initial:'KH', icon:'🧭',
+    avatar:'', transparentPerspective:true, sub:'文化精神分析 · 基本焦虑 · 人际防御',
+    kb:'horney-perspective.md', accent:'#8A5743', light:'#F3E8DF',
+    font:'"Georgia","Noto Serif SC",serif',
+    hint:'她会追问：你的解决办法在保护你免受什么，又让你失去了什么',
+    intro:'这里使用卡伦·霍妮的理论视角与你对话，但不冒充霍妮本人。我们不急着贴标签，先看看你在什么情境里感到不安全，又怎样用靠近、对抗或远离来保护自己。一个解释只有得到你的真实感受和后续经验支持，才值得保留。' }
 };
 
 // Masters not suitable per user: Lacan, Bion
-var AVAILABLE_KEYS = ['freud','klein','jung','rogers','beck','yalom','adler','susan_johnson'];
+var AVAILABLE_KEYS = ['freud','klein','jung','rogers','beck','yalom','adler','susan_johnson','horney'];
 var PERMANENT_KEY = 'winnicott';
 var allMasterKeys = [PERMANENT_KEY].concat(AVAILABLE_KEYS);
 
@@ -482,7 +489,7 @@ var fontSize = 100;  // percentage
 var respondRounds = 2;  // 1 = no serial rounds, 2 = with serial rounds
 
 // ====== Serial order: Winnicott always last ======
-var SERIAL_ORDER = ['freud','jung','klein','rogers','beck','yalom','adler','susan_johnson'];
+var SERIAL_ORDER = ['freud','jung','klein','rogers','beck','yalom','adler','susan_johnson','horney'];
 
 function getSerialOrder(repliedKeys) {
   var order = [];
@@ -500,6 +507,7 @@ var PRESETS = [
   { id:'existential', title:'存在主义专场', sub:'温尼科特 + 亚隆 + 罗杰斯', keys:['winnicott','yalom','rogers'], desc:'死亡焦虑、共情与抱持——存在的深度探讨' },
   { id:'cbt', title:'认知行为组', sub:'温尼科特 + 贝克 + 罗杰斯', keys:['winnicott','beck','rogers'], desc:'认知歪曲、无条件积极关注与足够好的抱持' },
   { id:'object', title:'客体关系组', sub:'温尼科特 + 克莱因', keys:['winnicott','klein'], desc:'早期客体关系、投射认同与过渡性空间' },
+  { id:'culture', title:'文化与自我组', sub:'温尼科特 + 霍妮 + 阿德勒', keys:['winnicott','horney','adler'], desc:'真实自我、基本焦虑与面对生活任务的勇气' },
   { id:'solo', title:'独坐温尼科特', sub:'仅温尼科特一人', keys:['winnicott'], desc:'回到最纯粹的温尼科特式陪伴' }
 ];
 
@@ -1078,7 +1086,9 @@ async function callMasterAPI(key, activeNames, history, userMsg, isReactMode) {
 
   try {
     var res = await fetch(m.kb);
+    if (!res.ok) throw new Error('知识文件加载失败：HTTP ' + res.status);
     var kbContent = await res.text();
+    var perspectiveBoundary = m.transparentPerspective ? '\n【身份与证据边界】你不是卡伦·霍妮本人，不声称拥有她未公开的记忆或立场。你透明地使用霍妮理论视角，解释保持为可检验假说；涉及未直接讨论的当代问题时说明这是框架推断，不进行远程诊断。\n' : '';
 
     var sysPrompt;
     if (isReactMode === 'summary') {
@@ -1123,6 +1133,7 @@ async function callMasterAPI(key, activeNames, history, userMsg, isReactMode) {
         + '\n⑦ 你可以根据你的风格决定是否在回应中关注用户。温尼科特许会自然地询问用户的称呼；弗洛伊德可能专注于分析而不问；荣格可能问一个关于梦的后续问题。一切由你的性格决定。]\n\n' + kbContent;
     }
 
+    sysPrompt = perspectiveBoundary + sysPrompt;
     var msgs = [{ role: 'system', content: sysPrompt }];
     history.forEach(function(h) {
       if (!h || typeof h.content !== 'string') return;
@@ -1190,9 +1201,9 @@ var SCENARIOS = {
   '梦': ['freud','jung'], '梦境': ['freud','jung'], '梦见': ['freud','jung'],
   '死亡': ['yalom'], '去世': ['yalom'], '临终': ['yalom'],
   '童年': ['klein','winnicott'], '小时候': ['klein','winnicott'], '父母': ['klein','winnicott'],
-  '关系': ['rogers','klein'], '婚姻': ['rogers','klein'],
-  '焦虑': ['beck','yalom'], '恐惧': ['beck','yalom'], '害怕': ['beck','yalom'],
-  '自卑': ['adler'], '勇气': ['adler'],
+  '关系': ['rogers','klein','horney'], '婚姻': ['rogers','klein'],
+  '焦虑': ['beck','yalom','horney'], '恐惧': ['beck','yalom','horney'], '害怕': ['beck','yalom','horney'],
+  '完美': ['horney'], '应该': ['horney'], '自卑': ['adler'], '勇气': ['adler'],
   '认知': ['beck'], '思维': ['beck'], '想法': ['beck']
 };
 
@@ -1399,5 +1410,6 @@ MindmapFeature.init({
   buttonEl: document.getElementById('mmBtn')
 });
 </script>
+  <script src="site-shell.js?v=20260803"></script>
 </body>
 </html>

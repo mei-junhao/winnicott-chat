@@ -1,7 +1,7 @@
 # Winnicott Chat — 项目手册
 
 > 最后更新：2026-08-03
-> 当前版本：v5.3.1
+> 当前版本：v5.4
 > 生产环境：https://mei-junhao.github.io/winnicott-chat/ （GitHub Pages，固定 URL）  
 > 入口文件：index.html（主页；旧的 master-select.html 已废弃并删除）  
 > 仓库地址：https://github.com/mei-junhao/winnicott-chat
@@ -10,7 +10,7 @@
 
 ## 一、项目概述
 
-精神分析大师 AI 对话平台。用户可以与温尼科特、拉康、弗洛伊德、克莱因、荣格、比昂、罗杰斯、贝克、亚隆、苏珊·约翰逊（EFT）等大师的 AI 模拟对话；另含「多大师圆桌对话」「AI 临床督导」「咨询师A 定制服务」三个独立模块。
+精神分析大师 AI 对话平台。主页提供温尼科特、弗洛伊德、克莱因、荣格、比昂、罗杰斯、贝克、亚隆、阿德勒、苏珊·约翰逊（EFT）、科胡特、卡伦·霍妮共 12 位大师入口；温尼科特页内另可切换拉康。另含「多大师圆桌对话」「AI 临床督导」「咨询师A 定制服务」三个独立模块。
 
 **技术栈：** 纯 HTML + CSS + JS，零框架单文件部署，GitHub Pages 静态托管，localStorage 存储对话。各页内联 CSS/JS，无构建步骤。
 
@@ -23,9 +23,9 @@ winnicott-chat/
 ├── public/                          ← 部署目录（所有静态资源，gh-pages 即此目录的子树镜像）
 │   │
 │   ├── 【核心页面】
-│   ├── index.html                   ← ★ 主页：大师卡片网格（10 位大师）+ 留言板 + 三个模块入口
+│   ├── index.html                   ← ★ 主页：大师卡片网格（12 位大师）+ 留言板 + 三个模块入口
 │   ├── winnicott-chat.html          ← 温尼科特 / 拉康 双人对话 (v4)
-│   ├── master-chat.html             ← 多大师共享模板（?master=freud|klein|jung|bion|rogers|beck|yalom|susan_johnson）
+│   ├── master-chat.html             ← 多大师共享模板（含 horney；通过 ?master=<key> 切换）
 │   ├── roundtable.html              ← 多大师圆桌对话（多位大师同空间回应，支持 @ 指定）
 │   ├── consultant-a.html            ← 咨询师A 定制服务页（密码门 meijunhao123，温度锁 60）
 │   ├── ai-supervisor.html           ← AI 临床督导（密码已取消，含免责声明）
@@ -43,11 +43,15 @@ winnicott-chat/
 │   ├── beck-knowledge.md            ← 贝克
 │   ├── yalom-knowledge.md           ← 亚隆
 │   ├── sue-johnson-knowledge.md     ← 苏珊·约翰逊（EFT）
+│   ├── horney-knowledge.md          ← 卡伦·霍妮女娲版（咨询 / 教学）
+│   ├── horney-perspective.md        ← 卡伦·霍妮仓颉版（交心 / 圆桌）
 │   ├── consultant-a-knowledge.md    ← 咨询师A（温尼科特取向咨询师人格，由 style doc 提炼）
 │   ├── *-perspective.md             ← 各大师视角设定（Marvis skill 提炼，部分用于 KB 生成）
 │   ├── adler-knowledge.md / cangjie-perspective-full.md / nvwa-perspective-full.md  ← 待接入/素材
 │   │
-│   ├── 【资源】
+│   ├── 【共享体验层 / 资源】
+│   ├── site-theme.css               ← 九页共用视觉、响应式与可访问性层
+│   ├── site-shell.js                ← 九页共用导航与高频入口编排层
 │   ├── lacan-avatar.jpg             ← 拉康头像
 │   ├── reward-qr.jpg                ← 打赏二维码
 │   ├── about-winnicott-chat.html / about-winnicott-chat-video.html  ← 关于页
@@ -73,8 +77,8 @@ winnicott-chat/
 ```
 index.html（主页：大师卡片 + 留言板 + 模块入口）
     ├── → winnicott-chat.html（温尼科特 / 拉康 双人对话）
-    ├── → master-chat.html?master=freud        （弗洛伊德）
-    │      ?master=klein / jung / bion / rogers / beck / yalom / susan_johnson
+    ├── → master-chat.html?master=freud        （共享大师模板）
+    │      ?master=klein / jung / bion / rogers / beck / yalom / adler / susan_johnson / kohut / horney
     ├── → roundtable.html                       （多大师圆桌对话）
     ├── → consultant-a.html                     （咨询师A 定制服务，密码门）
     └── → ai-supervisor.html                    （AI 临床督导）
@@ -103,8 +107,9 @@ index.html（主页：大师卡片 + 留言板 + 模块入口）
 
 ### 3.3 master-chat.html 功能
 
-- 通过 `?master=` 参数切换大师（当前：freud / klein / jung / bion / rogers / beck / yalom / susan_johnson）
-- 每位大师独立知识库文件（`<master>-knowledge.md`，经 `loadSystemPrompt()` 加载）
+- 通过 `?master=` 参数切换大师（当前：freud / klein / jung / bion / rogers / beck / yalom / adler / susan_johnson / kohut / horney）
+- 每位大师独立知识库文件，经 `loadSystemPrompt()` 加载；支持 `kbCangjie` 时，低温交心读取仓颉版，中高温咨询/教学读取知识库版
+- 卡伦·霍妮采用透明理论视角：明确不是历史人物本人，不声称拥有未公开记忆或当代立场，不进行远程诊断，解释保持为可检验假说
 - 共享 API 路由和四层降级逻辑（与 winnicott-chat.html 相同）
 - 个性化主题色 + Wikipedia 真实照片
 - 左上角「← 返回」按钮指向 `index.html`
@@ -149,12 +154,12 @@ index.html（主页：大师卡片 + 留言板 + 模块入口）
 - 安全响应要求用户优先移除危险物品、到有人陪伴的安全位置，并联系当地急救、警方、急诊或可信任的人。
 - 该层不进行诊断、不自动报警、不记录危机原文，也不能替代现场危机服务。
 
-### 3.8 全局 UI 优化（Tier A/B/C）
+### 3.8 全量体验层（v5.4）
 
-- 在 5 个活动页（index / winnicott-chat / master-chat / roundtable / ai-supervisor）的 `<head>` 内统一注入 `<style id="ui-optimize">` 视觉层，**仅增 CSS、不改结构/JS/字体/主题色**
-- Tier A：按钮 `:active` 物理下沉、`hover` 微抬升、`:focus-visible` 键盘焦点环、输入框聚焦染色阴影、`scroll-behavior:smooth`
-- Tier B：弹窗 `uiPop` 淡入、消息气泡 hover 极轻阴影、温度 chip 选中态内描边
-- Tier C：新消息气泡 `uiMsgIn` 淡入（圆桌排除 `.master` 开场白）；带 `prefers-reduced-motion` 降级
+- 九个主要页面统一接入 `site-theme.css` 与 `site-shell.js`，在不重写原业务逻辑的前提下统一导航、页面宽度、高频入口和暖米色视觉。
+- 首页支持 12 位大师卡片的搜索与议题筛选；单聊把历史、保存、导出、字号等高频操作集中到快捷栏；圆桌明确区分“参与者”和“回应对象”；AI 督导按“材料—隐私确认—分析与追问”组织流程。
+- 体验层保留原有功能和页面函数，只做 DOM 编排和调用；API、知识库、危机判断、存储、圆桌路由仍由原模块负责。
+- 全站使用 `100dvh`、移动端安全区、`:focus-visible` 和 `prefers-reduced-motion` 降级；旧页面内联 Tier A/B/C 样式继续保留，作为局部交互反馈。
 
 ---
 
@@ -209,6 +214,8 @@ var _tierLevel = 0;  // 当前线路索引
 | `beck-knowledge.md` | 贝克 | Marvis skill → 提炼 |
 | `yalom-knowledge.md` | 亚隆 | Marvis skill → 提炼 |
 | `sue-johnson-knowledge.md` | 苏珊·约翰逊（EFT） | Marvis skill → 提炼 |
+| `horney-perspective.md` | 卡伦·霍妮低温交心 / 圆桌 | 仓颉版方法系统 |
+| `horney-knowledge.md` | 卡伦·霍妮咨询 / 教学 | 女娲版认知框架 |
 | `consultant-a-knowledge.md` | 咨询师A 定制 | style doc → 提炼 |
 
 ### Skill 源文件路径（更新 KB 时参考）
@@ -247,7 +254,14 @@ C:\Users\Administrator\AppData\Roaming\Tencent\Marvis\User\oAN1i2TkarGXJ5_iqPWv0
 3. **未来维护方式**：由本仓库随页面 schema 一并维护；新增消息字段或版本时只更新共享归一化函数及回归用例，不引入第三方依赖。
 4. **职责重叠检查**：模块仅负责 JSON 读取、schema 归一化、旧键迁移和安全写入；不负责 UI 渲染、危机判断、API 调用或业务路由，与现有入口无重复职责。
 
-### 6.3 部署命令（GitHub Pages）
+### 6.3 全量体验层与霍妮接入说明（2026-08-03）
+
+1. **为什么现有入口无法扩展**：旧页面各自维护导航、页面宽度和高频入口，继续在九个 HTML 内复制样式和 DOM 重排逻辑会再次造成不一致；卡伦·霍妮则可以直接扩展现有 `master-chat.html` 的 `MASTERS` 配置，不新增独立聊天页。
+2. **修改成本**：新增两个无依赖静态资源 `public/site-theme.css` 与 `public/site-shell.js`，九个页面各接入一次；霍妮新增两份知识/视角文档，并在 `index.html`、`master-chat.html` 和 `i18n.js` 增加配置。测试覆盖注入唯一性、内联脚本、新大师路由、知识文件加载与四项发布门禁。
+3. **未来维护方式**：共用视觉与导航只在 `site-theme.css` / `site-shell.js` 维护；新增大师优先扩展 `MASTERS` 与首页配置，知识文件继续按 `<master>-knowledge.md` / `<master>-perspective.md` 命名；不引入框架或第三方依赖。
+4. **职责重叠检查**：体验层只处理导航、布局、入口编排和隐私确认 UI，不接管 API、人物提示词、存储、安全判断或圆桌业务；霍妮复用 `master-chat.html`，不新增重复页面或工作流。
+
+### 6.4 部署命令（GitHub Pages）
 
 **生产环境部署：** 所有修改完成后执行以下命令。GitHub Pages 自动构建，1-2 分钟后生效。
 更新后的页面在固定 URL：`https://mei-junhao.github.io/winnicott-chat/`
@@ -275,7 +289,7 @@ git branch -D gh-pages-build 2>/dev/null
 - 推送后用 `git show origin/gh-pages:<file> | grep '<关键串>'` 校验关键改动已上线
 - **禁止再使用 CloudStudio 沙箱部署**——URL 不固定，无法增量更新
 
-### 6.3 验证 API 可用性
+### 6.5 验证 API 可用性
 
 ```bash
 # 验证模型列表
@@ -288,7 +302,7 @@ curl -s -X POST 'https://api.kkdmx.com/v1/chat/completions' \
   -d '{"model":"<MODEL>","messages":[{"role":"user","content":"hi"}],"max_tokens":5}'
 ```
 
-### 6.4 关键代码位置（winnicott-chat.html）
+### 6.6 关键代码位置（winnicott-chat.html）
 
 | 功能 | 行号范围 |
 |------|---------|
@@ -324,6 +338,8 @@ curl -s -X POST 'https://api.kkdmx.com/v1/chat/completions' \
 - [x] 大师真实照片（Wikipedia URL）
 - [x] 主页设为 index.html（替代 master-select.html）
 - [x] 新增 苏珊·约翰逊（EFT）大师
+- [x] 新增 卡伦·霍妮：复用 `master-chat.html`，仓颉/女娲双文档分温度加载，并接入首页与圆桌
+- [x] 全量体验层：九页统一导航、视觉、高频入口和移动端布局
 - [x] 全局 UI 优化（5 页注入 CSS 视觉层 Tier A/B/C）
 - [x] 圆桌 / 大师 / 督导 三页加 10 轮自动打赏（温尼科特保持 15 轮）
 - [x] 修复温尼科特分享截图 bug（背景错乱 / 桌面无法保存 / 二维码死链）
@@ -335,7 +351,7 @@ curl -s -X POST 'https://api.kkdmx.com/v1/chat/completions' \
 - [ ] consultant-a 改为服务端鉴权（当前仅前端软门禁）
 - [ ] 清理开发备份文件（backup-*/index-dev*/original-index.html/v4-*）
 - [ ] 对话自动章节改为基于语义相似度
-- [ ] 接入 adler / cangjie / nvwa 等待接入素材
+- [ ] 继续完善其他大师的仓颉 / 女娲双文档与透明身份边界（当前霍妮已完成）
 
 ---
 
@@ -343,6 +359,7 @@ curl -s -X POST 'https://api.kkdmx.com/v1/chat/completions' \
 
 | 日期 | 变更内容 |
 |------|---------|
+| 2026-08-03 | **v5.4 全量体验层与卡伦·霍妮**：九页接入共享视觉/导航体验层；首页新增第 12 位大师卡伦·霍妮；共享单聊按温度加载仓颉交心版与女娲咨询/教学版；圆桌新增霍妮、文化与自我预设及相关场景推荐；透明声明非本人复现；危机分流进一步排除“想了解自杀理论”等知识讨论误判；四项发布门禁与新路由回归通过 |
 | 2026-08-03 | **v5.3.1 发布门禁补强**：危机分流覆盖迫近他伤时间词并排除新闻/研究误判；圆桌修复“仅@”空目标回退和多@折叠；新增 `storage.js` 统一迁移旧键/旧字段、隔离脏数据和显示配额错误；四项门禁全部通过，未推送远程 |
 | 2026-06-29 | 🚀 迁移到 GitHub Pages：`mei-junhao.github.io/winnicott-chat/`，URL 固定不再变 |
 | 2026-06-29 | 部署生产环境（入口 master-select.html） |
