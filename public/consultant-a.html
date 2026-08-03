@@ -3,6 +3,8 @@
 <head>
   <script src="proxy.js"></script>
   <script src="i18n.js?v=5"></script>
+  <script src="safety.js?v=20260803"></script>
+  <script src="storage.js?v=20260803"></script>
 
   <script>
   /* ===== 对话页界面三语化（由 i18n.js 在每次切语言时调用） ===== */
@@ -468,7 +470,7 @@
     </div>
     <div class="input-area">
       <div class="input-wrap">
-        <textarea id="input" rows="1" placeholder="写下你想说的……" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}"></textarea>
+        <textarea id="input" rows="1" placeholder="写下你想说的……" onkeydown="if(!event.isComposing&&event.keyCode!==229&&event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}"></textarea>
         <button id="sendBtn" onclick="sendMessage()"><svg viewBox="0 0 24 24" fill="currentColor" style="width:22px;height:22px"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg></button><button id="mmBtn" title="对话至少需要 10 条消息" disabled style="flex-shrink:0;margin-left:6px;padding:6px 10px;border-radius:9px;border:1px solid var(--border);background:var(--card);color:var(--muted);font-size:12px;cursor:pointer;font-family:inherit;">🧠 导图</button>
       </div>
     </div>
@@ -968,6 +970,7 @@ function checkChapterShift() {
 // ====== Send ======
 async function sendMessage() {
   var text=inputEl.value.trim(); if(!text||isLoading)return;
+  if(window.ChatSafety&&window.ChatSafety.guard(text,{container:messagesEl,className:'msg ai safety-response',render:function(el,message){var bubble=document.createElement('div');bubble.className='bubble';bubble.style.whiteSpace='pre-wrap';bubble.textContent=message;el.appendChild(bubble);},onBlocked:function(){inputEl.value='';}}))return;
   if(!systemPrompt){showBanner('知识库加载中，请稍等');return;}
   inputEl.value=''; appendMessage('user',text); conversation.push({role:'user',content:text});
   mcUserMsgCount++; maybeAutoRewardMC();
@@ -1001,7 +1004,8 @@ async function sendMessage() {
       if(cfg.key)hdrs['Authorization']='Bearer '+cfg.key;
       if(cfg.api.indexOf('xinjingchat.online')>=0){
       }
-      var res=await fetch(cfg.api,{method:'POST',headers:hdrs,body:bodyStr});
+      var _ac=new AbortController(); var _tm=setTimeout(function(){_ac.abort();},120000); var res;
+      try{res=await fetch(cfg.api,{method:'POST',headers:hdrs,body:bodyStr,signal:_ac.signal});}finally{clearTimeout(_tm);}
       if(res.status===429){_rateLimited=true;try{var ej=await res.json();var ra=(ej.error&&ej.error.retry_after_seconds)||60;showBanner('请求过于频繁，请等待约 '+ra+' 秒后重试');}catch(_e){showBanner('请求过于频繁，请等待约 60 秒后重试');}break;}
       if(!res.ok){ if(_apiLine==='gpt'){_apiLine='deepseek'; showBanner('GPT 线路异常，自动切换 DeepSeek Pro 重试'); continue;} if(_apiLine==='gemini'){_apiLine='deepseek'; showBanner('Gemini 线路异常，自动切换 DeepSeek Pro 重试'); continue;} if(_apiLine==='claude'){_apiLine='deepseek'; showBanner('Claude 线路异常，自动切换 DeepSeek Pro 重试'); continue;} showBanner(cfg.name+' 返回 '+res.status+'，尝试下一条'); continue;}
 
@@ -1019,6 +1023,7 @@ async function sendMessage() {
           }
         }
       }
+      if(buf.trim().startsWith('data: ')){var tail=buf.trim().slice(6).trim();if(tail&&tail!=='[DONE]'){try{var tailJson=JSON.parse(tail);var tailDelta=tailJson.choices&&tailJson.choices[0]&&tailJson.choices[0].delta;if(tailDelta&&tailDelta.content)fullReply+=tailDelta.content;}catch(e){}}}
       if(fullReply){success=true;_tierLevel=attempt; break;}
       _retry++;
     }catch(e){
@@ -1028,7 +1033,7 @@ async function sendMessage() {
       showBanner(cfg.name+' 不可用，尝试下一条');
       if(_tierLevel<TIERS.length-1){_tierLevel++;_retry=0;fullReply='';continue;}
       if(_retry<_maxRetries){_retry++;continue;}
-      showBanner('没事儿，API 没钱了，正在充，还不行发邮件 985729106@qq.com 问问'); conversation.pop(); _fatalError=true; break;
+      showBanner('服务暂时不可用，已保留本轮问题，可稍后重试'); _fatalError=true; break;
     }
   }
 
@@ -1047,19 +1052,22 @@ async function sendMessage() {
 }
 
 // ====== History ======
-function saveConversation(){ try{localStorage.setItem('mc_conv_'+masterKey,JSON.stringify(conversation));}catch(e){} }
+function storageNotice(message){showBanner(message);}
+function readMasterHistory(){return window.ChatStorage.read('mc_hist_'+masterKey,{kind:'chatHistory',onError:storageNotice});}
+function saveConversation(){return window.ChatStorage.write('mc_conv_'+masterKey,window.ChatStorage.normalizeChatMessages(conversation),{onError:storageNotice});}
 function saveHistory(){
-  if(!conversation.length)return;
-  var h=[]; try{h=JSON.parse(localStorage.getItem('mc_hist_'+masterKey))||[];}catch(e){}
-  h.unshift({id:Date.now().toString(36),title:M.name+' '+(conversation[0]?conversation[0].content.slice(0,20):'')+'…',time:new Date().toISOString(),msgCount:conversation.length,messages:conversation.slice(0,50)});
+  if(!conversation.length)return false;
+  var h=readMasterHistory();
+  var messages=window.ChatStorage.normalizeChatMessages(conversation).slice(-50);
+  h.unshift({id:Date.now().toString(36),title:M.name+' '+(messages[0]?messages[0].content.slice(0,20):'')+'…',time:new Date().toISOString(),msgCount:messages.length,schemaVersion:2,messages:messages});
   if(h.length>20)h=h.slice(0,20);
-  localStorage.setItem('mc_hist_'+masterKey,JSON.stringify(h));
+  return window.ChatStorage.write('mc_hist_'+masterKey,h,{onError:storageNotice});
 }
 function saveChat(){
   if(!conversation.length){showBanner('暂无对话可保存');return;}
-  saveHistory();
-  saveConversation();
-  showBanner('对话已保存');
+  var historySaved=saveHistory();
+  var conversationSaved=saveConversation();
+  if(historySaved&&conversationSaved)showBanner('对话已保存');
 }
 function resetConversation(){
   conversation=[];_tierLevel=0;_chapterCount=0;
@@ -1069,7 +1077,7 @@ function resetConversation(){
   showBanner('已开始新对话');
 }
 function openHistory(){
-  var h=[]; try{h=JSON.parse(localStorage.getItem('mc_hist_'+masterKey))||[];}catch(e){}
+  var h=readMasterHistory();
   if(!h.length){showBanner('暂无历史记录');return;}
   // Simple inline display - open next to changelog
   toggleSettings();
@@ -1082,7 +1090,7 @@ function openHistory(){
   cc.style.display='block'; cc.innerHTML=html;
 }
 function loadHistory(id){
-  var h=[]; try{h=JSON.parse(localStorage.getItem('mc_hist_'+masterKey))||[];}catch(e){}
+  var h=readMasterHistory();
   var entry=null;
   for(var i=0;i<h.length;i++){if(h[i].id===id){entry=h[i];break;}}
   if(!entry){showBanner('未找到历史记录');return;}
@@ -1142,8 +1150,8 @@ function showChangelog(){
   }
   window.closeMCUpdate = closeMCUpdate;
   // Restore conversation
-  var saved=localStorage.getItem('mc_conv_'+masterKey);
-  if(saved) try{conversation=JSON.parse(saved);if(conversation.length){document.getElementById('intro').style.display='none';document.querySelector('.header').classList.add('compact');for(var i=0;i<conversation.length;i++)appendMessage(conversation[i].role,conversation[i].content,i);}}catch(e){}
+  conversation=window.ChatStorage.read('mc_conv_'+masterKey,{kind:'chatMessages',onError:storageNotice});
+  if(conversation.length){document.getElementById('intro').style.display='none';document.querySelector('.header').classList.add('compact');for(var i=0;i<conversation.length;i++)appendMessage(conversation[i].role,conversation[i].content,i);}
 })();
 
 
@@ -1340,7 +1348,7 @@ function showHistory() {
   el.classList.add('show'); renderHistory();
 }
 function renderHistory() {
-  var h = []; try { h = JSON.parse(localStorage.getItem('mc_hist_' + masterKey)) || []; } catch(e) {}
+  var h = readMasterHistory();
   var empty = document.getElementById('historyEmpty');
   var container = document.getElementById('historyContent');
   container.querySelectorAll('.history-item').forEach(function(e) { e.remove(); });
@@ -1356,7 +1364,7 @@ function renderHistory() {
   container.insertAdjacentHTML('beforeend', html);
 }
 function loadHistoryItem(id) {
-  var h = []; try { h = JSON.parse(localStorage.getItem('mc_hist_' + masterKey)) || []; } catch(e) {}
+  var h = readMasterHistory();
   var entry = null;
   for (var i = 0; i < h.length; i++) { if (h[i].id === id) { entry = h[i]; break; } }
   if (!entry) { showBanner('未找到历史记录'); return; }
@@ -1369,9 +1377,9 @@ function loadHistoryItem(id) {
   showBanner('已加载历史对话');
 }
 function deleteHistoryItem(id) {
-  var h = []; try { h = JSON.parse(localStorage.getItem('mc_hist_' + masterKey)) || []; } catch(e) {}
+  var h = readMasterHistory();
   h = h.filter(function(e) { return e.id !== id; });
-  localStorage.setItem('mc_hist_' + masterKey, JSON.stringify(h));
+  if (!window.ChatStorage.write('mc_hist_' + masterKey, h, {onError:storageNotice})) return;
   renderHistory();
 }
 

@@ -1,7 +1,7 @@
 # Winnicott Chat — 项目手册
 
-> 最后更新：2026-07-12  
-> 当前版本：v5.2  
+> 最后更新：2026-08-03
+> 当前版本：v5.3.1
 > 生产环境：https://mei-junhao.github.io/winnicott-chat/ （GitHub Pages，固定 URL）  
 > 入口文件：index.html（主页；旧的 master-select.html 已废弃并删除）  
 > 仓库地址：https://github.com/mei-junhao/winnicott-chat
@@ -118,8 +118,10 @@ index.html（主页：大师卡片 + 留言板 + 模块入口）
 - 📎 文件上传（.txt/.md/.docx，建议 4000 字以内，实时字数统计）
 - 🔍 整体印象：可折叠/展开
 - 💬 督导对话
-- 💾 自动保存：印象生成 + 每次对话后自动存 localStorage
-- 📂 历史对话：弹窗面板查看/加载/删除
+- 🔐 临床数据治理：默认不自动保存；仅在用户点击“主动保存”并二次确认后写入 `supervisor_history_v2`
+- 🧹 本地脱敏检查：手机号、身份证号、邮箱和明确身份字段在提交前阻断提醒
+- 📂 历史对话：纯文本结构化保存，弹窗查看/加载/删除；旧 HTML 历史不再执行
+- 🗑️ 一键删除：清除新旧督导历史、当前记录和自定义 API 设置
 - 📚 基于 alice-perspective SKILL.md 的完整督导框架
 - ☕ 打赏：**10 轮**自动弹出 + 手动按钮（`spvUserMsgCount` / `spvMaybeAutoReward()`）
 - 🔄 四层 API 降级
@@ -140,7 +142,14 @@ index.html（主页：大师卡片 + 留言板 + 模块入口）
 - **密码门**：进入即弹覆盖层，门面文案「本页面为定制服务，具体请联系开发者」，密码 `meijunhao123`（前端明文校验，软门禁，**非真实鉴权**）
 - 首页入口：index.html 圆桌对话卡片正下方「定制服务」（副文案「咨询师A · 需密码进入」）
 
-### 3.7 全局 UI 优化（Tier A/B/C）
+### 3.7 全站危机安全层（v5.3）
+
+- `public/safety.js` 是五个活动聊天页共用的本地输入安全模块。
+- 对明确、迫近的自伤/他伤风险和一般性危机表达分级处理；命中后暂停普通大师角色或督导生成，不上传命中原文。
+- 安全响应要求用户优先移除危险物品、到有人陪伴的安全位置，并联系当地急救、警方、急诊或可信任的人。
+- 该层不进行诊断、不自动报警、不记录危机原文，也不能替代现场危机服务。
+
+### 3.8 全局 UI 优化（Tier A/B/C）
 
 - 在 5 个活动页（index / winnicott-chat / master-chat / roundtable / ai-supervisor）的 `<head>` 内统一注入 `<style id="ui-optimize">` 视觉层，**仅增 CSS、不改结构/JS/字体/主题色**
 - Tier A：按钮 `:active` 物理下沉、`hover` 微抬升、`:focus-visible` 键盘焦点环、输入框聚焦染色阴影、`scroll-behavior:smooth`
@@ -173,6 +182,8 @@ var _tierLevel = 0;  // 当前线路索引
 - 成功则保持当前线路，不再尝试
 - **新对话/切换人物/加载历史/新对话** → 重置 `_tierLevel = 0`
 - 超时 `_maxRetry` 次（最多3次）后切下一条
+- v5.3 起，任何线路降级都不得删除当前用户消息；canonical conversation 只由明确的新建/清空操作修改
+- 所有旧代理必须保留客户端 `stream` 选择：单聊使用 SSE，圆桌使用非流式 JSON
 
 ### 4.3 master-chat.html API 配置
 
@@ -229,7 +240,14 @@ C:\Users\Administrator\AppData\Roaming\Tencent\Marvis\User\oAN1i2TkarGXJ5_iqPWv0
 6. **本地校验**：改动后用 `node --check` 抽验内联脚本语法；提交前确认 `</head>` 唯一、注入块位置正确
 7. **先审后行**：改前先给方案，用户确认（「部署吧」/「开始」/「要」）后再推送；未确认不得 push
 
-### 6.2 部署命令（GitHub Pages）
+### 6.2 共享存储模块新增说明（2026-08-03）
+
+1. **为什么现有入口无法扩展**：`safety.js` 只负责危机分流，把历史迁移放入其中会混淆安全与持久化职责；五个活动页各自复制迁移代码会继续产生不一致行为。
+2. **修改成本**：新增一个无依赖的 `public/storage.js`，五页各增加一个脚本引用并将对话/历史读写接到统一接口；测试覆盖旧键、脏消息、旧字段和配额异常。
+3. **未来维护方式**：由本仓库随页面 schema 一并维护；新增消息字段或版本时只更新共享归一化函数及回归用例，不引入第三方依赖。
+4. **职责重叠检查**：模块仅负责 JSON 读取、schema 归一化、旧键迁移和安全写入；不负责 UI 渲染、危机判断、API 调用或业务路由，与现有入口无重复职责。
+
+### 6.3 部署命令（GitHub Pages）
 
 **生产环境部署：** 所有修改完成后执行以下命令。GitHub Pages 自动构建，1-2 分钟后生效。
 更新后的页面在固定 URL：`https://mei-junhao.github.io/winnicott-chat/`
@@ -325,6 +343,7 @@ curl -s -X POST 'https://api.kkdmx.com/v1/chat/completions' \
 
 | 日期 | 变更内容 |
 |------|---------|
+| 2026-08-03 | **v5.3.1 发布门禁补强**：危机分流覆盖迫近他伤时间词并排除新闻/研究误判；圆桌修复“仅@”空目标回退和多@折叠；新增 `storage.js` 统一迁移旧键/旧字段、隔离脏数据和显示配额错误；四项门禁全部通过，未推送远程 |
 | 2026-06-29 | 🚀 迁移到 GitHub Pages：`mei-junhao.github.io/winnicott-chat/`，URL 固定不再变 |
 | 2026-06-29 | 部署生产环境（入口 master-select.html） |
 | 2026-06-29 | 创建 7 个大师知识库文件（来源：Marvis skills 提炼） |
