@@ -1338,7 +1338,81 @@ function mcFallbackWindow(content) {
   w.document.write('<button onclick="copyAndClose()">📋 一键复制全部内容</button>');
   w.document.write('<hr><pre>' + content.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</pre>');
   w.document.write('<script>function copyAndClose(){var ta=document.createElement("textarea");ta.value=' + JSON.stringify(content) + ';ta.style.position="fixed";ta.style.left="-9999px";document.body.appendChild(ta);ta.select();document.execCommand("copy");document.body.removeChild(ta);alert("已复制！请粘贴到微信邮件中发送。");}<\/script>');
-  w.document.write('</body></html>');
+  w.document.write('
+<script>
+/* 2026-08-04 语音朗读：点 🔊 播放 AI 回复（Edge-TTS，blob 播放不占存储） */
+(function () {
+  if (window.__ttsInited) return;
+  window.__ttsInited = true;
+  function ttsPlay(text, role) {
+    if (!text || !text.trim()) return;
+    var rid = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : ('xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+      var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8); return v.toString(16);
+    }));
+    fetch('https://xinjingchat.online/tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ replyId: rid, text: String(text).slice(0, 1000), role: role || '' })
+    }).then(function (r) {
+      if (!r.ok) throw new Error('tts ' + r.status);
+      return r.blob();
+    }).then(function (blob) {
+      var url = URL.createObjectURL(blob);
+      var a = new Audio(url);
+      a.onended = function () { URL.revokeObjectURL(url); };
+      a.onerror = function () { URL.revokeObjectURL(url); };
+      a.play().catch(function () { URL.revokeObjectURL(url); });
+    }).catch(function (e) { /* 静默失败，文本仍在 */ });
+  }
+  window.ttsPlay = ttsPlay;
+  // 事件委托：点击 .tts-btn 播放（从 data-text/data-role 取内容）
+  document.addEventListener('click', function (ev) {
+    var btn = ev.target.closest ? ev.target.closest('.tts-btn') : null;
+    if (!btn) return;
+    ev.stopPropagation();
+    var t = btn.getAttribute('data-text') || '';
+    var role = btn.getAttribute('data-role') || '';
+    ttsPlay(t, role);
+  });
+  // 自动给 AI 回复 bubble 加 🔊 按钮（MutationObserver，监听新消息）
+  function addTtsBtn(bubble) {
+    if (!bubble || bubble.querySelector('.tts-btn') || bubble.getAttribute('data-tts-done')) return;
+    var txt = (bubble.textContent || '').trim();
+    if (!txt) return;
+    bubble.setAttribute('data-tts-done', '1');
+    var btn = document.createElement('button');
+    btn.className = 'tts-btn';
+    btn.setAttribute('data-text', txt.slice(0, 1000));
+    btn.setAttribute('data-role', (window.currentMasterKey || window.M && M && M.key) || '');
+    btn.style.cssText = 'margin:6px 4px 2px;padding:3px 10px;border-radius:8px;border:1px solid #d8d2ca;background:#fff;color:#8b8178;font-size:11px;cursor:pointer;';
+    btn.textContent = '🔊';
+    btn.title = '朗读回复';
+    bubble.appendChild(btn);
+  }
+  function scanNewBubbles(root) {
+    if (!root) return;
+    var els = root.querySelectorAll ? root.querySelectorAll('.msg.ai .bubble, .ai .bubble, [class*="msg"][class*="ai"] .bubble') : [];
+    for (var i = 0; i < els.length; i++) addTtsBtn(els[i]);
+  }
+  scanNewBubbles(document);
+  if (window.MutationObserver) {
+    var mo = new MutationObserver(function (muts) {
+      for (var i = 0; i < muts.length; i++) {
+        for (var j = 0; j < muts[i].addedNodes.length; j++) {
+          var n = muts[i].addedNodes[j];
+          if (n.nodeType === 1) {
+            if (n.classList && n.classList.contains('bubble')) addTtsBtn(n);
+            else scanNewBubbles(n);
+          }
+        }
+      }
+    });
+    mo.observe(document.body, { childList: true, subtree: true });
+  }
+})();
+</script>
+
+</body></html>');
   w.document.close();
 }
 
