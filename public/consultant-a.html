@@ -1477,10 +1477,6 @@ function showChangelog() {
 </script>
 
 <script>
-// ====== 模型评测公告（一次性弹窗） ======
-function showEvalNotice(){ var el=document.getElementById('evalNoticeOverlay'); if(el) el.style.display='flex'; }
-function closeEvalNotice(){ var el=document.getElementById('evalNoticeOverlay'); if(el) el.style.display='none'; localStorage.setItem('chat_eval_notice_shown','1'); }
-if(!localStorage.getItem('chat_eval_notice_shown')){ setTimeout(showEvalNotice, 900); }
 function refreshLineBtns(){
   var d=document.getElementById('lineDeepBtn'), g=document.getElementById('lineGptBtn'), gm=document.getElementById('lineGemBtn'), cl=document.getElementById('lineClBtn');
   if(d){ d.style.background=_apiLine==='deepseek'?'var(--accent)':'none'; d.style.color=_apiLine==='deepseek'?'#fff':'var(--muted)'; }
@@ -1491,25 +1487,6 @@ function refreshLineBtns(){
 refreshLineBtns();
 </script>
 
-<!-- 模型评测公告弹窗 -->
-<div id="evalNoticeOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center;padding:16px;">
-  <div style="background:#fff;border-radius:14px;max-width:540px;width:100%;padding:20px 22px;box-shadow:0 8px 40px rgba(0,0,0,.3);max-height:86vh;overflow-y:auto;color:#333;font-size:13px;line-height:1.75;">
-    <h3 style="margin:0 0 10px;font-size:17px;color:#4a3f35;">🔬 模型升级公告</h3>
-    <p style="margin:0 0 8px;">根据对多款模型的深入评测，我们统一使用 <strong>Gemini / DeepSeek Pro / GPT-5.6</strong> 模型（默认 Gemini），回复成本大幅上升。如果你感觉回复质量有所提升，欢迎多多打赏支持 💖</p>
-    <p style="margin:0 0 10px;">现在可以在 <strong>设置 → API 线路状态</strong> 中切换模型线路（DeepSeek Pro / GPT-5.6 / Gemini）。</p>
-    <table style="width:100%;border-collapse:collapse;font-size:12px;text-align:center;">
-      <thead><tr style="background:#f4efe8;"><th style="padding:7px 4px;">模型</th><th>临床敏锐</th><th>理论一致</th><th>风格贴合</th><th>可操作</th><th>材料忠实</th><th>综合分</th></tr></thead>
-      <tbody>
-        <tr><td style="padding:7px 4px;">deepseek-v4-flash</td><td>72.5</td><td>67.5</td><td>76.3</td><td>56.3</td><td>90.0</td><td><b>71.5</b></td></tr>
-        <tr style="background:#faf6f0;"><td>deepseek-v4-pro</td><td>93.8</td><td>93.8</td><td>90.0</td><td>93.8</td><td>95.0</td><td><b>93.1</b></td></tr>
-        <tr><td>gpt-5.6-luna(max)</td><td>90.0</td><td>88.0</td><td>90.0</td><td>88.0</td><td>88.0</td><td><b>88.9</b></td></tr>
-        <tr style="background:#faf6f0;"><td>gemini-3.5-flash</td><td>93.0</td><td>92.0</td><td>95.0</td><td>93.0</td><td>93.0</td><td><b>93.2</b></td></tr>
-        <tr><td>claude-sonnet-5</td><td>95.0</td><td>96.0</td><td>97.0</td><td>92.0</td><td>94.0</td><td><b>95.1</b></td></tr>
-      </tbody>
-    </table>
-    <p style="margin:8px 0 0;font-size:11px;color:#999;">评分口径：5 个督导案例实测（2026-08-02），单项满分 100 分；综合分按 临床 27.8% / 理论 22.2% / 风格 22.2% / 可操作 16.7% / 材料忠实 11.1% 加权。gpt 为 5.6-luna(max) 思考模式。</p>
-    <button onclick="closeEvalNotice()" style="margin-top:14px;width:100%;padding:9px;border:none;border-radius:9px;background:#8a6f5d;color:#fff;font-size:13px;cursor:pointer;font-family:inherit;">知道了</button>
-  </div>
 </div>
 <!-- mindmap feature (2026-08-02) -->
 <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
