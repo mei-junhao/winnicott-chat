@@ -8,7 +8,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '2026-08-03.1';
+  var VERSION = '2026-08-04.2';
   var IMMEDIATE_PATTERNS = [
     /(?:现在|马上|今晚|今天|已经|正在|准备|打算|计划).{0,12}(?:自杀|轻生|结束生命|杀死自己|不想活|跳楼|割腕|上吊|服毒|吞药)/i,
     /(?:自杀|轻生|结束生命|杀死自己|跳楼|割腕|上吊|服毒|吞药).{0,12}(?:现在|马上|今晚|今天|已经|正在|准备|打算|计划)/i,
@@ -52,9 +52,9 @@
 
   function response(level) {
     if (level === 'immediate') {
-      return '我很重视你刚才说的情况。现在先不要独自承受，也先不要继续实施任何可能伤害自己或他人的行动。请把危险物品放远，移动到有其他人在的安全位置，并立即联系当地急救、警方或最近的急诊；同时联系一位你信任且能马上陪在身边的人。若你能继续回复，请只告诉我：你现在是否已经采取行动，身边是否有人，以及你所在的国家或地区。我不会继续进行普通的大师角色对话，直到先确认你的现实安全。';
+      return '现实安全提示：你刚才描述的情况可能有迫近危险。现在先停止任何可能伤害自己或他人的行动，把药物、刀具、绳索、武器或其他危险物品交给身边可信任的人或放到无法立即取得的位置；立刻移动到有其他人在的安全地点，不要独处；立即联系当地急救、警方或最近的急诊，并联系一位能马上到场陪伴的人。若还能回复，请只告诉我：是否已经采取行动、身边是否有人、你所在的国家或地区。确认现实安全前，普通大师对话会暂停。';
     }
-    return '你提到的内容可能涉及现实安全，我想先暂停普通的大师角色对话。请告诉我：你现在是否有立即伤害自己或他人的打算、是否已经准备了具体方式，以及身边是否有可以联系的人。如果危险迫近，请立即联系当地急救、警方或最近的急诊，并请一位可信任的人陪在你身边。这里的文字交流不能替代现场的危机支持。';
+    return '现实安全提示：你提到的内容可能涉及自伤、他伤、暴力控制或急性失控。请先告诉我：现在是否有立即行动的打算、是否已准备具体方式或危险物品、身边是否有能联系的人。如果危险迫近，请立刻远离危险物品，移动到有人的安全地点，联系当地急救、警方或最近的急诊，并请可信任的人陪在身边。文字交流不能替代现场危机支持。';
   }
 
   function append(container, message, options) {
@@ -64,8 +64,16 @@
     el.className = options.className || 'msg ai safety-response';
     el.setAttribute('role', 'alert');
     el.setAttribute('data-safety-version', VERSION);
-    if (typeof options.render === 'function') options.render(el, message);
-    else el.textContent = message;
+    if (typeof options.render === 'function') {
+      options.render(el, message);
+      var rendered = el.querySelector('.bubble') || el.firstElementChild || el;
+      rendered.style.fontWeight = '700';
+      rendered.setAttribute('data-safety-emphasis', 'strong');
+    } else {
+      var strong = document.createElement('strong');
+      strong.textContent = message;
+      el.appendChild(strong);
+    }
     container.appendChild(el);
     if (typeof el.scrollIntoView === 'function') el.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }

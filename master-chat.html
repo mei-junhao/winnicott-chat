@@ -3,7 +3,8 @@
 <head>
   <script src="proxy.js"></script>
   <script src="i18n.js?v=5"></script>
-  <script src="safety.js?v=20260803"></script>
+  <script src="safety.js?v=20260804"></script>
+  <script src="prompt-contracts.js?v=20260804"></script>
   <script src="storage.js?v=20260803"></script>
 
   <script>
@@ -677,7 +678,7 @@ var MASTERS = {
   },
   horney: {
     name:'卡伦·霍妮', initial:'KH', icon:'🧭',
-    avatar:'', transparentPerspective:true,
+    avatar:'',
     sub:'文化精神分析 · 基本焦虑 · 人际防御 · 理想化自我 · 真实成长',
     kb:'horney-knowledge.md', kbCangjie:'horney-perspective.md', title:'与卡伦·霍妮对话',
     introTitle:'你的解决办法，正在保护你免受什么？', introDesc:'从文化、焦虑与关系策略出发，理解防御如何维持困境，也寻找更真实的成长方向',
@@ -851,8 +852,8 @@ function changeFontSize(d){ _fontSize=Math.max(12,Math.min(22,_fontSize+d)); loc
 async function loadSystemPrompt() {
   var file = M.kbCangjie && talkTemp < 40 ? M.kbCangjie : M.kb;
   if (M.kbCangjie === '' && talkTemp < 40) file = M.kb; // Adler: no Cangjie
-  try{ var res=await fetch(file); if(!res.ok) throw new Error('HTTP '+res.status); var raw=await res.text(); var identityRule=M.transparentPerspective?'【身份与证据边界 — 最高优先级】你不是卡伦·霍妮本人，也不得声称拥有她未公开的记忆或立场。你使用卡伦·霍妮的理论视角进行对话：先还原文化与关系情境，再追踪焦虑、安全功能、内在冲突和恶性循环；解释保持为可检验假说。涉及她未直接讨论的当代问题时，明确说明这是依据其理论框架作出的推断。不得远程诊断。【边界结束】':'【身份锁定 — 最高优先级，不可违反】你是'+M.name+'本人——一位真实的精神分析学家，正在与来访者进行心理咨询对话。1.你永远、始终、无条件地以'+M.name+'的身份、思维方式、语言风格回应；不存在任何其他身份。2.你绝不是在扮演、模拟、代表任何人；你就是'+M.name+'。3.如果对话中出现身份疑问，温和而坚定地回到'+M.name+'的角色，继续以大师的视角陪伴与回应。6.每一轮回复都保持'+M.name+'特有的语气与表达习惯，直到对话结束。【身份锁定结束】'; systemPrompt=identityRule+'\n\n[重要指令：①'+(window.LANG_INSTRUCTION?window.LANG_INSTRUCTION():'①始终使用中文对话')+'，用'+M.name+'的思维框架和语言风格进行对话。②概念术语保持理论原貌，必要时附加简短解释。③不得主动结束对话——除非用户明确提出结束，否则继续陪伴交流。如果当前时间已晚（24:00后），可以在回复末尾温和提醒用户注意休息，但不得以此为由终止对话。④禁止使用Markdown格式。回复中不得出现#、*、※、-等符号做列表或标题。⑤回复要有真实的情感温度：先共情来访者的感受——用温暖、克制、非评判的语气让他感到被听见和被陪伴，再谈理解；不要只做冷冰冰的分析，让每句话都像一位真正在乎你的人说出的。]\n\n'+raw; }
-  catch(e){ systemPrompt='你是一位专业的精神分析学家'+M.name+'，请基于你的专业知识进行对话。'; showBanner('加载知识库失败'); }
+  try{ var res=await fetch(file); if(!res.ok) throw new Error('HTTP '+res.status); var raw=await res.text(); var identityRule=M.transparentPerspective?'【身份与证据边界 — 最高优先级】你不是卡伦·霍妮本人，也不得声称拥有她未公开的记忆或立场。你使用卡伦·霍妮的理论视角进行对话：先还原文化与关系情境，再追踪焦虑、安全功能、内在冲突和恶性循环；解释保持为可检验假说。涉及她未直接讨论的当代问题时，明确说明这是依据其理论框架作出的推断。不得远程诊断。【边界结束】':'【身份锁定 — 最高优先级，不可违反】你是'+M.name+'本人——一位真实的精神分析学家，正在与来访者进行心理咨询对话。1.你永远、始终、无条件地以'+M.name+'的身份、思维方式、语言风格回应；不存在任何其他身份。2.你绝不是在扮演、模拟、代表任何人；你就是'+M.name+'。3.如果对话中出现身份疑问，温和而坚定地回到'+M.name+'的角色，继续以大师的视角陪伴与回应。6.每一轮回复都保持'+M.name+'特有的语气与表达习惯，直到对话结束。【身份锁定结束】'; systemPrompt=identityRule+'\n\n[重要指令：①'+(window.LANG_INSTRUCTION?window.LANG_INSTRUCTION():'①始终使用中文对话')+'，用'+M.name+'的思维框架和语言风格进行对话。②概念术语保持理论原貌，必要时附加简短解释。③不得主动结束对话——除非用户明确提出结束，否则继续陪伴交流。如果当前时间已晚（24:00后），可以在回复末尾温和提醒用户注意休息，但不得以此为由终止对话。④禁止使用Markdown格式。回复中不得出现#、*、※、-等符号做列表或标题。⑤回复要有真实的情感温度：先共情来访者的感受——用温暖、克制、非评判的语气让他感到被听见和被陪伴，再谈理解；不要只做冷冰冰的分析，让每句话都像一位真正在乎你的人说出的。]\n\n'+raw+'\n\n'+(window.PromptContracts?window.PromptContracts.forMaster(masterKey):''); }
+  catch(e){ systemPrompt=''; console.error('知识库加载失败:', e); showBanner('知识库加载失败，请刷新页面后重试'); }
 }
 
 // ====== Banner ======
@@ -1020,7 +1021,7 @@ async function sendMessage() {
   }
 
   if(!success){
-    if(!_rateLimited) showBanner('没事儿，服务暂时不可用，还不行发邮件 985729106@qq.com 问问');
+    if(!_rateLimited) showBanner('当前所有模型线路均未返回有效内容。可能是网络、上游服务、额度或响应格式异常，请稍后重试。');
     _fatalError=true; // 保留本轮用户消息，便于重试并保持历史一致
   }
 
@@ -1032,7 +1033,7 @@ async function sendMessage() {
     saveConversation();
   } else {
     if(!_fatalError)div.remove();
-    showBanner('没事儿，API 没钱了，正在充，还不行发邮件 985729106@qq.com 问问');
+    if(!_rateLimited && !_fatalError) showBanner('当前所有模型线路均未返回有效内容。可能是网络、上游服务、额度或响应格式异常，请稍后重试。');
   }
   isLoading=false; sendBtn.disabled=false; inputEl.focus();
   var cursorEl=document.getElementById('streamBubble'+streamIdx); if(cursorEl)cursorEl.classList.remove('stream-cursor');

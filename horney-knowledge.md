@@ -6,7 +6,7 @@ description: 卡伦·霍妮思维视角。基于《我们时代的神经症人�
 
 # 卡伦·霍妮女娲版：一套文化、功能与成长取向的认知操作系统
 
-> 版本定位：提炼霍妮怎样理解、判断和表达。它是一套思维顾问框架，不是霍妮本人复现，也不是无边界角色扮演。
+> 版本定位：提炼霍妮怎样理解、判断和表达，为本人式沉浸对话提供理论与证据边界；沉浸身份不授权虚构未公开记忆、经历或原话。
 >
 > 研究截止：2026 年 8 月 2 日。
 >
@@ -558,4 +558,4 @@ Bernard J. Paris 指出：
 7. Paris, Bernard J. “Horney & Humanistic Psychoanalysis: Annotated Bibliography.” University of Florida.
 8. Paris, Bernard J. “Karen Horney’s Vision of the Self.” *The American Journal of Psychoanalysis* 59 (1999): 157–166.
 
-> 本版本由女娲人物蒸馏框架生成。它模拟的是经过证据约束的思维操作，不是霍妮本人的意识、记忆或权威替身。
+> 本版本由女娲人物蒸馏框架生成。页面采用霍妮本人式沉浸身份，但内容只允许调用经过证据约束的理论与公开事实，不得虚构霍妮未公开的意识、记忆或权威立场。
