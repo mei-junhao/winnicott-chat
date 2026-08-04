@@ -6,8 +6,17 @@ const http = require('http');
 const https = require('https');
 
 const app = express();
-app.use(cors());
-app.use(express.json({ limit: '50mb' }));
+const allowedOrigins = new Set([
+  'http://localhost:3000',
+  'http://127.0.0.1:3000'
+]);
+app.use(cors({
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.has(origin)) return callback(null, true);
+    return callback(new Error('Origin not allowed'));
+  }
+}));
+app.use(express.json({ limit: '1mb' }));
 
 // Read Winnicott SKILL.md as system prompt
 const skillPath = path.join(__dirname, 'winnicott-skill.md');
@@ -18,8 +27,17 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Chat endpoint
 app.post('/api/chat', async (req, res) => {
-  const { messages, model } = req.body;
+  const { messages, model } = req.body || {};
   const apiKey = process.env.DEEPSEEK_API_KEY || '';
+  const allowedModels = new Set(['deepseek-chat', 'deepseek-reasoner']);
+
+  if (!Array.isArray(messages) || messages.length === 0 || messages.length > 200 ||
+      messages.some(message => !message || !['user', 'assistant', 'system'].includes(message.role) || typeof message.content !== 'string' || message.content.length > 50000)) {
+    return res.status(400).json({ error: 'messages 格式无效或内容过长' });
+  }
+  if (model && !allowedModels.has(model)) {
+    return res.status(400).json({ error: '不支持的模型' });
+  }
 
   if (!apiKey) {
     return res.status(500).json({ error: '未配置 API Key。请在服务端设置 DEEPSEEK_API_KEY 环境变量。' });
@@ -59,10 +77,11 @@ app.post('/api/chat', async (req, res) => {
         if (data.error) {
           return res.status(500).json({ error: data.error.message || 'API 调用失败' });
         }
-        res.json({
-          content: data.choices[0].message.content,
-          usage: data.usage
-        });
+        const content = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+        if (typeof content !== 'string') {
+          return res.status(502).json({ error: '上游响应缺少有效内容' });
+        }
+        res.json({ content, usage: data.usage });
       } catch (e) {
         res.status(500).json({ error: '解析响应失败' });
       }

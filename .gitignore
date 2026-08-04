@@ -11,3 +11,6 @@ red-cards*.html
 xiaohongshu*.md
 update-article.html
 /UsersAdministrator.git-credentials
+__pycache__/
+*.pyc
+public/*.bak-*

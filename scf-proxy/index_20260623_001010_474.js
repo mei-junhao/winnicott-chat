@@ -53,8 +53,8 @@ exports.main_handler = async (event, context) => {
     };
   }
 
-  // 去掉 stream（SCF API 网关默认不流式，返回完整结果）
-  body.stream = false;
+  // 保留客户端协议选择；该旧 API 网关如不支持流式，应从生产路由移除。
+  body.stream = body.stream === true;
 
   const postData = JSON.stringify(body);
 

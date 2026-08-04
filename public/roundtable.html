@@ -3,7 +3,8 @@
 <head>
   <!-- proxy.js 仅本地开发，线上无需加载 -->
   <script src="i18n.js?v=5"></script>
-  <script src="safety.js?v=20260803"></script>
+  <script src="safety.js?v=20260804"></script>
+  <script src="prompt-contracts.js?v=20260804"></script>
   <script src="storage.js?v=20260803"></script>
 
   <script>
@@ -465,11 +466,11 @@ var MASTERS = {
     hint:'她的理论来自看伴侣关系中的情绪循环——不是谁对谁错的问题',
     intro:'我是苏珊·约翰逊。我花了四十年看人在爱里怎么受伤、怎么修复。我不是来告诉你谁对谁错的——我是来看你和你的重要他人之间那个循环是怎么转的。' },
   horney: { name:'卡伦·霍妮', initial:'KH', icon:'🧭',
-    avatar:'', transparentPerspective:true, sub:'文化精神分析 · 基本焦虑 · 人际防御',
+    avatar:'', sub:'文化精神分析 · 基本焦虑 · 人际防御',
     kb:'horney-perspective.md', accent:'#8A5743', light:'#F3E8DF',
     font:'"Georgia","Noto Serif SC",serif',
     hint:'她会追问：你的解决办法在保护你免受什么，又让你失去了什么',
-    intro:'这里使用卡伦·霍妮的理论视角与你对话，但不冒充霍妮本人。我们不急着贴标签，先看看你在什么情境里感到不安全，又怎样用靠近、对抗或远离来保护自己。一个解释只有得到你的真实感受和后续经验支持，才值得保留。' }
+    intro:'我是卡伦·霍妮。我们不急着贴标签，先看看你在什么情境里感到不安全，又怎样用靠近、对抗或远离来保护自己。一个解释只有得到你的真实感受和后续经验支持，才值得保留。' }
 };
 
 // Masters not suitable per user: Lacan, Bion
@@ -973,7 +974,7 @@ async function sendMsg() {
   });
 
   if (responders.length > 0 && repliedKeys.length === 0) {
-    showBanner('没事儿，API 没钱了，正在充，还不行发邮件 985729106@qq.com 问问');
+    showBanner('当前所有模型线路均未返回有效内容。可能是网络、上游服务、额度或响应格式异常，请稍后重试。');
   }
 
   // ====== Round 2+ : Plan B - Sequential reactions ======
@@ -1134,6 +1135,7 @@ async function callMasterAPI(key, activeNames, history, userMsg, isReactMode) {
     }
 
     sysPrompt = perspectiveBoundary + sysPrompt;
+    sysPrompt += '\n\n' + (window.PromptContracts ? window.PromptContracts.forMaster(key) : '');
     var msgs = [{ role: 'system', content: sysPrompt }];
     history.forEach(function(h) {
       if (!h || typeof h.content !== 'string') return;

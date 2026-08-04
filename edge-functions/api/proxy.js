@@ -20,7 +20,7 @@ export function onRequestOptions(context) {
 // POST 代理
 export async function onRequestPost(context) {
   const body = await context.request.json();
-  body.stream = true;
+  body.stream = body.stream === true;
 
   const response = await fetch(DEEPSEEK_API, {
     method: 'POST',
@@ -35,7 +35,7 @@ export async function onRequestPost(context) {
     status: response.status,
     headers: {
       'Access-Control-Allow-Origin': '*',
-      'Content-Type': 'text/event-stream',
+      'Content-Type': body.stream ? 'text/event-stream' : 'application/json',
     },
   });
 }

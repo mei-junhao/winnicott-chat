@@ -17,7 +17,7 @@ export default {
       return new Response('Method not allowed', { status: 405 });
     }
     const body = await request.json();
-    body.stream = true;
+    body.stream = body.stream === true;
     const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -30,7 +30,7 @@ export default {
       status: response.status,
       headers: {
         'Access-Control-Allow-Origin': '*',
-        'Content-Type': 'text/event-stream',
+        'Content-Type': body.stream ? 'text/event-stream' : 'application/json',
       },
     });
   },

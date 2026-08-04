@@ -1,7 +1,7 @@
 # Winnicott Chat — 项目手册
 
 > 最后更新：2026-08-04
-> 当前版本：v5.4.1
+> 当前版本：v5.5.0（提示词与知识边界整改进行中，未部署）
 > 生产环境：https://mei-junhao.github.io/winnicott-chat/ （GitHub Pages，固定 URL）  
 > 入口文件：index.html（主页；旧的 master-select.html 已废弃并删除）  
 > 仓库地址：https://github.com/mei-junhao/winnicott-chat
@@ -261,7 +261,14 @@ C:\Users\Administrator\AppData\Roaming\Tencent\Marvis\User\oAN1i2TkarGXJ5_iqPWv0
 3. **未来维护方式**：共用视觉与导航只在 `site-theme.css` / `site-shell.js` 维护；新增大师优先扩展 `MASTERS` 与首页配置，知识文件继续按 `<master>-knowledge.md` / `<master>-perspective.md` 命名；不引入框架或第三方依赖。
 4. **职责重叠检查**：体验层只处理导航、布局、入口编排和隐私确认 UI，不接管 API、人物提示词、存储、安全判断或圆桌业务；霍妮复用 `master-chat.html`，不新增重复页面或工作流。
 
-### 6.4 部署命令（GitHub Pages）
+### 6.4 提示词契约与术语附录模块新增说明（2026-08-04）
+
+1. **为什么现有入口无法扩展**：术语规则当前散落在各知识文件和页面内联提示中，同一大师在单聊、圆桌及不同温度文件之间会出现译名漂移；继续向每个知识文件复制同一组事实边界和译名规则，会形成多份难以同步的副本。现有 `i18n.js` 负责界面语言，不能承载学派术语和证据纪律；`safety.js` 只负责危机分流，也不应扩展提示词职责。
+2. **修改成本**：新增一个无依赖静态模块 `public/prompt-contracts.js`，集中提供沉浸身份下的事实证据边界、用户输入指令隔离和按大师索引的术语附录；四个生产对话入口各增加一次脚本引用，并在最终 system prompt 中附加相应契约。测试覆盖 13 位大师索引、四个页面加载链、知识文件加载失败及内联脚本语法。
+3. **未来维护方式**：由本仓库随知识文件共同维护。术语变更必须记录来源与审核状态；新增大师只增加一个键，不新增页面或工作流。未经原文或权威二手资料核验的译名标为待复核，不冒充确定标准。
+4. **职责重叠检查**：模块只提供提示词级事实边界和术语一致性，不负责界面翻译、危机判断、API 路由、存储、人物主体内容或知识检索；与 `i18n.js`、`safety.js`、知识文件和页面业务逻辑职责互补而不重叠。
+
+### 6.5 部署命令（GitHub Pages）
 
 **生产环境部署：** 所有修改完成后执行以下命令。GitHub Pages 自动构建，1-2 分钟后生效。
 更新后的页面在固定 URL：`https://mei-junhao.github.io/winnicott-chat/`

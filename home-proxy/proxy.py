@@ -3,7 +3,7 @@
 # Home Proxy: DeepSeek API 本地代理
 # Key 从环境变量 DEEPSEEK_API_KEY 读取，永不写入代码
 # 用法: set DEEPSEEK_API_KEY=sk-xxx && python proxy.py
-# 监听 localhost:9000
+# 默认监听 127.0.0.1:9000，仅供本机使用
 
 import os
 import json
@@ -57,8 +57,8 @@ class ProxyHandler(BaseHTTPRequestHandler):
             self.wfile.write(b'DEEPSEEK_API_KEY not configured')
             return
 
-        # Force stream for better UX
-        data['stream'] = True
+        # Preserve the client protocol: single chat uses SSE, roundtable uses JSON.
+        data['stream'] = data.get('stream') is True
         req_data = json.dumps(data).encode('utf-8')
 
         try:
@@ -75,7 +75,7 @@ class ProxyHandler(BaseHTTPRequestHandler):
             proxy_res = urllib.request.urlopen(req, timeout=120)
             self.send_response(proxy_res.status)
             self._cors_headers()
-            self.send_header('Content-Type', 'text/event-stream')
+            self.send_header('Content-Type', 'text/event-stream' if data['stream'] else 'application/json')
             self.send_header('Cache-Control', 'no-cache')
             self.end_headers()
 
@@ -103,6 +103,6 @@ class ProxyHandler(BaseHTTPRequestHandler):
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 9000))
-    server = HTTPServer(('0.0.0.0', port), ProxyHandler)
+    server = HTTPServer(('127.0.0.1', port), ProxyHandler)
     print(f'DeepSeek Proxy running on port {port}')
     server.serve_forever()

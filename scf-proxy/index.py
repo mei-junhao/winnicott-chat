@@ -46,7 +46,7 @@ class ProxyHandler(BaseHTTPRequestHandler):
             self.wfile.write(b'DEEPSEEK_API_KEY not configured')
             return
 
-        data['stream'] = True
+        data['stream'] = data.get('stream') is True
         req_data = json.dumps(data).encode('utf-8')
 
         try:
@@ -63,7 +63,7 @@ class ProxyHandler(BaseHTTPRequestHandler):
             proxy_res = urllib.request.urlopen(req, timeout=60)
             self.send_response(proxy_res.status)
             self._cors_headers()
-            self.send_header('Content-Type', 'text/event-stream')
+            self.send_header('Content-Type', 'text/event-stream' if data['stream'] else 'application/json')
             self.send_header('Cache-Control', 'no-cache')
             self.end_headers()
 
