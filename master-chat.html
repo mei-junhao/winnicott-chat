@@ -1436,7 +1436,6 @@ function showChangelog() {
   el.style.display = el.style.display === 'block' ? 'none' : 'block';
 }
 
-  // 2026-08-02: 每次进入都弹（移除一次性限制）
 function refreshLineBtns(){
   var d=document.getElementById('lineDeepBtn'), g=document.getElementById('lineGptBtn'), gm=document.getElementById('lineGemBtn'), cl=document.getElementById('lineClBtn');
   if(d){ d.style.background=_apiLine==='deepseek'?'var(--accent)':'none'; d.style.color=_apiLine==='deepseek'?'#fff':'var(--muted)'; }
