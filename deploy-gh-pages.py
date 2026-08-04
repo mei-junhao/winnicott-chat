@@ -13,7 +13,7 @@ ALLOWED_EXACT = {
     'roundtable.html', 'consultant-a.html', 'ai-supervisor.html',
     'about-winnicott-chat.html', 'about-winnicott-chat-video.html',
     'xinjing-landing.html', 'i18n.js', 'proxy.js', 'mindmap.js', 'safety.js',
-    'prompt-contracts.js',
+    'prompt-contracts.js', 'adaptive-dialogue.js',
     'lacan-avatar.jpg', 'reward-qr.jpg', 'assets/xinjing-workbench.png',
     'prompts/supervisor.txt'
 }
