@@ -5,6 +5,7 @@
   <script src="i18n.js?v=5"></script>
   <script src="safety.js?v=20260804"></script>
   <script src="prompt-contracts.js?v=20260804"></script>
+  <script src="adaptive-dialogue.js?v=20260804"></script>
   <script src="storage.js?v=20260803"></script>
 
   <script>
@@ -738,6 +739,20 @@ document.getElementById('greetingBtns').insertAdjacentHTML('beforeend',
 var conversation = [];
 var systemPrompt = '';
 var talkTemp = parseInt(localStorage.getItem('mc_temp_' + masterKey) || '60');
+var _adaptiveResult = null;
+var _adaptivePromptReload = null;
+if (window.AdaptiveDialogue) {
+  window.AdaptiveDialogue.configure({ scope: 'master-' + masterKey, onModeChange: function (mode) {
+    var savedTemp = parseInt(localStorage.getItem('mc_temp_' + masterKey) || '60');
+    if (mode === 'support') talkTemp = Math.min(savedTemp, 25);
+    else if (mode === 'analytic') talkTemp = Math.max(savedTemp, 75);
+    else talkTemp = savedTemp;
+    var slider = document.getElementById('tempSlider');
+    if (slider) slider.value = talkTemp;
+    updateTemp(talkTemp, false);
+    _adaptivePromptReload = loadSystemPrompt();
+  }});
+}
 var _maxTokens = parseInt(localStorage.getItem('mc_len_' + masterKey) || '0');
 var isLoading = false; var _tierLevel = 0; var _chapterCount = 0;
 var _msgIdCounter = 0; var _msgToConvIdx = {}; var _streamIdx = 0;
@@ -784,9 +799,10 @@ function setApiLine(line) {
 }
 function getActiveConfig() { if(apiMode==='custom'&&customApi&&customKey) return {api:customApi,key:customKey,model:customModel,name:'自定义'}; return {api:API_PROXY,key:'',model:(_apiLine==='gpt'?'gpt-5.6':(_apiLine==='gemini'?'gemini-3.5-flash':(_apiLine==='claude'?'claude-sonnet-5':'deepseek-v4-pro'))),name:(_apiLine==='gpt'?'GPT-5.6':(_apiLine==='gemini'?'Gemini':(_apiLine==='claude'?'Claude':'DeepSeek Pro')))}; }
 
-function updateTemp(val) {
+function updateTemp(val,persist) {
   var old=talkTemp; talkTemp=parseInt(val);
-  localStorage.setItem('mc_temp_'+masterKey,talkTemp);
+  if(persist!==false&&window.AdaptiveDialogue&&document.activeElement===document.getElementById('tempSlider'))window.AdaptiveDialogue.noteManualMode(talkTemp<=30?'support':(talkTemp>=75?'analytic':'balanced'));
+  if(persist!==false)localStorage.setItem('mc_temp_'+masterKey,talkTemp);
   document.getElementById('tempLabel').textContent=talkTemp;
   document.getElementById('tempSlider').style.background='linear-gradient(to right, var(--accent) '+talkTemp+'%, #e5d9c8 '+talkTemp+'%)';
   var oldZone=old<40?0:old<=70?1:2; var newZone=talkTemp<40?0:talkTemp<=70?1:2;
@@ -865,6 +881,7 @@ var _selectedTemp = null;  // mode temperature selected by user
 function startChat(tip) {
   if (typeof tip === 'number') {
     // Mode button clicked: show hints for this mode
+    if(window.AdaptiveDialogue)window.AdaptiveDialogue.noteManualMode(tip<=30?'support':(tip>=75?'analytic':'balanced'));
     talkTemp = tip;
     _selectedTemp = tip;
     updateTemp(tip);
@@ -961,8 +978,14 @@ function checkChapterShift() {
 // ====== Send ======
 async function sendMessage() {
   var text=inputEl.value.trim(); if(!text||isLoading)return;
+  var safetyResult=window.ChatSafety?window.ChatSafety.assess(text):{level:'none'};
   if(window.ChatSafety&&window.ChatSafety.guard(text,{container:messagesEl,className:'msg ai safety-response',render:function(el,message){var bubble=document.createElement('div');bubble.className='bubble';bubble.style.whiteSpace='pre-wrap';bubble.textContent=message;el.appendChild(bubble);},onBlocked:function(){inputEl.value='';}}))return;
   if(!systemPrompt){showBanner('知识库加载中，请稍等');return;}
+  _adaptivePromptReload=null;
+  _adaptiveResult=window.AdaptiveDialogue?window.AdaptiveDialogue.inspect(text,{riskLevel:safetyResult.level}):null;
+  if(_adaptivePromptReload&&typeof _adaptivePromptReload.then==='function'){
+    try{await _adaptivePromptReload;}catch(adaptiveLoadError){console.error('自适应知识库加载失败:',adaptiveLoadError);}
+  }
   inputEl.value=''; appendMessage('user',text); conversation.push({role:'user',content:text});
   mcUserMsgCount++; maybeAutoRewardMC();
   _streamIdx++; isLoading=true; sendBtn.disabled=true; showTyping(); document.querySelector('.header').classList.add('compact');
@@ -977,7 +1000,8 @@ async function sendMessage() {
   var cfg=getActiveConfig();
   var now=new Date(); var h=now.getHours(); var m=now.getMinutes();
   var timeNote='[当前时间：'+h+'时'+m+'分'+(h>=0&&h<6?'，已夜深，可在回复末尾温和提醒用户休息':'')+']';
-  var ctxMessages=[{role:'system',content:systemPrompt+tempInstr+'\n\n'+timeNote}];
+  var adaptiveInstr=window.AdaptiveDialogue?window.AdaptiveDialogue.instruction(_adaptiveResult,M.name):'';
+  var ctxMessages=[{role:'system',content:systemPrompt+tempInstr+adaptiveInstr+'\n\n'+timeNote}];
   ctxMessages=ctxMessages.concat(conversation);
 
   var fullReply=''; var success=false; var _retry=0; var _maxRetries=3; var _fatalError=false; var _rateLimited=false;
@@ -1031,6 +1055,7 @@ async function sendMessage() {
     checkChapterShift(); _autoSaveCounter++;
     if(_autoSaveCounter>=5){_autoSaveCounter=0;saveHistory();}
     saveConversation();
+    if(_adaptiveResult&&_adaptiveResult.showConfirm)window.AdaptiveDialogue.showSuggestion(_adaptiveResult);
   } else {
     if(!_fatalError)div.remove();
     if(!_rateLimited && !_fatalError) showBanner('当前所有模型线路均未返回有效内容。可能是网络、上游服务、额度或响应格式异常，请稍后重试。');
@@ -1059,6 +1084,7 @@ function saveChat(){
 }
 function resetConversation(){
   conversation=[];_tierLevel=0;_chapterCount=0;
+  if(window.AdaptiveDialogue)window.AdaptiveDialogue.reset();
   localStorage.removeItem('mc_conv_'+masterKey);
   messagesEl.querySelectorAll('.msg,.chapter-divider').forEach(function(e){e.remove();});
   document.getElementById('intro').style.display=''; document.querySelector('.header').classList.remove('compact');
