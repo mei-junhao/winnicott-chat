@@ -706,7 +706,8 @@ MASTERS = {
 // ====== Parse Master ======
 var params = new URLSearchParams(window.location.search);
 var masterKey = params.get('master') || 'consultantA';
-var M = MASTERS[masterKey] || MASTERS.consultantA;
+if (!MASTERS[masterKey]) masterKey = 'consultantA';
+var M = MASTERS[masterKey];
 document.querySelector(':root').style.setProperty('--bg', M.bg);
 document.querySelector(':root').style.setProperty('--accent', M.accent);
 document.querySelector(':root').style.setProperty('--light-accent', M.lightAccent);
@@ -1572,7 +1573,7 @@ MindmapFeature.init({
       bubble.appendChild(btn);
     }
     btn.setAttribute('data-text', txt.slice(0, 1000));
-    btn.setAttribute('data-role', (window.currentMasterKey || window.M && M && M.key) || '');
+    btn.setAttribute('data-role', (typeof masterKey !== 'undefined' && masterKey === 'consultantA' ? 'consultant' : masterKey) || '');
     bubble.setAttribute('data-tts-done', '1');
   }
   function bubbleFromNode(node) {

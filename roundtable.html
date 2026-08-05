@@ -771,6 +771,7 @@ function addMsg(name, text, isUser) {
     div.textContent = '—— ' + text + ' ——';
   } else {
     div.className = 'msg master';
+    div.setAttribute('data-speaker-id', name || '');
     var bg = m ? m.light : '#f5f0eb';
     var color = m ? m.accent : '#8b6f5c';
     var initial = m ? m.initial : '?';
@@ -1451,17 +1452,19 @@ MindmapFeature.init({
       bubble.appendChild(btn);
     }
     btn.setAttribute('data-text', txt.slice(0, 1000));
-    btn.setAttribute('data-role', (window.currentMasterKey || window.M && M && M.key) || '');
+    var speaker = bubble.closest ? bubble.closest('.msg.master') : null;
+    var speakerRole = speaker ? speaker.getAttribute('data-speaker-id') : '';
+    btn.setAttribute('data-role', speakerRole || (window.currentMasterKey || window.M && M && M.key) || '');
     bubble.setAttribute('data-tts-done', '1');
   }
   function bubbleFromNode(node) {
     var el = node && node.nodeType === 1 ? node : (node && node.parentElement);
-    return el && el.closest ? el.closest('.msg.ai .bubble, .ai .bubble, [class*="msg"][class*="ai"] .bubble') : null;
+    return el && el.closest ? el.closest('.msg.ai .bubble, .ai .bubble, [class*="msg"][class*="ai"] .bubble, .msg.master .msg-text') : null;
   }
   window.__ensureTtsButton = addTtsBtn;
   function scanNewBubbles(root) {
     if (!root) return;
-    var els = root.querySelectorAll ? root.querySelectorAll('.msg.ai .bubble, .ai .bubble, [class*="msg"][class*="ai"] .bubble') : [];
+    var els = root.querySelectorAll ? root.querySelectorAll('.msg.ai .bubble, .ai .bubble, [class*="msg"][class*="ai"] .bubble, .msg.master .msg-text') : [];
     for (var i = 0; i < els.length; i++) addTtsBtn(els[i]);
   }
   scanNewBubbles(document);

@@ -2423,7 +2423,7 @@ MindmapFeature.init({
       bubble.appendChild(btn);
     }
     btn.setAttribute('data-text', txt.slice(0, 1000));
-    btn.setAttribute('data-role', (window.currentMasterKey || window.M && M && M.key) || '');
+    btn.setAttribute('data-role', _persona === 'lacan' ? 'lacan' : 'winnicott');
     bubble.setAttribute('data-tts-done', '1');
   }
   function bubbleFromNode(node) {
