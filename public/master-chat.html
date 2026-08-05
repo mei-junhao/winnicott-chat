@@ -1050,7 +1050,9 @@ async function sendMessage() {
   }
 
   if(success&&fullReply){
-    document.getElementById('streamBubble'+streamIdx).classList.remove('stream-cursor');
+    var completedBubble=document.getElementById('streamBubble'+streamIdx);
+    completedBubble.classList.remove('stream-cursor');
+    if(window.__ensureTtsButton)window.__ensureTtsButton(completedBubble);
     conversation.push({role:'assistant',content:fullReply});
     checkChapterShift(); _autoSaveCounter++;
     if(_autoSaveCounter>=5){_autoSaveCounter=0;saveHistory();}
@@ -1543,21 +1545,39 @@ MindmapFeature.init({
     var role = btn.getAttribute('data-role') || '';
     ttsPlay(t, role);
   });
-  // 自动给 AI 回复 bubble 加 🔊 按钮（MutationObserver，监听新消息）
+  // 自动给 AI 回复 bubble 加 🔊 按钮。流式回复会持续替换 innerHTML，
+  // 因此同时监听文本变化，并在按钮被替换后重新补回。
+  function bubbleText(bubble) {
+    var copy = bubble.cloneNode ? bubble.cloneNode(true) : null;
+    if (copy && copy.querySelectorAll) {
+      var buttons = copy.querySelectorAll('.tts-btn');
+      for (var i = 0; i < buttons.length; i++) buttons[i].remove();
+      return (copy.textContent || '').trim();
+    }
+    return (bubble.textContent || '').trim();
+  }
   function addTtsBtn(bubble) {
-    if (!bubble || bubble.querySelector('.tts-btn') || bubble.getAttribute('data-tts-done')) return;
-    var txt = (bubble.textContent || '').trim();
+    if (!bubble) return;
+    var txt = bubbleText(bubble);
     if (!txt) return;
-    bubble.setAttribute('data-tts-done', '1');
-    var btn = document.createElement('button');
-    btn.className = 'tts-btn';
+    var btn = bubble.querySelector ? bubble.querySelector('.tts-btn') : null;
+    if (!btn) {
+      btn = document.createElement('button');
+      btn.className = 'tts-btn';
+      btn.style.cssText = 'margin:6px 4px 2px;padding:3px 10px;border-radius:8px;border:1px solid #d8d2ca;background:#fff;color:#8b8178;font-size:11px;cursor:pointer;';
+      btn.textContent = '🔊';
+      btn.title = '朗读回复';
+      bubble.appendChild(btn);
+    }
     btn.setAttribute('data-text', txt.slice(0, 1000));
     btn.setAttribute('data-role', (window.currentMasterKey || window.M && M && M.key) || '');
-    btn.style.cssText = 'margin:6px 4px 2px;padding:3px 10px;border-radius:8px;border:1px solid #d8d2ca;background:#fff;color:#8b8178;font-size:11px;cursor:pointer;';
-    btn.textContent = '🔊';
-    btn.title = '朗读回复';
-    bubble.appendChild(btn);
+    bubble.setAttribute('data-tts-done', '1');
   }
+  function bubbleFromNode(node) {
+    var el = node && node.nodeType === 1 ? node : (node && node.parentElement);
+    return el && el.closest ? el.closest('.msg.ai .bubble, .ai .bubble, [class*="msg"][class*="ai"] .bubble') : null;
+  }
+  window.__ensureTtsButton = addTtsBtn;
   function scanNewBubbles(root) {
     if (!root) return;
     var els = root.querySelectorAll ? root.querySelectorAll('.msg.ai .bubble, .ai .bubble, [class*="msg"][class*="ai"] .bubble') : [];
@@ -1567,6 +1587,8 @@ MindmapFeature.init({
   if (window.MutationObserver) {
     var mo = new MutationObserver(function (muts) {
       for (var i = 0; i < muts.length; i++) {
+        var changedBubble = bubbleFromNode(muts[i].target);
+        if (changedBubble) addTtsBtn(changedBubble);
         for (var j = 0; j < muts[i].addedNodes.length; j++) {
           var n = muts[i].addedNodes[j];
           if (n.nodeType === 1) {
@@ -1576,7 +1598,7 @@ MindmapFeature.init({
         }
       }
     });
-    mo.observe(document.body, { childList: true, subtree: true });
+    mo.observe(document.body, { childList: true, subtree: true, characterData: true });
   }
 })();
 </script>
