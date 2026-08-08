@@ -787,7 +787,7 @@ function fillPreset(api,model) { document.getElementById('customApi').value=api;
 function saveSettings() { customApi=document.getElementById('customApi').value.trim(); customKey=document.getElementById('customKey').value.trim(); customModel=document.getElementById('customModel').value.trim()||'gpt-4o'; if(customApi)localStorage.setItem('mc_custom_api_'+masterKey,customApi);else localStorage.removeItem('mc_custom_api_'+masterKey); if(customKey)localStorage.setItem('mc_custom_key_'+masterKey,customKey);else localStorage.removeItem('mc_custom_key_'+masterKey); localStorage.setItem('mc_custom_model_'+masterKey,customModel); showBanner('设置已保存'); }
 function restoreSettings() { customApi=localStorage.getItem('mc_custom_api_'+masterKey)||''; customKey=localStorage.getItem('mc_custom_key_'+masterKey)||''; customModel=localStorage.getItem('mc_custom_model_'+masterKey)||'gpt-4o'; document.getElementById('customApi').value=customApi; document.getElementById('customKey').value=customKey; document.getElementById('customModel').value=customModel; }
 // ====== API 线路（deepseek / gpt，全站共享选择） ======
-var _apiLine = localStorage.getItem('chat_api_line_v2') || 'gemini';  // 2026-08-02 默认 gemini（chat_api_line_v2 新键，旧键作废）
+var _apiLine = localStorage.getItem('chat_api_line_v2') || 'deepseek';  // 2026-08-02 默认 gemini（chat_api_line_v2 新键，旧键作废）
 function setApiLine(line) {
   _apiLine = line;
   localStorage.setItem('chat_api_line_v2', line);

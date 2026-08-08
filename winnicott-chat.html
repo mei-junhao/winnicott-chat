@@ -1588,7 +1588,7 @@ function closeSharePreview() {
 }
 
 // ====== API 线路（deepseek / gpt，全站共享选择） ======
-var _apiLine = localStorage.getItem('chat_api_line_v2') || 'gemini';  // 2026-08-02 默认 gemini
+var _apiLine = localStorage.getItem('chat_api_line_v2') || 'deepseek';  // 2026-08-02 默认 gemini
 function setApiLine(line) {
   _apiLine = line;
   localStorage.setItem('chat_api_line_v2', line);
