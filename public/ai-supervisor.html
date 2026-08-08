@@ -759,7 +759,7 @@ var customKey = localStorage.getItem('sv_key') || '';
 var customModel = localStorage.getItem('sv_model') || '';
 var apiMode = (customApi && customKey) ? 'custom' : 'default';  // 有自有API则默认使用
 // ====== API 线路（deepseek / gpt，全站共享选择；ai 督导默认 pro） ======
-var _apiLine = localStorage.getItem('chat_api_line_v2') || 'gemini';  // 2026-08-02 默认 gemini
+var _apiLine = localStorage.getItem('chat_api_line_v2') || 'deepseek';  // 2026-08-02 默认 gemini
 function setApiLine(line) {
   _apiLine = line;
   localStorage.setItem('chat_api_line_v2', line);
