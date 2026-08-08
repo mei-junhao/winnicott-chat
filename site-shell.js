@@ -48,12 +48,37 @@
   function chat(){
     var app=document.querySelector('.app');if(!app)return;
     var header=app.querySelector('.header');var panel=document.getElementById('settingsPanel');
-    if(header){var bar=node('div','preview-commandbar');bar.innerHTML='<button type="button" data-action="history">历史</button><button type="button" data-action="save">保存</button><button type="button" data-action="share">分享 / 转发</button><span class="preview-spacer"></span><span class="preview-context">低频 API、外观、导出、邮件与数据管理仍在“设置”中</span>';header.insertAdjacentElement('afterend',bar);
-      bar.addEventListener('click',function(e){var a=e.target.dataset.action;if(!a)return;if(a==='history')call('showHistory');if(a==='save'){if(typeof window.saveToHistory==='function')call('saveToHistory');else call('saveChat')}if(a==='share')call('toggleForwardMode')});
+    if(header){var bar=node('div','preview-commandbar');bar.innerHTML='<button type="button" data-action="back">返回首页</button><button type="button" data-action="home">首页</button><button type="button" data-action="history">历史</button><button type="button" data-action="save">保存</button><button type="button" data-action="share">分享 / 转发</button><button type="button" data-action="settings">设置</button><span class="preview-spacer"></span><span class="preview-context">人物标题会在开始对话后自动隐藏</span>';header.insertAdjacentElement('afterend',bar);
+      bar.addEventListener('click',function(e){var a=e.target.dataset.action;if(!a)return;if(a==='back'||a==='home'){window.location.href='index.html'}else if(a==='history'){call('showHistory')}else if(a==='save'){if(typeof window.saveToHistory==='function')call('saveToHistory');else call('saveChat')}else if(a==='share'){call('toggleForwardMode')}else if(a==='settings'){call('toggleSettings')}});
     }
     if(panel){panel.querySelectorAll('hr').forEach(function(hr){hr.style.borderColor='var(--preview-line)'});}
+    function syncHeader(){
+      var el=app.querySelector('.header');if(!el)return;
+      var msgs=document.getElementById('messages');
+      var hasContent=msgs&&msgs.querySelector('.msg,.chapter-divider');
+      el.classList.toggle('is-min',!!hasContent);
+    }
+    var msgs=document.getElementById('messages');
+    if(msgs&&window.MutationObserver){var ob=new MutationObserver(syncHeader);ob.observe(msgs,{childList:true,subtree:true});syncHeader()}
+    else syncHeader();
+    if(typeof setupChatComposerHeight==='function')setupChatComposerHeight();
     document.title=document.title||'大师对话';
   }
+
+  function setupChatComposerHeight(){
+    var composer=document.querySelector('.bottom-bar');if(!composer||!document.body.classList.contains('preview-chat'))return;
+    function apply(){
+      var rect=composer.getBoundingClientRect();
+      var h=Math.max(80,Math.min(260,Math.round(window.innerHeight-rect.top)));
+      document.documentElement.style.setProperty('--chat-composer-h',h+'px');
+    }
+    apply();
+    if(window.ResizeObserver){var ro=new ResizeObserver(apply);ro.observe(composer)}
+    window.addEventListener('resize',apply);
+    window.addEventListener('load',apply);
+    if(window.visualViewport){window.visualViewport.addEventListener('resize',apply)}
+  }
+  window.setupChatComposerHeight=setupChatComposerHeight;
 
   function roundtable(){
     var app=document.querySelector('.app');if(!app)return;
