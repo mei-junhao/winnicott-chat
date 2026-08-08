@@ -1,5 +1,22 @@
 # Winnicott Chat — 版本日志
 
+## v5.5.4 (2026-08-08) — 移动端回复被输入栏遮挡修复
+
+- 修复 `public/site-theme.css` 中 `.preview-chat .messages` 与 `.preview-roundtable .chat-area` 的 `padding: 18px 13px !important` 覆盖原页面为底部输入栏预留的 145px，导致温尼科特页面与 master-chat、roundtable 一起出现回复末尾被遮住、无法滚动看到完整内容。
+- 引入 CSS 变量 `--chat-composer-h`，消息区 `padding-bottom` 改为 `calc(var(--chat-composer-h,110px) + 16px)`，由 `ResizeObserver` + `visualViewport` 实时测量 `.bottom-bar` 高度并写入变量，覆盖微信浏览器、Chrome Android、Safari iOS 与全面屏。
+- `.preview-chat .header.is-min` 在出现对话消息后让原人物页头隐藏，让位给紧凑操作栏和消息区。
+- `public/site-shell.js` 的 `chat()` 增补“首页”“设置”入口，并对消息区内容变化做 MutationObserver 同步，确保人物页头在发送第一条消息后立刻隐藏、点击新对话后恢复。
+- 不删除 TTS、分享、转发、导图、API 线路、自定义 API 等功能；五个活动页 22 段内联脚本、`site-shell.js`、`git diff --check` 均通过语法检查。
+- 当前仅本地修改，未提交推送 GitHub，未部署 GitHub Pages。
+
+## v5.5.3 (2026-08-05) — 统一大师 TTS 语速
+
+- 根据试听反馈，将 VPS `/opt/chat-proxy/tts.js` 中 14 个大师/督导角色的 Edge-TTS 语速统一从 `slow` 调整为 `medium`。
+- 保留各角色已确认的基础音色、音高和 role 键；远程备份为 `tts.js.bak-20260805-120224`。
+- `node --check` 通过，`chat-proxy.service` 重启后状态为 `active`。
+- 真实回归已验证温尼科特、弗洛伊德、克莱因、荣格返回 `200 audio/mpeg` 与 `X-TTS: edge`；后续角色测试触发服务端每 IP 每分钟 5 次限流，需在窗口后补测。
+
+
 ## v5.5.2 (2026-08-04) — 修复大师音色角色匹配
 
 - 统一五个生产页面的 TTS role：温尼科特/拉康、通用大师、咨询师A、AI 督导分别传递规范角色键。

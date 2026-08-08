@@ -1,7 +1,7 @@
 # Winnicott Chat — 项目手册
 
-> 最后更新：2026-08-04
-> 当前版本：v5.5.2（修复大师音色角色匹配）
+> 最后更新：2026-08-08
+> 当前版本：v5.5.4（修复移动端回复被输入栏遮挡 + 紧凑操作栏）
 > 生产环境：https://mei-junhao.github.io/winnicott-chat/ （GitHub Pages，固定 URL）  
 > 入口文件：index.html（主页；旧的 master-select.html 已废弃并删除）  
 > 仓库地址：https://github.com/mei-junhao/winnicott-chat
@@ -370,6 +370,20 @@ curl -s -X POST 'https://api.kkdmx.com/v1/chat/completions' \
 ---
 
 ## 九、变更记录
+
+### v5.5.4（2026-08-08）— 移动端回复显示不全修复
+- `public/site-theme.css`：修复 `.preview-chat .messages` 与 `.preview-roundtable .chat-area` 的 `padding: 18px 13px !important;` 把原页面为固定底部输入栏预留的 `padding-bottom:145px` 覆盖的问题。引入 CSS 变量 `--chat-composer-h`，消息区 `padding-bottom` 改为 `calc(var(--chat-composer-h,110px) + 16px)`。
+- 新增 `.preview-chat .header.is-min`：进入对话后人物页头自动隐藏，气泡上方保留小型说话人标签。
+- `public/site-shell.js` 的 `chat()` 增加首页入口与设置入口、人物页头同步逻辑、`setupChatComposerHeight()` 实时测量 `.bottom-bar` 高度并写入 CSS 变量，使用 `ResizeObserver` + `visualViewport` 监听键盘弹出。
+- `master-chat.html`、`winnicott-chat.html`、`roundtable.html` 同步受益；底部固定输入栏新增 `border-top:1px solid var(--preview-line)`，使用 `env(safe-area-inset-bottom)`。
+- 22 段内联脚本与 `site-shell.js` 通过语法检查；`git diff --check` 通过。线下未提交。
+
+### v5.5.3（2026-08-05）
+- 根据试听反馈，将 VPS `/opt/chat-proxy/tts.js` 中 14 个大师/督导角色的 Edge-TTS 语速统一从 `slow` 调整为 `medium`。
+- 保留各角色已确认的基础音色、音高和 role 键；远程备份为 `tts.js.bak-20260805-120224`。
+- `node --check` 通过，`chat-proxy.service` 重启后状态为 `active`。
+- 已完成 3 个角色的真实 `/tts` 回归，均返回 `200 audio/mpeg` 与 `X-TTS: edge`；继续回归时触发服务端每 IP 每分钟 5 次限流，返回 `429`，需在限流窗口后补测其余角色。
+
 
 | 日期 | 变更内容 |
 |------|---------|
