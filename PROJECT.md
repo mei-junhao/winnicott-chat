@@ -1,7 +1,7 @@
 # Winnicott Chat — 项目手册
 
 > 最后更新：2026-08-23
-> 当前版本：v5.5.5（圆桌输出截断 / 设置收起 / 自动保存修复）
+> 当前版本：v5.5.6（圆桌自动保存入历史 + 状态栏收起）
 > 生产环境：https://mei-junhao.github.io/winnicott-chat/ （GitHub Pages，固定 URL）  
 > 入口文件：index.html（主页；旧的 master-select.html 已废弃并删除）  
 > 仓库地址：https://github.com/mei-junhao/winnicott-chat
@@ -370,6 +370,11 @@ curl -s -X POST 'https://api.kkdmx.com/v1/chat/completions' \
 ---
 
 ## 九、变更记录
+
+### v5.5.6（2026-08-23）— 圆桌自动保存入历史 + 状态栏收起
+- `public/roundtable.html`：自动保存除写 `rt_autosave` 草稿外，同步以 id=`autosave` 写入 `rt_history`，返回首页再回来可在「历史记录」看到自动保存记录；`clearAutosave` 同步移除该记录；手动保存会替换自动保存记录避免重复。
+- `public/site-shell.js` + `public/site-theme.css`：圆桌新增「收起状态栏 ▴ / 放下状态栏 ▾」开关，可折叠参与者/操作栏，最大化聊天窗口；折叠状态持久化到 `rt_status_collapsed`。
+- 真实浏览器（Edge Headless + CDP）验证：折叠/展开、自动保存跨页恢复、历史记录可见均通过；视觉模型复核折叠后聊天区变大。
 
 ### v5.5.5（2026-08-23）— 圆桌截断 / 设置收起 / 自动保存修复
 - `public/roundtable.html`：圆桌请求 `max_tokens` 由 512/400/600 提升为 2048/1536/1536，配合服务端 `enable_thinking:false`，解决 DeepSeek v4-pro 推理 token 占用回复预算导致的输出截断 / 空回复。

@@ -86,6 +86,20 @@
     if(toolbar)Array.prototype.slice.call(toolbar.children).forEach(function(el){el.classList.add('preview-source-control')});
     var control=node('div','preview-round-control');control.innerHTML='<button type="button" data-action="participants">管理参与者</button><label for="previewResponseTarget">本轮谁回应</label><select id="previewResponseTarget"><option value="all">全体参与者</option></select><span class="preview-spacer"></span><button type="button" data-action="save">保存</button><button type="button" data-action="history">历史</button><details class="preview-advanced"><summary>更多</summary><div class="preview-advanced-body"><button type="button" data-action="presets">预设组合</button><button type="button" data-action="new">新对话</button><label><input id="previewSerial" type="checkbox" checked> 串行</label><button type="button" data-action="fontDown">A−</button><button type="button" data-action="fontUp">A+</button></div></details>';
     if(toolbar)toolbar.insertAdjacentElement('beforebegin',control);else app.querySelector('.header').insertAdjacentElement('afterend',control);
+    var handle=node('div','rt-status-handle','<button type="button" data-action="statusToggle">收起状态栏 ▴</button>');
+    control.insertAdjacentElement('beforebegin',handle);
+    var collapseKey='rt_status_collapsed';
+    var collapsed=false; try { collapsed=localStorage.getItem(collapseKey)==='1'; } catch(e) {}
+    if(collapsed) document.body.classList.add('rt-status-collapsed');
+    var statusToggle=handle.querySelector('button');
+    statusToggle.textContent = collapsed ? '放下状态栏 ▾' : '收起状态栏 ▴';
+    statusToggle.setAttribute('aria-expanded', String(!collapsed));
+    statusToggle.addEventListener('click', function(){
+      collapsed = document.body.classList.toggle('rt-status-collapsed');
+      statusToggle.textContent = collapsed ? '放下状态栏 ▾' : '收起状态栏 ▴';
+      statusToggle.setAttribute('aria-expanded', String(!collapsed));
+      try { localStorage.setItem(collapseKey, collapsed ? '1' : '0'); } catch(e) {}
+    });
     var help=node('div','preview-round-help','只需要理解两件事：谁在场、这一轮谁回应。原有 @ 指定、预设、串行、多轮、历史、导图和自定义 API 均保留。');control.insertAdjacentElement('afterend',help);
     function names(){var items=Array.prototype.slice.call(document.querySelectorAll('.avatar-item .aname'));return items.map(function(x){return x.textContent.trim()}).filter(Boolean)}
     function sync(){var select=document.getElementById('previewResponseTarget');var cur=select.value;select.innerHTML='<option value="all">全体参与者</option>';names().forEach(function(n){var o=document.createElement('option');o.value=n;o.textContent=n;select.appendChild(o)});if(Array.prototype.some.call(select.options,function(o){return o.value===cur}))select.value=cur}

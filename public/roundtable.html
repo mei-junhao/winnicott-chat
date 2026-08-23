@@ -1283,6 +1283,10 @@ function autosaveConversation() {
     messages: window.ChatStorage.normalizeRoundMessages(conversation)
   };
   window.ChatStorage.write(AUTOSAVE_KEY, entry);
+  var h = readRoundHistory().filter(function(e) { return e.id !== 'autosave'; });
+  h.unshift(entry);
+  if (h.length > 30) h = h.slice(0, 30);
+  window.ChatStorage.write(HISTORY_KEY, h);
 }
 function pushConversation(msg) {
   conversation.push(msg);
@@ -1290,6 +1294,8 @@ function pushConversation(msg) {
 }
 function clearAutosave() {
   try { localStorage.removeItem(AUTOSAVE_KEY); } catch (e) {}
+  var h = readRoundHistory().filter(function(e) { return e.id !== 'autosave'; });
+  window.ChatStorage.write(HISTORY_KEY, h);
 }
 function restoreAutosave() {
   var raw;
@@ -1315,7 +1321,7 @@ function readRoundHistory() { return window.ChatStorage.read(HISTORY_KEY, { kind
 
 function saveHistory() {
   if (conversation.length === 0) { showBanner('没有对话内容可保存'); return; }
-  var h = readRoundHistory();
+  var h = readRoundHistory().filter(function(e) { return e.id !== 'autosave'; });
   var title = '圆桌·' + new Date().toLocaleString('zh-CN', {month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
   var firstMsg = '';
   for (var i = 0; i < conversation.length; i++) {
