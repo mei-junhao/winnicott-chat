@@ -1,7 +1,7 @@
 # Winnicott Chat — 项目手册
 
-> 最后更新：2026-08-08
-> 当前版本：v5.5.4（修复移动端回复被输入栏遮挡 + 紧凑操作栏）
+> 最后更新：2026-08-23
+> 当前版本：v5.5.5（圆桌输出截断 / 设置收起 / 自动保存修复）
 > 生产环境：https://mei-junhao.github.io/winnicott-chat/ （GitHub Pages，固定 URL）  
 > 入口文件：index.html（主页；旧的 master-select.html 已废弃并删除）  
 > 仓库地址：https://github.com/mei-junhao/winnicott-chat
@@ -370,6 +370,13 @@ curl -s -X POST 'https://api.kkdmx.com/v1/chat/completions' \
 ---
 
 ## 九、变更记录
+
+### v5.5.5（2026-08-23）— 圆桌截断 / 设置收起 / 自动保存修复
+- `public/roundtable.html`：圆桌请求 `max_tokens` 由 512/400/600 提升为 2048/1536/1536，配合服务端 `reasoning_effort:none`，解决 DeepSeek v4-pro 推理 token 占用回复预算导致的输出截断 / 空回复。
+- `public/roundtable.html`：新增 `rt_autosave` 自动保存，用户消息与各大师回复逐条落盘 localStorage，重新打开页面自动恢复；「新对话」清除自动保存。
+- `public/roundtable.html`、`master-chat.html`、`winnicott-chat.html`、`consultant-a.html`、`ai-supervisor.html`：设置面板新增「收起 ▴」按钮，可明确关闭 API 设置面板。
+- 远端 `/opt/chat-proxy/server.js`：旧版 DeepSeek 透传兜底路径补充 `reasoning_effort:'none'`，降低推理 token 占用。
+- 本地校验：相关内联脚本通过语法检查；线上 API 实测 `finish_reason:stop` 且内容完整。
 
 ### v5.5.4（2026-08-08）— 移动端回复显示不全修复
 - `public/site-theme.css`：修复 `.preview-chat .messages` 与 `.preview-roundtable .chat-area` 的 `padding: 18px 13px !important;` 把原页面为固定底部输入栏预留的 `padding-bottom:145px` 覆盖的问题。引入 CSS 变量 `--chat-composer-h`，消息区 `padding-bottom` 改为 `calc(var(--chat-composer-h,110px) + 16px)`。

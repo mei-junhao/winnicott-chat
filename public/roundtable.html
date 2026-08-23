@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <!-- proxy.js 仅本地开发，线上无需加载 -->
@@ -288,7 +288,10 @@
 
   <!-- Settings panel -->
   <div class="settings-panel" id="settingsPanel">
-    <h3>API 设置</h3>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <h3 style="margin:0;">API 设置</h3>
+      <button type="button" onclick="toggleSettings()" style="background:none;border:1px solid #e8e1d9;border-radius:6px;padding:2px 10px;font-size:11px;cursor:pointer;color:#8f857d;font-family:inherit;">收起 ▴</button>
+    </div>
     <div class="mode-toggle">
       <button class="d-btn active" id="dBtn" onclick="setMode('default')">默认 API</button>
       <button class="c-btn" id="cBtn" onclick="setMode('custom')">自用 API</button>
@@ -917,7 +920,7 @@ async function sendMsg() {
 
   // Add user message
   addMsg(null, text, true);
-  conversation.push({name:'user', text:text, time:Date.now()});
+  pushConversation({name:'user', text:text, time:Date.now()});
   rtUserMsgCount++; rtMaybeAutoReward();
   input.value = '';
   input.style.height = 'auto';
@@ -966,7 +969,7 @@ async function sendMsg() {
     var key = responders[i];
     if (r.status === 'fulfilled' && r.value) {
       addMsg(key, r.value);
-      conversation.push({name:key, text:r.value, time:Date.now()});
+      pushConversation({name:key, text:r.value, time:Date.now()});
       repliedKeys.push(key);
     } else {
       var m = MASTERS[key];
@@ -1011,7 +1014,7 @@ async function sendMsg() {
           var key = others[i];
           if (r.status === 'fulfilled' && r.value) {
             addMsg(key, r.value);
-            conversation.push({name:key, text:r.value, time:Date.now()});
+            pushConversation({name:key, text:r.value, time:Date.now()});
           }
         });
       }
@@ -1023,7 +1026,7 @@ async function sendMsg() {
       var finalReply = await callMasterAPI(targetKey, activeNames, finalHistory, null, true);
       if (finalReply) {
         addMsg(targetKey, finalReply);
-        conversation.push({name:targetKey, text:finalReply, time:Date.now()});
+        pushConversation({name:targetKey, text:finalReply, time:Date.now()});
       }
     } else {
       // === Normal flow: serial rounds ===
@@ -1059,7 +1062,7 @@ async function sendMsg() {
 
         if (sReply) {
           addMsg(sKey, sReply);
-          conversation.push({name:sKey, text:sReply, time:Date.now()});
+          pushConversation({name:sKey, text:sReply, time:Date.now()});
         }
 
         // Brief delay between serial rounds (except last)
@@ -1149,7 +1152,7 @@ async function callMasterAPI(key, activeNames, history, userMsg, isReactMode) {
     var cfg = getActiveConfig();
     var hdrs = { 'Content-Type': 'application/json' };
     if (cfg.key) hdrs['Authorization'] = 'Bearer ' + cfg.key;
-    var bodyStr = JSON.stringify({ model: cfg.model, messages: msgs, temperature: isReactMode ? 0.6 : 0.7, max_tokens: isReactMode === 'summary' ? 600 : (isReactMode ? 400 : 512), stream: false });
+    var bodyStr = JSON.stringify({ model: cfg.model, messages: msgs, temperature: isReactMode ? 0.6 : 0.7, max_tokens: isReactMode === 'summary' ? 1536 : (isReactMode ? 1536 : 2048), stream: false });
     if (cfg.api.indexOf('xinjingchat.online') >= 0) {
     }
     var controller = new AbortController();
@@ -1248,9 +1251,12 @@ renderAvatarBar();
 // Restore font size
 var savedFont = parseInt(localStorage.getItem('rt_font'));
 if (savedFont) { fontSize = savedFont; }
-// Winnicott intro on first visit
-showMasterIntro('winnicott');
-addMsg(null, '欢迎来到圆桌会议室。点击头像切换自动回应，输入 @大师名 可指定回应对象。', true);
+// Restore auto-saved conversation if present; otherwise show first-visit intro
+var restored = restoreAutosave();
+if (!restored) {
+  showMasterIntro('winnicott');
+  addMsg(null, '欢迎来到圆桌会议室。点击头像切换自动回应，输入 @大师名 可指定回应对象。', true);
+}
 
 // ====== Banner ======
 var bannerTimer = null;
@@ -1264,6 +1270,46 @@ function showBanner(text) {
 
 // ====== History ======
 var HISTORY_KEY = 'rt_history';
+var AUTOSAVE_KEY = 'rt_autosave';
+function autosaveConversation() {
+  if (conversation.length === 0) return;
+  var entry = {
+    id: 'autosave',
+    title: '圆桌·自动保存',
+    time: Date.now(),
+    msgCount: conversation.length,
+    schemaVersion: 2,
+    masters: activeMasters.slice(),
+    messages: window.ChatStorage.normalizeRoundMessages(conversation)
+  };
+  window.ChatStorage.write(AUTOSAVE_KEY, entry);
+}
+function pushConversation(msg) {
+  conversation.push(msg);
+  autosaveConversation();
+}
+function clearAutosave() {
+  try { localStorage.removeItem(AUTOSAVE_KEY); } catch (e) {}
+}
+function restoreAutosave() {
+  var raw;
+  try { raw = localStorage.getItem(AUTOSAVE_KEY); } catch (e) { return false; }
+  if (!raw) return false;
+  var entry;
+  try { entry = JSON.parse(raw); } catch (e) { clearAutosave(); return false; }
+  if (!entry || !Array.isArray(entry.messages)) { clearAutosave(); return false; }
+  var msgs = window.ChatStorage.normalizeRoundMessages(entry.messages);
+  if (msgs.length === 0) { clearAutosave(); return false; }
+  if (entry.masters && entry.masters.length > 0) { activeMasters = entry.masters; renderAvatarBar(); }
+  conversation = msgs;
+  var area = document.getElementById('chatArea');
+  area.innerHTML = '';
+  msgs.forEach(function(msg) {
+    if (msg.name === 'user') addMsg(null, msg.text, true);
+    else if (MASTERS[msg.name]) addMsg(msg.name, msg.text);
+  });
+  return true;
+}
 function roundStorageNotice(message) { showBanner(message); }
 function readRoundHistory() { return window.ChatStorage.read(HISTORY_KEY, { kind:'roundHistory', onError:roundStorageNotice }); }
 
@@ -1334,6 +1380,7 @@ function loadHistory(id) {
     }
   });
   closeHistory();
+  autosaveConversation();
   showBanner('已加载历史对话');
 }
 
@@ -1353,6 +1400,7 @@ function clearChat() {
   if (conversation.length === 0) return;
   if (!confirm('确定开始新对话？当前对话将被清除。')) return;
   conversation = [];
+  clearAutosave();
   var area = document.getElementById('chatArea');
   area.innerHTML = '';
   addMsg(null, '新的圆桌对话开始了。温尼科特依然在座。', true);
