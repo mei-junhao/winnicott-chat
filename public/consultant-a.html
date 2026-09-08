@@ -3,7 +3,7 @@
 <head>
   <script src="proxy.js"></script>
   <script src="i18n.js?v=5"></script>
-  <script src="safety.js?v=20260804"></script>
+  <script src="safety.js?v=20260908"></script>
   <script src="prompt-contracts.js?v=20260804"></script>
   <script src="storage.js?v=20260803"></script>
 
@@ -790,7 +790,7 @@ function setApiLine(line) {
   checkAllAPIs();
 }
 // 2026-08-02 security: PROXY_TOKEN/proxySign removed (proxy uses Referer whitelist + per-IP rate limit)
-function getActiveConfig() { if(apiMode==='custom'&&customApi&&customKey) return {api:customApi,key:customKey,model:customModel}; if(_tierLevel>0){ var t=TIERS[Math.min(_tierLevel,TIERS.length-1)]; return {api:t.api,key:t.key,model:t.model}; } return {api:'https://xinjingchat.online',key:'',model:(_apiLine==='gpt'?'gpt-5.6':(_apiLine==='gemini'?'gemini-3.5-flash':(_apiLine==='claude'?'claude-sonnet-5':'deepseek-v4-pro')))}; }
+function getActiveConfig() { if(apiMode==='custom'&&customApi&&customKey) return {api:customApi,key:customKey,model:customModel}; if(_tierLevel>0){ var t=TIERS[Math.min(_tierLevel,TIERS.length-1)]; return {api:t.api,key:t.key,model:t.model}; } return {api:'https://xinjingchat.online',key:'',model:(_apiLine==='gpt'?'gpt-5.6':(_apiLine==='gemini'?'gemini-3.7-flash':(_apiLine==='claude'?'claude-sonnet-5':'deepseek-v4-pro')))}; }
 
 function updateTemp(val) {
   var old=talkTemp; talkTemp=parseInt(val);

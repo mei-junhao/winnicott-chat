@@ -3,7 +3,7 @@
 <head>
   <!-- proxy.js 仅本地开发，线上无需加载 -->
   <script src="i18n.js?v=5"></script>
-  <script src="safety.js?v=20260804"></script>
+  <script src="safety.js?v=20260908"></script>
   <script src="prompt-contracts.js?v=20260804"></script>
   <script src="adaptive-dialogue.js?v=20260804"></script>
   <script src="storage.js?v=20260803"></script>
@@ -1099,7 +1099,7 @@ function getActiveConfig() {
     return { api: customApi, key: customKey, model: customModel };
   }
   if (SCF_URL) {
-    return { api: SCF_URL.replace(/\/+$/, ''), key: '', model: (_apiLine === 'gpt' ? 'gpt-5.6' : (_apiLine === 'gemini' ? 'gemini-3.5-flash' : (_apiLine === 'claude' ? 'claude-sonnet-5' : 'deepseek-v4-pro'))) };
+    return { api: SCF_URL.replace(/\/+$/, ''), key: '', model: (_apiLine === 'gpt' ? 'gpt-5.6' : (_apiLine === 'gemini' ? 'gemini-3.7-flash' : (_apiLine === 'claude' ? 'claude-sonnet-5' : 'deepseek-v4-pro'))) };
   }
   var level = Math.min(_tierLevel, TIERS.length - 1);
   var t = TIERS[level];
