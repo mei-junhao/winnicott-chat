@@ -3,190 +3,342 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="心镜 XinJing — 面向心理咨询师的本地优先临床工作台。排期、记录、逐字稿、督导、报告、资料库与账务，一条连续的个案工作线。">
-  <title>心镜 XinJing — 面向心理咨询师的本地临床工作台</title>
+  <meta name="description" content="心镜 XinJing — 面向心理咨询师的本地优先临床工作台。排期、记录、逐字稿、报告、督导、资料库与账务，一条连续的个案工作线。数据留在你的电脑里。">
+  <title>心镜 XinJing — 心理咨询师的本地临床工作台</title>
   <style>
     :root {
-      --bg: #0f1219;
-      --bg-2: #161b26;
-      --bg-3: #1c2333;
-      --surface: rgba(255,255,255,.04);
-      --surface-hover: rgba(255,255,255,.07);
-      --border: rgba(255,255,255,.08);
-      --border-accent: rgba(99,140,255,.3);
-      --ink: #eef2f9;
-      --ink-2: #a8b5cc;
-      --ink-3: #6b7a94;
-      --accent: #638cff;
-      --accent-2: #38d9a9;
-      --accent-3: #f59f00;
-      --accent-soft: rgba(99,140,255,.12);
-      --accent-2-soft: rgba(56,217,169,.12);
-      --accent-3-soft: rgba(245,159,0,.12);
-      --radius: 16px;
-      --radius-sm: 10px;
-      --max: 1200px;
-      --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-      --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+      /* 暖色治愈系 + 临床专业质感 */
+      --paper: #faf7f2;
+      --paper-2: #f3ede4;
+      --paper-3: #ebe3d7;
+      --card: #fffdfa;
+      --ink: #2f2a25;
+      --ink-2: #5c534a;
+      --ink-3: #8c8175;
+      --line: #e5dcd0;
+      --line-2: #d6cabb;
+      --clay: #8a6f5d;
+      --clay-deep: #6d5647;
+      --clay-soft: #f0e7dd;
+      --sage: #6b8a5d;
+      --sage-soft: #eaf0e5;
+      --amber: #c08a3e;
+      --amber-soft: #f9f0e0;
+      --shadow-sm: 0 1px 2px rgba(90,70,55,.05), 0 2px 8px rgba(90,70,55,.04);
+      --shadow: 0 4px 12px rgba(90,70,55,.07), 0 12px 32px rgba(90,70,55,.06);
+      --shadow-lg: 0 8px 24px rgba(90,70,55,.09), 0 24px 64px rgba(90,70,55,.08);
+      --r: 18px;
+      --r-sm: 12px;
+      --max: 1140px;
+      --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+      --serif: "Songti SC", "SimSun", Georgia, serif;
     }
     * { box-sizing: border-box; margin: 0; padding: 0 }
     html { scroll-behavior: smooth }
-    body { background: var(--bg); color: var(--ink); font: 16px/1.7 var(--sans); -webkit-font-smoothing: antialiased }
+    body {
+      background: var(--paper); color: var(--ink);
+      font: 16px/1.75 var(--sans);
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
     a { color: inherit; text-decoration: none }
     img { max-width: 100%; display: block }
     .wrap { width: min(var(--max), calc(100% - 48px)); margin: 0 auto }
 
-    /* === NAV === */
-    .nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: rgba(15,18,25,.82); backdrop-filter: blur(16px) saturate(1.4); border-bottom: 1px solid var(--border) }
-    .nav .wrap { height: 64px; display: flex; align-items: center; justify-content: space-between }
-    .brand { display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: 18px }
-    .brand-mark { width: 34px; height: 34px; border-radius: 10px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); display: grid; place-items: center; font-size: 18px; color: #fff; font-weight: 800 }
-    .brand small { display: block; font-size: 11px; font-weight: 500; color: var(--ink-3); letter-spacing: .02em }
-    .nav-links { display: flex; gap: 28px; font-size: 14px; color: var(--ink-2) }
+    /* ============ NAV ============ */
+    .nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(250,247,242,.88);
+      backdrop-filter: blur(14px) saturate(1.3);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav .wrap { height: 66px; display: flex; align-items: center; justify-content: space-between; gap: 20px }
+    .brand { display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: 17px; letter-spacing: .01em }
+    .brand-mark {
+      width: 36px; height: 36px; border-radius: 11px;
+      background: linear-gradient(140deg, var(--clay) 0%, var(--clay-deep) 100%);
+      display: grid; place-items: center;
+      font-family: var(--serif); font-size: 19px; color: #fff; font-weight: 700;
+      box-shadow: 0 3px 10px rgba(138,111,93,.28);
+    }
+    .brand small { display: block; font-size: 10.5px; font-weight: 500; color: var(--ink-3); letter-spacing: .04em }
+    .nav-links { display: flex; gap: 26px; font-size: 14px; color: var(--ink-2) }
     .nav-links a { transition: color .2s }
-    .nav-links a:hover { color: var(--accent) }
-    .nav-cta { height: 38px; padding: 0 18px; border-radius: 9px; background: var(--accent); color: #fff; font-weight: 650; font-size: 14px; display: inline-flex; align-items: center; gap: 7px; transition: .2s }
-    .nav-cta:hover { background: #4f7aff; transform: translateY(-1px) }
+    .nav-links a:hover { color: var(--clay) }
+    .nav-cta {
+      height: 38px; padding: 0 18px; border-radius: 10px;
+      background: var(--clay); color: #fff; font-weight: 650; font-size: 14px;
+      display: inline-flex; align-items: center; gap: 7px;
+      transition: background .2s, transform .2s;
+    }
+    .nav-cta:hover { background: var(--clay-deep); transform: translateY(-1px) }
 
-    /* === HERO === */
-    .hero { position: relative; min-height: 100vh; display: flex; align-items: center; overflow: hidden; padding-top: 64px }
-    .hero::before { content: ""; position: absolute; top: -40%; right: -20%; width: 80vw; height: 80vw; border-radius: 50%; background: radial-gradient(circle, rgba(99,140,255,.12) 0%, transparent 65%); pointer-events: none }
-    .hero::after { content: ""; position: absolute; bottom: -30%; left: -15%; width: 60vw; height: 60vw; border-radius: 50%; background: radial-gradient(circle, rgba(56,217,169,.08) 0%, transparent 60%); pointer-events: none }
-    .hero .wrap { position: relative; z-index: 2; display: grid; grid-template-columns: 1.1fr .9fr; gap: 60px; align-items: center; padding: 80px 0 }
-    .hero-badge { display: inline-flex; align-items: center; gap: 8px; background: var(--accent-soft); border: 1px solid var(--border-accent); color: var(--accent); font-size: 13px; font-weight: 650; padding: 6px 14px; border-radius: 999px; margin-bottom: 24px }
-    .hero-badge::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--accent-2); animation: pulse 2s infinite }
-    @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: .4 } }
-    .hero h1 { font-size: clamp(38px, 5vw, 56px); line-height: 1.15; font-weight: 780; letter-spacing: -.02em; margin-bottom: 20px }
-    .hero h1 .gradient { background: linear-gradient(135deg, var(--accent), var(--accent-2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text }
-    .hero-lead { font-size: 18px; color: var(--ink-2); max-width: 520px; margin-bottom: 36px; line-height: 1.8 }
-    .hero-actions { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 20px }
-    .btn { display: inline-flex; align-items: center; gap: 9px; height: 50px; padding: 0 24px; border-radius: 12px; font-weight: 650; font-size: 15px; border: none; cursor: pointer; transition: .2s }
-    .btn-primary { background: linear-gradient(135deg, var(--accent), #4f7aff); color: #fff; box-shadow: 0 8px 32px rgba(99,140,255,.25) }
-    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(99,140,255,.35) }
-    .btn-ghost { background: var(--surface); border: 1px solid var(--border); color: var(--ink) }
-    .btn-ghost:hover { border-color: var(--border-accent); background: var(--surface-hover) }
+    /* ============ HERO ============ */
+    .hero { position: relative; overflow: hidden; padding: 76px 0 84px }
+    .hero::before {
+      content: ""; position: absolute; top: -30%; right: -12%;
+      width: 640px; height: 640px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(138,111,93,.10) 0%, transparent 68%);
+      pointer-events: none;
+    }
+    .hero::after {
+      content: ""; position: absolute; bottom: -38%; left: -14%;
+      width: 520px; height: 520px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(107,138,93,.09) 0%, transparent 66%);
+      pointer-events: none;
+    }
+    .hero .wrap { position: relative; z-index: 2; display: grid; grid-template-columns: 1.06fr .94fr; gap: 56px; align-items: center }
+    .hero-badges { display: flex; flex-wrap: wrap; gap: 9px; margin-bottom: 22px }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 7px;
+      background: var(--clay-soft); border: 1px solid var(--line-2);
+      color: var(--clay-deep); font-size: 12.5px; font-weight: 650;
+      padding: 6px 13px; border-radius: 999px;
+    }
+    .hero-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--sage); animation: breathe 2.4s ease-in-out infinite }
+    .hero-badge.alt { background: var(--sage-soft); border-color: #d3e0c9; color: #4f6b43 }
+    .hero-badge.alt .dot { background: var(--sage) }
+    @keyframes breathe { 0%,100% { opacity: 1; transform: scale(1) } 50% { opacity: .45; transform: scale(.82) } }
+    .hero h1 { font-size: clamp(34px, 4.4vw, 50px); line-height: 1.18; font-weight: 760; letter-spacing: -.015em; margin-bottom: 20px }
+    .hero h1 em { font-style: normal; color: var(--clay); position: relative }
+    .hero h1 em::after {
+      content: ""; position: absolute; left: 0; right: 0; bottom: 3px; height: 7px;
+      background: rgba(138,111,93,.15); border-radius: 3px; z-index: -1;
+    }
+    .hero-lead { font-size: 16.5px; color: var(--ink-2); max-width: 520px; margin-bottom: 32px; line-height: 1.85 }
+    .hero-lead strong { color: var(--ink); font-weight: 650 }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 18px }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+      height: 50px; padding: 0 24px; border-radius: 13px;
+      font-weight: 650; font-size: 15px; border: none; cursor: pointer;
+      transition: transform .2s, box-shadow .2s, background .2s, border-color .2s;
+      font-family: inherit;
+    }
+    .btn-primary { background: var(--clay); color: #fff; box-shadow: 0 6px 20px rgba(138,111,93,.24) }
+    .btn-primary:hover { background: var(--clay-deep); transform: translateY(-2px); box-shadow: 0 10px 28px rgba(138,111,93,.3) }
+    .btn-ghost { background: var(--card); border: 1px solid var(--line-2); color: var(--ink) }
+    .btn-ghost:hover { border-color: var(--clay); background: var(--clay-soft) }
     .hero-note { font-size: 13px; color: var(--ink-3) }
+
     .hero-visual { position: relative }
-    .hero-shot { border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 40px 100px rgba(0,0,0,.5); width: 100% }
-    .hero-float { position: absolute; background: var(--bg-3); border: 1px solid var(--border); border-radius: 12px; padding: 14px 18px; font-size: 13px; box-shadow: 0 16px 48px rgba(0,0,0,.4) }
-    .hero-float.f1 { top: -16px; right: -12px; display: flex; align-items: center; gap: 8px }
-    .hero-float.f2 { bottom: 24px; left: -20px; display: flex; align-items: center; gap: 8px }
-    .float-dot { width: 8px; height: 8px; border-radius: 50% }
+    .hero-frame {
+      background: var(--card); border: 1px solid var(--line); border-radius: 20px;
+      padding: 14px; box-shadow: var(--shadow-lg);
+    }
+    .hero-frame img { border-radius: 12px }
+    .hero-float {
+      position: absolute; display: flex; align-items: center; gap: 9px;
+      background: var(--card); border: 1px solid var(--line);
+      border-radius: 12px; padding: 11px 16px;
+      font-size: 12.5px; font-weight: 600; color: var(--ink-2);
+      box-shadow: var(--shadow);
+    }
+    .hero-float.f1 { top: -14px; right: -10px }
+    .hero-float.f2 { bottom: 26px; left: -22px }
+    .float-dot { width: 7px; height: 7px; border-radius: 50% }
 
-    /* === STATS === */
-    .stats { border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); background: var(--bg-2) }
-    .stats .wrap { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0 }
-    .stat { padding: 36px 24px; text-align: center; border-right: 1px solid var(--border) }
+    /* ============ STATS ============ */
+    .stats { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: var(--paper-2) }
+    .stats .wrap { display: grid; grid-template-columns: repeat(4, 1fr) }
+    .stat { padding: 32px 22px; text-align: center; border-right: 1px solid var(--line) }
     .stat:last-child { border-right: 0 }
-    .stat b { display: block; font-size: 32px; font-weight: 780; background: linear-gradient(135deg, var(--accent), var(--accent-2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text }
-    .stat span { display: block; margin-top: 6px; font-size: 14px; color: var(--ink-3) }
+    .stat b { display: block; font-size: 30px; font-weight: 760; color: var(--clay); letter-spacing: -.02em }
+    .stat span { display: block; margin-top: 5px; font-size: 13.5px; color: var(--ink-3) }
 
-    /* === SECTIONS === */
-    section { padding: 100px 0 }
-    .kicker { color: var(--accent); font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 14px }
-    .h2 { font-size: clamp(28px, 3.5vw, 38px); line-height: 1.25; font-weight: 740; margin-bottom: 16px }
-    .section-copy { color: var(--ink-2); max-width: 640px; font-size: 16px }
+    /* ============ SECTION ============ */
+    section { padding: 88px 0 }
+    .kicker {
+      display: inline-flex; align-items: center; gap: 8px;
+      color: var(--clay); font-size: 12.5px; font-weight: 700;
+      letter-spacing: .08em; text-transform: uppercase; margin-bottom: 14px;
+    }
+    .kicker::before { content: ""; width: 20px; height: 2px; background: var(--clay); border-radius: 2px }
+    .h2 { font-size: clamp(26px, 3.2vw, 36px); line-height: 1.28; font-weight: 740; letter-spacing: -.015em; margin-bottom: 14px }
+    .section-copy { color: var(--ink-2); max-width: 660px; font-size: 16px; line-height: 1.8 }
 
-    /* === FEATURES === */
-    .feat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 48px }
-    .feat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; transition: .25s; position: relative; overflow: hidden }
-    .feat-card:hover { border-color: var(--border-accent); background: var(--surface-hover); transform: translateY(-3px) }
-    .feat-card .icon { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; margin-bottom: 18px; font-size: 20px }
-    .feat-card h3 { font-size: 17px; font-weight: 680; margin-bottom: 10px }
-    .feat-card p { font-size: 14px; color: var(--ink-2); line-height: 1.7 }
-    .feat-card .badge { position: absolute; top: 16px; right: 16px; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 6px }
-    .badge-live { background: var(--accent-2-soft); color: var(--accent-2) }
-    .badge-soon { background: var(--accent-3-soft); color: var(--accent-3) }
-    .badge-future { background: rgba(168,181,204,.1); color: var(--ink-3) }
-    .icon-blue { background: var(--accent-soft); color: var(--accent) }
-    .icon-green { background: var(--accent-2-soft); color: var(--accent-2) }
-    .icon-amber { background: var(--accent-3-soft); color: var(--accent-3) }
+    /* ============ FEATURES ============ */
+    .feat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 44px }
+    .feat-card {
+      background: var(--card); border: 1px solid var(--line); border-radius: var(--r);
+      padding: 26px; transition: transform .25s, box-shadow .25s, border-color .25s;
+      position: relative;
+    }
+    .feat-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); border-color: var(--line-2) }
+    .feat-card .icon {
+      width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center;
+      margin-bottom: 16px; font-size: 19px;
+    }
+    .feat-card h3 { font-size: 16.5px; font-weight: 690; margin-bottom: 9px }
+    .feat-card p { font-size: 14px; color: var(--ink-2); line-height: 1.75 }
+    .icon-clay { background: var(--clay-soft); color: var(--clay-deep) }
+    .icon-sage { background: var(--sage-soft); color: #4f6b43 }
+    .icon-amber { background: var(--amber-soft); color: var(--amber) }
+    .feat-note {
+      display: inline-block; margin-top: 10px; padding: 4px 10px;
+      background: var(--sage-soft); color: #4f6b43; border-radius: 7px;
+      font-size: 12px; font-weight: 650;
+    }
 
-    /* === WORKFLOW === */
-    .flow-section { background: var(--bg-2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border) }
-    .flow-track { display: flex; gap: 0; margin-top: 48px; position: relative; overflow-x: auto; padding-bottom: 8px }
-    .flow-track::before { content: ""; position: absolute; top: 28px; left: 28px; right: 28px; height: 2px; background: linear-gradient(90deg, var(--accent), var(--accent-2)); opacity: .3 }
-    .flow-node { flex: 1; min-width: 150px; display: flex; flex-direction: column; align-items: center; text-align: center; padding: 0 12px; position: relative }
-    .flow-dot { width: 56px; height: 56px; border-radius: 50%; background: var(--bg-3); border: 2px solid var(--border-accent); display: grid; place-items: center; font-size: 22px; margin-bottom: 16px; position: relative; z-index: 2 }
-    .flow-node b { font-size: 15px; margin-bottom: 6px }
-    .flow-node span { font-size: 12.5px; color: var(--ink-3); line-height: 1.5 }
+    /* ============ WORKFLOW ============ */
+    .flow-section { background: var(--paper-2); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line) }
+    .flow-track { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0; margin-top: 44px; position: relative }
+    .flow-track::before {
+      content: ""; position: absolute; top: 26px; left: 6%; right: 6%; height: 2px;
+      background: linear-gradient(90deg, var(--clay), var(--sage)); opacity: .22;
+    }
+    .flow-node { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 0 8px; position: relative }
+    .flow-dot {
+      width: 54px; height: 54px; border-radius: 50%;
+      background: var(--card); border: 2px solid var(--line-2);
+      display: grid; place-items: center; font-size: 21px;
+      margin-bottom: 14px; position: relative; z-index: 2;
+      box-shadow: var(--shadow-sm);
+    }
+    .flow-node b { font-size: 14.5px; margin-bottom: 5px }
+    .flow-node span { font-size: 12.5px; color: var(--ink-3); line-height: 1.55 }
 
-    /* === ROADMAP === */
-    .roadmap-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; margin-top: 48px }
-    .roadmap-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; position: relative }
-    .roadmap-card .ver { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; font-size: 15px; margin-bottom: 12px }
-    .roadmap-card .ver .tag { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 6px }
-    .roadmap-card ul { list-style: none; padding: 0 }
-    .roadmap-card li { padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 14px; color: var(--ink-2); display: flex; align-items: flex-start; gap: 10px }
-    .roadmap-card li:last-child { border-bottom: 0 }
-    .roadmap-card li::before { content: ""; width: 6px; height: 6px; border-radius: 50%; margin-top: 8px; flex-shrink: 0 }
-    .tag-dev { background: var(--accent-soft); color: var(--accent) }
-    .tag-plan { background: var(--accent-3-soft); color: var(--accent-3) }
-    .tag-vision { background: rgba(168,181,204,.1); color: var(--ink-3) }
-    .roadmap-card li::before { background: var(--accent) }
-    .roadmap-card.plan li::before { background: var(--accent-3) }
-    .roadmap-card.vision li::before { background: var(--ink-3) }
+    /* ============ PRINCIPLES ============ */
+    .principle-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 44px }
+    .principle {
+      background: var(--card); border: 1px solid var(--line); border-radius: var(--r);
+      padding: 26px;
+    }
+    .principle .icon { font-size: 26px; margin-bottom: 14px; display: block }
+    .principle h3 { font-size: 16px; font-weight: 690; margin-bottom: 9px }
+    .principle p { font-size: 14px; color: var(--ink-2); line-height: 1.75 }
 
-    /* === DOWNLOAD === */
-    .dl-section { background: var(--bg-2); border-top: 1px solid var(--border) }
-    .dl-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; margin-top: 48px }
-    .dl-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; transition: .25s }
-    .dl-card:hover { border-color: var(--border-accent); transform: translateY(-2px) }
-    .dl-card .plat { display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: 17px; margin-bottom: 8px }
-    .dl-card .plat .ic { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); font-size: 18px }
-    .dl-card .desc { font-size: 13px; color: var(--ink-3); margin-bottom: 6px }
-    .dl-card .file { font-size: 13px; font-family: var(--mono); color: var(--ink-2); margin-bottom: 16px }
-    .dl-card .meta { display: flex; align-items: center; justify-content: space-between }
-    .dl-card .size { font-size: 13px; color: var(--ink-3) }
-    .dl-btn { height: 42px; padding: 0 20px; border-radius: 10px; background: var(--accent); color: #fff; font-weight: 650; font-size: 14px; display: inline-flex; align-items: center; gap: 7px; transition: .2s }
-    .dl-btn:hover { background: #4f7aff; transform: translateY(-1px) }
-    .dl-tip { font-size: 12px; color: var(--ink-3); margin-top: 12px; line-height: 1.6 }
+    /* ============ TRUST ============ */
+    .trust-section { background: var(--paper-2); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line) }
+    .trust-box {
+      background: var(--card); border: 1px solid var(--line); border-radius: 22px;
+      padding: 40px; margin-top: 36px; display: grid;
+      grid-template-columns: 1fr 1fr; gap: 34px; align-items: center;
+      box-shadow: var(--shadow-sm);
+    }
+    .trust-list { list-style: none }
+    .trust-list li {
+      display: flex; align-items: flex-start; gap: 11px;
+      padding: 11px 0; border-bottom: 1px solid var(--line);
+      font-size: 14.5px; color: var(--ink-2);
+    }
+    .trust-list li:last-child { border-bottom: 0 }
+    .trust-list .chk { color: var(--sage); font-weight: 800; flex-shrink: 0; font-size: 15px; line-height: 1.6 }
+    .trust-side { background: var(--paper-3); border-radius: 16px; padding: 28px }
+    .trust-side h4 { font-size: 15px; font-weight: 690; margin-bottom: 12px; color: var(--ink) }
+    .trust-side p { font-size: 13.5px; color: var(--ink-2); line-height: 1.8 }
+    .trust-side .mono { font-family: var(--mono); font-size: 12.5px; color: var(--clay-deep) }
 
-    /* === PRINCIPLES === */
-    .principle-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 48px }
-    .principle { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px }
-    .principle .icon { font-size: 28px; margin-bottom: 16px }
-    .principle h3 { font-size: 16px; font-weight: 680; margin-bottom: 10px }
-    .principle p { font-size: 14px; color: var(--ink-2); line-height: 1.7 }
+    /* ============ DOWNLOAD ============ */
+    .dl-section { background: var(--paper-2); border-top: 1px solid var(--line) }
+    .dl-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 44px }
+    .dl-card {
+      background: var(--card); border: 1px solid var(--line); border-radius: var(--r);
+      padding: 26px; transition: transform .25s, box-shadow .25s, border-color .25s;
+      display: flex; flex-direction: column;
+    }
+    .dl-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); border-color: var(--line-2) }
+    .dl-card.primary { border-color: var(--clay); border-width: 1.5px }
+    .dl-card .plat { display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: 16.5px; margin-bottom: 7px }
+    .dl-card .plat .ic {
+      width: 40px; height: 40px; border-radius: 11px; display: grid; place-items: center;
+      background: var(--clay-soft); color: var(--clay-deep); font-size: 19px; flex-shrink: 0;
+    }
+    .dl-card .desc { font-size: 13px; color: var(--ink-3); margin-bottom: 14px }
+    .dl-card .file {
+      font-size: 12.5px; font-family: var(--mono); color: var(--ink-2);
+      background: var(--paper-2); border: 1px solid var(--line);
+      border-radius: 8px; padding: 8px 12px; margin-bottom: 16px;
+      word-break: break-all;
+    }
+    .dl-card .meta { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: auto }
+    .dl-card .size { font-size: 13px; color: var(--ink-3); white-space: nowrap }
+    .dl-btn {
+      height: 42px; padding: 0 20px; border-radius: 11px;
+      background: var(--clay); color: #fff; font-weight: 650; font-size: 14px;
+      display: inline-flex; align-items: center; gap: 7px;
+      transition: background .2s, transform .2s;
+    }
+    .dl-btn:hover { background: var(--clay-deep); transform: translateY(-1px) }
+    .dl-tip { font-size: 12.5px; color: var(--ink-3); margin-top: 14px; line-height: 1.7 }
+    .dl-tip.warn {
+      color: #8a6a2a; background: var(--amber-soft);
+      border-left: 3px solid var(--amber); border-radius: 8px; padding: 11px 14px;
+    }
+    .dl-tip.warn strong { color: #6d5320 }
+    .dl-tip .step { display: block; margin-top: 6px; color: var(--ink-2); line-height: 1.8 }
 
-    /* === CTA === */
-    .cta-section { position: relative; overflow: hidden }
-    .cta-box { background: linear-gradient(135deg, rgba(99,140,255,.15), rgba(56,217,169,.1)); border: 1px solid var(--border-accent); border-radius: 24px; padding: 72px 48px; text-align: center; position: relative }
-    .cta-box h2 { font-size: clamp(26px, 3vw, 36px); font-weight: 740; margin-bottom: 16px }
-    .cta-box p { color: var(--ink-2); max-width: 560px; margin: 0 auto 32px; font-size: 16px }
+    /* ============ FAQ ============ */
+    .faq-list { margin-top: 40px; display: grid; gap: 12px }
+    .faq-item { background: var(--card); border: 1px solid var(--line); border-radius: var(--r-sm); overflow: hidden }
+    .faq-item summary {
+      cursor: pointer; padding: 18px 22px; font-weight: 650; font-size: 15px;
+      display: flex; align-items: center; justify-content: space-between; gap: 14px;
+      list-style: none; transition: background .2s;
+    }
+    .faq-item summary::-webkit-details-marker { display: none }
+    .faq-item summary:hover { background: var(--clay-soft) }
+    .faq-item summary::after {
+      content: "+"; font-size: 20px; color: var(--clay); font-weight: 400;
+      flex-shrink: 0; transition: transform .25s;
+    }
+    .faq-item[open] summary::after { transform: rotate(45deg) }
+    .faq-body { padding: 0 22px 20px; font-size: 14px; color: var(--ink-2); line-height: 1.85 }
+    .faq-body p + p { margin-top: 10px }
+    .faq-body ol, .faq-body ul { padding-left: 20px; margin-top: 8px }
+    .faq-body li { margin-bottom: 6px }
+    .faq-body code {
+      font-family: var(--mono); font-size: 12.5px;
+      background: var(--paper-2); border: 1px solid var(--line);
+      border-radius: 5px; padding: 1px 6px; color: var(--clay-deep);
+    }
 
-    /* === FOOTER === */
-    .footer { border-top: 1px solid var(--border); padding: 36px 0 }
-    .footer .wrap { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px }
+    /* ============ CTA ============ */
+    .cta-box {
+      background: linear-gradient(135deg, var(--clay-soft), var(--sage-soft));
+      border: 1px solid var(--line-2); border-radius: 24px;
+      padding: 64px 44px; text-align: center;
+    }
+    .cta-box h2 { font-size: clamp(24px, 3vw, 34px); font-weight: 740; margin-bottom: 14px; letter-spacing: -.015em }
+    .cta-box p { color: var(--ink-2); max-width: 560px; margin: 0 auto 28px; font-size: 15.5px; line-height: 1.8 }
+
+    /* ============ FOOTER ============ */
+    .footer { border-top: 1px solid var(--line); padding: 34px 0; background: var(--paper-2) }
+    .footer .wrap { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px }
     .footer p { font-size: 13px; color: var(--ink-3) }
 
-    /* === RESPONSIVE === */
-    @media (max-width: 900px) {
-      .hero .wrap { grid-template-columns: 1fr; gap: 40px; padding: 60px 0 }
-      .hero-visual { display: none }
+    /* ============ RESPONSIVE ============ */
+    @media (max-width: 960px) {
+      .hero .wrap { grid-template-columns: 1fr; gap: 44px; padding-bottom: 0 }
+      .hero-visual { max-width: 560px }
+      .feat-grid, .principle-grid { grid-template-columns: repeat(2, 1fr) }
+      .flow-track { grid-template-columns: repeat(4, 1fr); gap: 22px 0 }
+      .flow-track::before { display: none }
+      .trust-box { grid-template-columns: 1fr; padding: 32px }
+      .nav-links { display: none }
+    }
+    @media (max-width: 760px) {
+      section { padding: 64px 0 }
       .stats .wrap { grid-template-columns: repeat(2, 1fr) }
       .stat:nth-child(2) { border-right: 0 }
-      .stat { border-bottom: 1px solid var(--border) }
-      .stat:nth-child(3), .stat:nth-child(4) { border-bottom: 0 }
-      .feat-grid, .principle-grid { grid-template-columns: 1fr }
-      .roadmap-grid, .dl-grid { grid-template-columns: 1fr }
-      .flow-track { flex-wrap: wrap; gap: 24px }
-      .flow-track::before { display: none }
-      .flow-node { min-width: calc(33% - 16px) }
-      .nav-links { display: none }
-      section { padding: 72px 0 }
+      .stat:nth-child(1), .stat:nth-child(2) { border-bottom: 1px solid var(--line) }
+      .feat-grid, .principle-grid, .dl-grid { grid-template-columns: 1fr }
+      .flow-track { grid-template-columns: repeat(2, 1fr) }
+      .hero-actions .btn { flex: 1 1 100% }
+      .cta-box { padding: 44px 24px }
     }
-    @media (max-width: 600px) {
+    @media (max-width: 480px) {
       .wrap { width: calc(100% - 32px) }
       .stats .wrap { grid-template-columns: 1fr }
-      .stat { border-right: 0 }
-      .flow-node { min-width: calc(50% - 12px) }
-      .hero-actions { flex-direction: column }
-      .btn { width: 100%; justify-content: center }
+      .stat { border-right: 0; border-bottom: 1px solid var(--line) }
+      .stat:last-child { border-bottom: 0 }
+      .flow-track { grid-template-columns: 1fr; gap: 20px 0 }
+      .brand small { display: none }
     }
     @media (prefers-reduced-motion: reduce) {
       html { scroll-behavior: auto }
-      * { transition: none !important; animation: none !important }
+      *, *::before, *::after { transition: none !important; animation: none !important }
     }
   </style>
   <link rel="stylesheet" href="site-theme.css?v=20260803">
@@ -202,8 +354,9 @@
       <nav class="nav-links">
         <a href="#features">功能</a>
         <a href="#workflow">工作方式</a>
-        <a href="#roadmap">路线图</a>
+        <a href="#principles">产品原则</a>
         <a href="#download">下载</a>
+        <a href="#faq">常见问题</a>
       </nav>
       <a class="nav-cta" href="#download">↓ 免费下载</a>
     </div>
@@ -214,20 +367,28 @@
     <section class="hero">
       <div class="wrap">
         <div>
-          <span class="hero-badge">v4.2 本地优先 · Windows / macOS</span>
-          <span class="hero-badge" style="margin-left:10px;background:var(--accent-2-soft);border-color:rgba(56,217,169,.3);color:var(--accent-2);">✓ 完整包含在线版"大师对话"全部功能</span>
-          <h1>让每一次会谈，<br>都回到同一条<span class="gradient">个案脉络</span>里。</h1>
-          <p class="hero-lead">心镜为心理咨询师整理排期、记录、逐字稿、报告、督导、资料库与账务。数据留在你的电脑中，AI 只在你需要时出现。<strong style="color:var(--ink);">已完整包含在线版"大师对话"的全部功能与知识体系</strong>，温尼科特、科胡特、弗洛伊德、克莱因等多位大师随叫随到。</p>
-          <div class="hero-actions">
-            <a class="btn btn-primary" href="https://xinjing-1439314927.cos.ap-guangzhou.myqcloud.com/xinjing-setup-4.1.0.exe">下载 Windows 安装版</a>
-            <a class="btn btn-ghost" href="#features">查看全部功能 ↓</a>
+          <div class="hero-badges">
+            <span class="hero-badge"><span class="dot"></span>v5.1.12 · Windows / macOS</span>
+            <span class="hero-badge alt"><span class="dot"></span>手工工作流永久免费</span>
           </div>
-          <p class="hero-note">默认本地存储 · 手工工作流永久免费 · AI 功能按权益与算力开放</p>
+          <h1>让每一次会谈，<br>都回到同一条<em>个案脉络</em>里。</h1>
+          <p class="hero-lead">
+            心镜为心理咨询师整理排期、记录、逐字稿、报告、督导、资料库与账务。
+            <strong>临床资料默认留在你自己的电脑里</strong>，AI 只在你需要时、以受控的最小上下文出现。
+            内置温尼科特、科胡特、弗洛伊德、克莱因等大师对话，以及温尼科特取向的知识库检索。
+          </p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#download">↓ 下载心镜 v5.1.12</a>
+            <a class="btn btn-ghost" href="#features">查看全部功能</a>
+          </div>
+          <p class="hero-note">本地存储 · 离线激活 · 90 天完整试用 · 不采集临床正文</p>
         </div>
         <div class="hero-visual">
-          <img class="hero-shot" src="assets/xinjing-workbench.png" alt="心镜工作台界面">
-          <div class="hero-float f1"><span class="float-dot" style="background:var(--accent-2)"></span>数据已保存在本地</div>
-          <div class="hero-float f2"><span class="float-dot" style="background:var(--accent)"></span>来源可追溯</div>
+          <div class="hero-frame">
+            <img src="assets/xinjing-workbench.png" alt="心镜临床工作台界面">
+          </div>
+          <div class="hero-float f1"><span class="float-dot" style="background:var(--sage)"></span>数据已保存在本地</div>
+          <div class="hero-float f2"><span class="float-dot" style="background:var(--clay)"></span>来源可追溯</div>
         </div>
       </div>
     </section>
@@ -235,9 +396,9 @@
     <!-- STATS -->
     <div class="stats">
       <div class="wrap">
-        <div class="stat"><b>22</b><span>专业工作页面</span></div>
-        <div class="stat"><b>3</b><span>视觉主题皮肤</span></div>
+        <div class="stat"><b>25</b><span>专业工作页面</span></div>
         <div class="stat"><b>100%</b><span>数据本地存储</span></div>
+        <div class="stat"><b>90 天</b><span>完整功能试用</span></div>
         <div class="stat"><b>0</b><span>强制联网要求</span></div>
       </div>
     </div>
@@ -250,140 +411,82 @@
         <p class="section-copy">从排期到记录、从材料到督导、从报告到账务——心镜把散落在不同工具里的工作收拢到同一条可追溯的个案线上。</p>
 
         <div class="feat-grid">
-          <!-- 已实现功能 -->
           <div class="feat-card">
-            <span class="badge badge-live">已实现</span>
-            <div class="icon icon-blue">📋</div>
+            <div class="icon icon-clay">📋</div>
             <h3>今日工作台</h3>
-            <p>打开即看到今日会谈、待补记录、当前来访者和下一动作。双视角切换：来访者视角与文档视角，自动记住你的偏好。</p>
+            <p>打开即看到今日会谈、待补记录、当前来访者和下一动作。支持「来访者视角 / 文档视角」双视角切换，并记住你的偏好。</p>
           </div>
           <div class="feat-card">
-            <span class="badge badge-live">已实现</span>
-            <div class="icon icon-blue">📅</div>
+            <div class="icon icon-clay">📅</div>
             <h3>会谈日历与排期</h3>
-            <p>创建、移动和开始预约。日历视图管理每周 10-40 节稳定个案，一键进入会谈。</p>
+            <p>创建、移动、开始预约，日历视图管理每周 10–40 节稳定个案，一键进入会谈与记录。</p>
           </div>
           <div class="feat-card">
-            <span class="badge badge-live">已实现</span>
-            <div class="icon icon-blue">✍️</div>
+            <div class="icon icon-clay">✍️</div>
             <h3>咨询记录</h3>
-            <p>快速记录与结构化记录两种模式。保存后可安排下次、补充账务、生成摘要或进入督导。</p>
+            <p>快速记录与结构化记录两种模式。保存后可安排下次、补充账务、生成摘要或直接进入督导。</p>
           </div>
           <div class="feat-card">
-            <span class="badge badge-live">已实现</span>
-            <div class="icon icon-blue">🎙️</div>
-            <h3>逐字稿管理</h3>
-            <p>导入和整理逐字稿，支持 AI 对话引导。材料来源条保留完整上下文，支持 TXT / MD / DOCX。</p>
+            <div class="icon icon-clay">🎙️</div>
+            <h3>逐字稿整理</h3>
+            <p>导入并整理逐字稿，支持 TXT / MD / DOCX。附带 AI 对话引导，材料来源条保留完整上下文。</p>
           </div>
           <div class="feat-card">
-            <span class="badge badge-live">已实现</span>
-            <div class="icon icon-blue">📄</div>
+            <div class="icon icon-clay">📄</div>
             <h3>报告撰写</h3>
-            <p>手工或 AI 辅助撰写报告。基于已有节次组织内容，保留来源引用与草稿历史，支持导出。</p>
+            <p>手工或 AI 辅助撰写报告，基于已有节次组织内容，保留来源引用与草稿历史，支持导出与打印。</p>
           </div>
           <div class="feat-card">
-            <span class="badge badge-live">已实现</span>
-            <div class="icon icon-green">🧠</div>
+            <div class="icon icon-sage">🧠</div>
             <h3>AI 督导</h3>
-            <p>会话式 AI 督导，附带思维导图视图。保留独立临床任务身份，来源可追溯。</p>
+            <p>会话式 AI 督导，附带思维导图视图。以独立临床任务身份运行，每条建议都可回溯到来源材料。</p>
           </div>
           <div class="feat-card">
-            <span class="badge badge-live">已实现</span>
-            <div class="icon icon-green">👥</div>
+            <div class="icon icon-sage">👥</div>
             <h3>真人督导记录</h3>
-            <p>记录真人督导过程，手动流程永久免费。AI 可分析督导材料并生成洞察（会员）。</p>
+            <p>记录真人督导过程，手动流程永久免费。AI 可分析督导材料并生成洞察（会员权益）。</p>
           </div>
           <div class="feat-card">
-            <span class="badge badge-live">已实现</span>
-            <div class="icon icon-green">🎓</div>
+            <div class="icon icon-sage">🎓</div>
             <h3>大师对话</h3>
-            <p>单大师深度对话或多大师理论会诊。内置多位心理学大师的知识框架与对话风格。<br><span style="display:inline-block;margin-top:6px;padding:3px 8px;background:var(--accent-2-soft);color:var(--accent-2);border-radius:6px;font-size:12px;font-weight:650;">✓ 已完整包含在线版"大师对话"全部功能与知识体系</span></p>
+            <p>单大师深度对话或多大师理论会诊。内置多位心理学大师的知识框架与对话风格。
+              <span class="feat-note">✓ 含在线版「大师对话」全部功能与知识体系</span>
+            </p>
           </div>
           <div class="feat-card">
-            <span class="badge badge-live">已实现</span>
-            <div class="icon icon-blue">📚</div>
-            <h3>个人资料库 (RAG)</h3>
-            <p>本机管理理论资料，分层检索：关键词 → 向量 → Rerank。按任务检索相关片段，不整库注入。</p>
+            <div class="icon icon-clay">📚</div>
+            <h3>个人资料库（RAG）</h3>
+            <p>本机管理理论资料，分层检索：关键词 → 向量 → 重排。按任务检索相关片段，不整库注入模型。</p>
           </div>
           <div class="feat-card">
-            <span class="badge badge-live">已实现</span>
-            <div class="icon icon-blue">📁</div>
-            <h3>文档中心与材料工作区</h3>
-            <p>按来访者聚合全部材料。支持上传、解析、关联来访者/会谈，先处理后归档。</p>
+            <div class="icon icon-clay">📁</div>
+            <h3>档案与材料工作区</h3>
+            <p>按来访者聚合全部材料，支持上传、解析、关联来访者与会谈，先处理后归档。</p>
           </div>
           <div class="feat-card">
-            <span class="badge badge-live">已实现</span>
-            <div class="icon icon-blue">💰</div>
-            <h3>账务管理</h3>
-            <p>收支记录、账单统计与月结。账务月历视图（会员），与临床会谈隔离口径。</p>
-          </div>
-          <div class="feat-card">
-            <span class="badge badge-live">已实现</span>
-            <div class="icon icon-green">📈</div>
-            <h3>AI 成长轨迹</h3>
-            <p>基于历史会谈和督导材料，AI 生成纵向成长分析，标记为草稿并保留来源。</p>
-          </div>
-          <div class="feat-card">
-            <span class="badge badge-live">已实现</span>
-            <div class="icon icon-blue">🎨</div>
-            <h3>三套视觉主题</h3>
-            <p>Clinical（默认）、Theatre（安静剧场）、Observatory（夜间观测）。深浅模式正交，皮肤仅改变 token。</p>
-          </div>
-          <div class="feat-card">
-            <span class="badge badge-live">已实现</span>
-            <div class="icon icon-blue">🔐</div>
-            <h3>会员与激活体系</h3>
-            <p>Free / Pro / Flagship 三档。本地激活码 + 云激活，手动工作流永久免费。</p>
-          </div>
-          <div class="feat-card">
-            <span class="badge badge-live">已实现</span>
-            <div class="icon icon-blue">💾</div>
-            <h3>备份与数据安全</h3>
-            <p>智能增量备份、数据导出与恢复。API Key 加密落盘，contextIsolation 全窗口开启。</p>
-          </div>
-          <div class="feat-card">
-            <span class="badge badge-live">已实现</span>
-            <div class="icon icon-blue">🤖</div>
-            <h3>小镜对话助手</h3>
-            <p>轻量问答与专业页导航。不替代专业页面，帮助你快速定位和进入工作。</p>
-          </div>
-          <div class="feat-card">
-            <span class="badge badge-live">已实现</span>
-            <div class="icon icon-blue">🔄</div>
-            <h3>自动更新</h3>
-            <p>Windows 启动时自动检查更新，GitHub + 腾讯云 COS 双源分发，便携版免安装即用。</p>
-          </div>
-          <div class="feat-card">
-            <span class="badge badge-live">已实现</span>
-            <div class="icon icon-green">🔗</div>
-            <h3>统一临床上下文与来源追溯</h3>
-            <p>ClinicalContext 快照 + SHA-256 校验。每条 AI 建议可追溯到原始来源，切换来访者后旧快照自动失效。</p>
-          </div>
-
-          <!-- 即将推出 -->
-          <div class="feat-card">
-            <span class="badge badge-soon">即将推出</span>
-            <div class="icon icon-amber">🗺️</div>
-            <h3>个案空间与来源图谱</h3>
-            <p>概念 B 融合文档中心：证据、推论和动作链的只读图谱，来源定位不超过 2 次操作。</p>
-          </div>
-          <div class="feat-card">
-            <span class="badge badge-soon">即将推出</span>
             <div class="icon icon-amber">🛡️</div>
-            <h3>可信 AI 内核</h3>
-            <p>AI 可取消、可比较、可评估、可追溯。统一传输和失败协议，六态 fallback 与备用服务。</p>
+            <h3>文档脱敏</h3>
+            <p>导出或外发前对材料做脱敏处理，自动识别并替换姓名、机构等敏感信息，降低隐私风险。</p>
           </div>
           <div class="feat-card">
-            <span class="badge badge-future">远期规划</span>
-            <div class="icon icon-amber">🔒</div>
-            <h3>加密备份与同步</h3>
-            <p>用户自有加密同步，不建设临床明文 SaaS。轻量移动伴侣：今日排期、提醒与一句话备忘。</p>
+            <div class="icon icon-amber">📈</div>
+            <h3>AI 成长洞察</h3>
+            <p>基于你的个案工作轨迹生成阶段性洞察：个案时长分布、主题变化与工作模式回顾。</p>
           </div>
           <div class="feat-card">
-            <span class="badge badge-future">远期规划</span>
-            <div class="icon icon-amber">👨‍👩‍👧</div>
-            <h3>团队版与专业生态</h3>
-            <p>独立数据边界和权限模型的团队版，内容包与教学模式。在真实需求验证后条件立项。</p>
+            <div class="icon icon-clay">💰</div>
+            <h3>记账与月结</h3>
+            <p>账单月历与月结单，账务隔离双口径校验。可计费会谈与免费会谈分开统计，避免混淆。</p>
+          </div>
+          <div class="feat-card">
+            <div class="icon icon-clay">🔐</div>
+            <h3>账号与权益</h3>
+            <p>离线激活，不需要联网服务器。免费版 / 会员版 / 旗舰版按需升级，权益由代码强制门控。</p>
+          </div>
+          <div class="feat-card">
+            <div class="icon icon-clay">💾</div>
+            <h3>备份与迁移</h3>
+            <p>智能增量备份、导出与恢复不作为高级会员专属能力。提供数据迁移辅助页，换机不断档。</p>
           </div>
         </div>
       </div>
@@ -407,104 +510,67 @@
       </div>
     </section>
 
-    <!-- ROADMAP -->
-    <section id="roadmap">
+    <!-- PRINCIPLES -->
+    <section id="principles">
       <div class="wrap">
-        <p class="kicker">产品路线图</p>
-        <h2 class="h2">从单人闭环到专业生态</h2>
-        <p class="section-copy">心镜围绕一条可追溯的临床闭环收束现有能力，再逐步建立可信 AI、商业服务、加密同步与条件式团队版。</p>
-        <div class="roadmap-grid">
-          <div class="roadmap-card">
-            <div class="ver">v4.2 <span class="tag tag-dev">开发中</span></div>
-            <ul>
-              <li>安全基线与 durable save 持久化确认</li>
-              <li>共享 UI 契约与 18 单元视觉矩阵</li>
-              <li>概念 A 融合首页（临床指挥台）</li>
-              <li>快速记录与保存后动作</li>
-              <li>Electron 43 升级与权益/发布契约</li>
-            </ul>
+        <p class="kicker">产品原则</p>
+        <h2 class="h2">它把散落的工作还给你，把专业判断仍留给你</h2>
+        <p class="section-copy">下面六条是心镜任何版本都不会让步的取舍标准。</p>
+        <div class="principle-grid">
+          <div class="principle">
+            <span class="icon">🏠</span>
+            <h3>本地优先</h3>
+            <p>临床资料默认留在本机。备份、导出、恢复和迁移不作为高级会员专属能力。</p>
           </div>
-          <div class="roadmap-card plan">
-            <div class="ver">v4.3 <span class="tag tag-plan">规划中</span></div>
-            <ul>
-              <li>概念 B 融合文档中心：个案图谱子视图</li>
-              <li>来源可追溯的个案工作空间</li>
-              <li>证据、推论与动作链的只读图谱</li>
-              <li>30 节 fixture 与来源定位验收</li>
-            </ul>
+          <div class="principle">
+            <span class="icon">🤝</span>
+            <h3>AI 有边界</h3>
+            <p>AI 可以建议、整理和比较，不能自动诊断、编造事实或未经确认修改正式记录。</p>
           </div>
-          <div class="roadmap-card plan">
-            <div class="ver">v4.4 <span class="tag tag-plan">规划中</span></div>
-            <ul>
-              <li>可信 AI 内核：可取消、可比较、可评估</li>
-              <li>统一传输和失败协议</li>
-              <li>六态 fallback 与备用服务真实部署</li>
-              <li>多端框架决策门（Electron / Tauri / Capacitor）</li>
-            </ul>
+          <div class="principle">
+            <span class="icon">🔍</span>
+            <h3>来源可追溯</h3>
+            <p>每一条 AI 建议和每一个后续动作都能回到原始来源。相关性不写成因果。</p>
           </div>
-          <div class="roadmap-card plan">
-            <div class="ver">v4.5 – v5.0 <span class="tag tag-plan">规划中</span></div>
-            <ul>
-              <li>加密备份、更新回滚与模块化</li>
-              <li>三档产品、算力、支付与请求包闭环</li>
-              <li>签名运营与可观测性达到长期维护标准</li>
-            </ul>
+          <div class="principle">
+            <span class="icon">🔓</span>
+            <h3>手工永久可用</h3>
+            <p>手动临床工作流永久免费。不依赖 AI 也能完成日常执业的全部核心工作。</p>
           </div>
-          <div class="roadmap-card vision">
-            <div class="ver">v5.5 <span class="tag tag-vision">远期</span></div>
-            <ul>
-              <li>用户自有加密同步（非临床明文 SaaS）</li>
-              <li>轻量移动伴侣：排期、提醒、一句话备忘</li>
-              <li>费用草稿与回桌面继续处理</li>
-            </ul>
+          <div class="principle">
+            <span class="icon">🛡️</span>
+            <h3>最小上下文</h3>
+            <p>远程 AI 只接收用户确认的最小上下文。不泄露完整个案库，不采集临床正文。</p>
           </div>
-          <div class="roadmap-card vision">
-            <div class="ver">v6.0 <span class="tag tag-vision">远期</span></div>
-            <ul>
-              <li>独立团队版：独立数据边界与权限模型</li>
-              <li>内容包与教学模式</li>
-              <li>在真实需求验证后条件立项</li>
-            </ul>
+          <div class="principle">
+            <span class="icon">📐</span>
+            <h3>围绕个案</h3>
+            <p>从来访者、节次到材料，一条可追溯的工作线。同一事实只保存在一个权威对象中。</p>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- PRINCIPLES -->
-    <section style="background:var(--bg-2);border-top:1px solid var(--border)">
+    <!-- TRUST -->
+    <section class="trust-section">
       <div class="wrap">
-        <p class="kicker">产品原则</p>
-        <h2 class="h2">它把散落的工作还给你，把专业判断仍留给你</h2>
-        <div class="principle-grid">
-          <div class="principle">
-            <div class="icon">🏠</div>
-            <h3>本地优先</h3>
-            <p>临床资料默认留在本机。备份、导出、恢复和迁移不作为高级会员专属能力。</p>
-          </div>
-          <div class="principle">
-            <div class="icon">🤝</div>
-            <h3>AI 有边界</h3>
-            <p>AI 可以建议、整理和比较，不能自动诊断、编造事实或未经确认修改正式记录。</p>
-          </div>
-          <div class="principle">
-            <div class="icon">🔍</div>
-            <h3>来源可追溯</h3>
-            <p>每一条 AI 建议和每一个后续动作都能回到原始来源。相关性不写成因果。</p>
-          </div>
-          <div class="principle">
-            <div class="icon">🔓</div>
-            <h3>手工永久可用</h3>
-            <p>手动临床工作流永久免费。不依赖 AI 也能完成日常执业的全部核心工作。</p>
-          </div>
-          <div class="principle">
-            <div class="icon">🛡️</div>
-            <h3>最小上下文</h3>
-            <p>远程 AI 只接收用户确认的最小上下文。不泄露完整个案库，不采集临床正文。</p>
-          </div>
-          <div class="principle">
-            <div class="icon">📐</div>
-            <h3>围绕个案</h3>
-            <p>从来访者、节次到材料，一条可追溯的工作线。同一事实只保存在一个权威对象中。</p>
+        <p class="kicker">数据与安全</p>
+        <h2 class="h2">你的临床资料，不需要交给任何云端</h2>
+        <p class="section-copy">心镜不做临床明文 SaaS。数据模型只有一个事实来源，AI 调用只做受控转发。</p>
+        <div class="trust-box">
+          <ul class="trust-list">
+            <li><span class="chk">✓</span><span>所有个案、记录、逐字稿与账务数据存在本机 IndexedDB</span></li>
+            <li><span class="chk">✓</span><span>不注册、不登录也能完整使用全部手工工作流</span></li>
+            <li><span class="chk">✓</span><span>AI 请求只携带你当次确认的材料片段，不整库上传</span></li>
+            <li><span class="chk">✓</span><span>激活信息只保存在本机 <code>license.json</code>，不绑定机器</span></li>
+            <li><span class="chk">✓</span><span>导出前可用「文档脱敏」处理姓名与机构信息</span></li>
+            <li><span class="chk">✓</span><span>备份与导出永久可用，不做会员墙</span></li>
+          </ul>
+          <div class="trust-side">
+            <h4>关于 AI 代理</h4>
+            <p>AI 能力通过代理服务器转发算力，采用双因子鉴权；用户文本经代理计算后<strong>不在服务端落地存储</strong>，服务端仅记录机器码额度。</p>
+            <p style="margin-top:12px;">默认额度按 30 天滚动窗口计算，额度耗尽时自动降级到免费兜底模型，而不是直接不可用。</p>
+            <p style="margin-top:12px;" class="mono">数据默认不出本机 · 不采集临床正文</p>
           </div>
         </div>
       </div>
@@ -515,55 +581,153 @@
       <div class="wrap">
         <p class="kicker">下载心镜</p>
         <h2 class="h2">选择适合你系统的安装包</h2>
-        <p class="section-copy">所有安装包托管于腾讯云对象存储（国内高速），点击即开始下载。安装与运行不需要联网账号，资料默认保存在你的电脑中。</p>
+        <p class="section-copy">当前版本 <strong>v5.1.12</strong>。所有安装包托管于腾讯云对象存储（国内高速），点击即开始下载。安装与运行不需要联网账号，资料默认保存在你的电脑中。</p>
+
         <div class="dl-grid">
-          <div class="dl-card">
+          <!-- Windows 安装版 -->
+          <div class="dl-card primary">
             <div class="plat"><span class="ic">🖥️</span>Windows 安装版</div>
             <div class="desc">推荐大多数用户 · 支持自动更新</div>
-            <div class="file">xinjing-setup-4.1.0.exe</div>
+            <div class="file">xinjing-setup-5.1.12.exe</div>
             <div class="meta">
-              <span class="size">≈ 83 MB</span>
-              <a class="dl-btn" href="https://xinjing-1439314927.cos.ap-guangzhou.myqcloud.com/xinjing-setup-4.1.0.exe">↓ 下载</a>
+              <span class="size">≈ 109.3 MB</span>
+              <a class="dl-btn" href="https://xinjing-1439314927.cos.ap-guangzhou.myqcloud.com/xinjing-setup-5.1.12.exe">↓ 下载</a>
             </div>
-            <div class="dl-tip" style="color:#f59f00;background:rgba(245,159,0,.08);padding:10px 12px;border-radius:8px;border-left:3px solid #f59f0b;margin-top:14px;">
-              ⚠️ <strong>安装包未做数字签名</strong>，Windows SmartScreen 首次运行会拦截，请按以下步骤放行：<br>
-              <span style="color:var(--ink-2);display:block;margin-top:6px;line-height:1.7;">1. 双击 exe → 弹出"Windows 已保护你的电脑"窗口<br>2. 点击底部的 <strong>「更多信息」</strong> → 再点 <strong>「仍要运行」</strong><br>3. 出现 UAC 弹窗时点 <strong>「是」</strong>，按向导完成安装</span>
+            <div class="dl-tip warn">
+              ⚠️ <strong>安装包未做数字签名</strong>，Windows SmartScreen 首次运行会拦截，请按以下步骤放行：
+              <span class="step">1. 双击 exe → 弹出「Windows 已保护你的电脑」<br>2. 点击底部的 <strong>「更多信息」</strong> → 再点 <strong>「仍要运行」</strong><br>3. 出现 UAC 弹窗时点「是」，按向导完成安装</span>
             </div>
-            <div class="dl-tip">双击安装，开始菜单与卸载入口齐全；后续版本将自动提示更新。</div>
+            <div class="dl-tip">双击安装，开始菜单与卸载入口齐全；后续版本会自动提示更新。</div>
           </div>
+
+          <!-- Windows 便携版 -->
           <div class="dl-card">
             <div class="plat"><span class="ic">📦</span>Windows 便携版</div>
             <div class="desc">免安装 · 放 U 盘即用</div>
-            <div class="file">xinjing-portable-4.1.0.exe</div>
+            <div class="file">xinjing-portable-5.1.12.exe</div>
             <div class="meta">
-              <span class="size">≈ 83 MB</span>
-              <a class="dl-btn" href="https://xinjing-1439314927.cos.ap-guangzhou.myqcloud.com/xinjing-portable-4.1.0.exe">↓ 下载</a>
+              <span class="size">≈ 109.1 MB</span>
+              <a class="dl-btn" href="https://xinjing-1439314927.cos.ap-guangzhou.myqcloud.com/xinjing-portable-5.1.12.exe">↓ 下载</a>
             </div>
-            <div class="dl-tip">无需管理员权限，解压即运行；适合在机构电脑或临时环境使用。</div>
+            <div class="dl-tip">无需管理员权限，解压即运行；适合机构电脑或临时环境。数据仍存于本机，与安装版共用同一份数据。</div>
           </div>
-          <div class="dl-card" style="grid-column: 1 / -1; text-align: center; padding: 48px 28px; background: linear-gradient(135deg, rgba(56,217,169,.06), rgba(99,140,255,.04));">
-            <div class="plat" style="justify-content: center; font-size: 20px; margin-bottom: 14px;">
-              <span class="ic" style="width: 48px; height: 48px; font-size: 22px; background: rgba(56,217,169,.12); color: var(--accent-2);">🍎</span>
-              macOS 版本
+
+          <!-- macOS DMG -->
+          <div class="dl-card">
+            <div class="plat"><span class="ic">🍎</span>macOS 安装包（DMG）</div>
+            <div class="desc">推荐 Mac 用户 · 拖入 Applications 即可</div>
+            <div class="file">xinjing-5.1.12.dmg</div>
+            <div class="meta">
+              <span class="size">≈ 134.1 MB</span>
+              <a class="dl-btn" href="https://xinjing-1439314927.cos.ap-guangzhou.myqcloud.com/xinjing-5.1.12.dmg">↓ 下载</a>
             </div>
-            <p style="color: var(--ink-2); font-size: 15px; margin-bottom: 12px; max-width: 560px; margin-left: auto; margin-right: auto; line-height: 1.7;">
-              macOS 版正在适配与签名中，<strong style="color: var(--accent-2); font-size: 18px;">敬请期待</strong>。
-            </p>
-            <p style="color: var(--ink-3); font-size: 13px;">
-              暂需 macOS 的用户可发邮件至 <a href="mailto:985729106@qq.com" style="color: var(--accent); text-decoration: underline; font-weight: 600;">985729106@qq.com</a> 优先排期通知，届时会同步告知。
-            </p>
+            <div class="dl-tip warn">
+              ⚠️ <strong>未做 Apple 签名与公证</strong>，首次打开会被 Gatekeeper 拦截，请按以下步骤放行：
+              <span class="step">1. 打开 DMG，把「心镜」拖入「应用程序」<br>2. 在「应用程序」里 <strong>右键点击图标 → 打开</strong>（不要双击）<br>3. 弹窗中点 <strong>「打开」</strong> 即可<br>4. 若仍被拦截：系统设置 → 隐私与安全性 → 找到心镜 → 点「仍要打开」</span>
+            </div>
+            <div class="dl-tip">首次启动后数据同样保存在本机，与 Windows 版互相独立。</div>
+          </div>
+
+          <!-- macOS ZIP -->
+          <div class="dl-card">
+            <div class="plat"><span class="ic">🗜️</span>macOS 压缩包（ZIP）</div>
+            <div class="desc">备用方式 · 解压后拖入 Applications</div>
+            <div class="file">xinjing-5.1.12.zip</div>
+            <div class="meta">
+              <span class="size">≈ 349.4 MB</span>
+              <a class="dl-btn" href="https://xinjing-1439314927.cos.ap-guangzhou.myqcloud.com/xinjing-5.1.12.zip">↓ 下载</a>
+            </div>
+            <div class="dl-tip">若 DMG 挂载异常可用此包。解压得到 .app 后拖入「应用程序」，同样需要右键「打开」放行。</div>
           </div>
         </div>
       </div>
     </section>
 
+    <!-- FAQ -->
+    <section id="faq">
+      <div class="wrap">
+        <p class="kicker">安装与使用</p>
+        <h2 class="h2">常见问题</h2>
+        <p class="section-copy">第一次使用时最常遇到的几件事，都在这里。</p>
+
+        <div class="faq-list">
+          <details class="faq-item" open>
+            <summary>心镜需要联网吗？我的资料会上传吗？</summary>
+            <div class="faq-body">
+              <p>不需要联网也能使用<strong>全部手工工作流</strong>（排期、记录、逐字稿、报告、督导记录、账务、资料库管理）。</p>
+              <p>只有你主动使用 AI 功能时才会联网，且只发送你当次确认的材料片段；临床正文不会整库上传，服务端也不落地存储你的文本。</p>
+            </div>
+          </details>
+
+          <details class="faq-item">
+            <summary>怎么激活？有试用期吗？</summary>
+            <div class="faq-body">
+              <p>首次启动起有 <strong>90 天完整功能试用</strong>，顶部会显示剩余天数，功能全开。</p>
+              <p>试用结束后程序进入「受限」状态：仍可正常使用其余功能，但会显示水印并禁用导出与打印。输入激活码即可恢复完整状态。</p>
+              <p>激活是<strong>离线校验</strong>，不需要联网服务器；激活信息只保存在本机，不绑定机器，换电脑后用同一个激活码即可。</p>
+            </div>
+          </details>
+
+          <details class="faq-item">
+            <summary>Windows 提示「未知发布者 / 已保护你的电脑」怎么办？</summary>
+            <div class="faq-body">
+              <p>这是因为安装包没有购买代码签名证书，属于正常现象。</p>
+              <ol>
+                <li>双击 exe，弹出「Windows 已保护你的电脑」</li>
+                <li>点击底部的「更多信息」→ 再点「仍要运行」</li>
+                <li>出现 UAC 弹窗时点「是」，按向导完成安装</li>
+              </ol>
+              <p>程序数据完全在本机，不上传任何服务器。</p>
+            </div>
+          </details>
+
+          <details class="faq-item">
+            <summary>macOS 提示「无法打开，因为来自身份不明的开发者」怎么办？</summary>
+            <div class="faq-body">
+              <p>心镜暂未购买 Apple 开发者签名与公证，首次打开需要手动放行一次：</p>
+              <ol>
+                <li>在「应用程序」文件夹里 <strong>右键（或按住 Control 点击）</strong>心镜图标 → 选择「打开」</li>
+                <li>弹窗中再点一次「打开」，之后就可以正常双击启动了</li>
+                <li>如果仍然被拦截：打开「系统设置 → 隐私与安全性」，在页面下方找到关于心镜的提示，点「仍要打开」</li>
+              </ol>
+              <p>只需要放行一次，后续版本更新后可能需重复一次。</p>
+            </div>
+          </details>
+
+          <details class="faq-item">
+            <summary>安装版和便携版有什么区别？数据互通吗？</summary>
+            <div class="faq-body">
+              <p>安装版会创建开始菜单与卸载入口，支持自动更新；便携版免安装、不写注册表，适合 U 盘或机构电脑。</p>
+              <p>两者<strong>共用同一份本机数据</strong>，二选一即可，不需要同时装。</p>
+            </div>
+          </details>
+
+          <details class="faq-item">
+            <summary>心镜和网页版「大师对话」是什么关系？</summary>
+            <div class="faq-body">
+              <p>桌面版<strong>已完整包含在线版「大师对话」的全部功能与知识体系</strong>，并且在本地整合了排期、记录、逐字稿、报告、督导、资料库与账务，形成一条连续的个案工作线。</p>
+              <p>如果你只需要大师对话，可以继续用网页版；如果希望把日常执业收拢到一处，桌面版更合适。</p>
+            </div>
+          </details>
+
+          <details class="faq-item">
+            <summary>我的数据怎么备份？换电脑怎么办？</summary>
+            <div class="faq-body">
+              <p>心镜提供智能增量备份、导出与恢复，这些能力<strong>永久可用、不做会员限制</strong>。</p>
+              <p>换电脑时使用内置的「数据迁移辅助页」，按引导导出再导入即可。建议定期备份到移动硬盘或你的私有云。</p>
+            </div>
+          </details>
+        </div>
+      </div>
+    </section>
+
     <!-- CTA -->
-    <section class="cta-section">
+    <section>
       <div class="wrap">
         <div class="cta-box">
           <h2>从今天的一场会谈开始</h2>
           <p>不必一次性迁入所有资料。可以从今天的一场会谈、一个需要整理的逐字稿，或一位正在持续工作的来访者开始。</p>
-          <a class="btn btn-primary" href="https://xinjing-1439314927.cos.ap-guangzhou.myqcloud.com/xinjing-setup-4.1.0.exe">下载心镜，开始使用</a>
+          <a class="btn btn-primary" href="https://xinjing-1439314927.cos.ap-guangzhou.myqcloud.com/xinjing-setup-5.1.12.exe">↓ 下载心镜 v5.1.12</a>
         </div>
       </div>
     </section>
