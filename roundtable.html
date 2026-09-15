@@ -1,0 +1,1545 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <!-- proxy.js 仅本地开发，线上无需加载 -->
+  <script src="i18n.js?v=5"></script>
+  <script src="safety.js?v=20260908"></script>
+  <script src="prompt-contracts.js?v=20260804"></script>
+  <script src="storage.js?v=20260803"></script>
+
+  <script>
+  /* ===== 对话页界面三语化（由 i18n.js 在每次切语言时调用） ===== */
+  window.onLangApplied = function (lang) {
+    if (!window.T) return;
+    var setPH = function (el, key) { if (el) el.setAttribute('placeholder', window.T(key)); };
+    var setTxt = function (el, key) { if (el) el.textContent = window.T(key); };
+    // 输入框占位符
+    ['input', 'chatInput', 'userInput', 'msgInput'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el && !/api|sk-|http/i.test(el.getAttribute('placeholder') || '')) setPH(el, 'chat_input_ph');
+    });
+    // 发送按钮（id=sendBtn / chatSendBtn / class=send-btn 文本为发送/发）
+    var sb = document.getElementById('sendBtn') || document.querySelector('.send-btn');
+    if (sb && /发送|发/.test(sb.textContent)) setTxt(sb, 'chat_send');
+    // 返回链接（← 返回 / 返回首页 等）
+    var back = document.querySelector('a.back-link');
+    if (back && /返回/.test(back.textContent)) setTxt(back, 'chat_back_home');
+    // 设置按钮（⚙️ 或 设置）
+    var setB = document.getElementById('settingsBtn');
+    if (setB && !/⚙/.test(setB.textContent)) setTxt(setB, 'chat_settings');
+    // 按已知中文文本批量切换按钮
+    var map = {
+      '清空': 'chat_clear', '导出对话': 'chat_export', '导出': 'chat_export',
+      '新对话': 'chat_new', '历史记录': 'chat_history',
+      '全体回应': 'chat_all_respond', '仅被@回应': 'chat_mention_only',
+      '邀请大师加入': 'chat_invite', '保存对话': 'chat_save', '打赏': 'chat_reward'
+    };
+    var btns = document.querySelectorAll('button, .back-btn, .btn-primary, .btn-cancel');
+    btns.forEach(function (b) {
+      var tx = (b.textContent || '').trim();
+      if (map[tx]) setTxt(b, map[tx]);
+    });
+    // 动态生成的返回模式按钮（← 返回选择模式）
+    var bm = document.querySelector('.back-btn');
+    if (bm && /返回选择模式/.test(bm.textContent)) setTxt(bm, 'chat_back_home');
+  };
+  </script>
+
+<link rel="icon" href="data:,">
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>圆桌会议室 — 多大师对话</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:"Noto Serif SC","Source Han Serif SC","Songti SC","STSong",Georgia,serif; background:#faf8f5; color:#2d2925; min-height:100vh; height:100vh; display:flex; justify-content:center; line-height:1.8; overflow:hidden; -webkit-font-smoothing:antialiased; }
+  .app { width:100%; max-width:720px; display:flex; flex-direction:column; height:100vh; min-height:0; overflow:hidden; background:#faf8f5; }
+
+  /* Header */
+  .header { padding:14px 20px 6px; text-align:center; border-bottom:1px solid #e8e1d9; background:#fffdfb; flex-shrink:0; position:relative; z-index:2; }
+  .header h1 { font-size:16px; font-weight:500; margin-bottom:2px; padding:0 80px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .header p { font-size:11px; color:#8f857d; margin-bottom:6px; }
+  .back-link { position:absolute; left:16px; top:14px; font-size:12px; color:#8f857d; text-decoration:none; }
+  .back-link:hover { color:#8b6f5c; }
+
+  /* Avatar bar */
+  .avatar-bar { display:flex; gap:6px; padding:8px 20px; background:#fffdfb; border-bottom:1px solid #e8e1d9; flex-shrink:0; overflow-x:auto; flex-wrap:wrap; align-items:center; }
+  .avatar-item { display:flex; flex-direction:column; align-items:center; gap:2px; cursor:pointer; padding:4px 8px; border-radius:8px; border:1px solid transparent; transition:0.15s; min-width:56px; }
+  .avatar-item:hover { background:#f3ede6; }
+  .avatar-item.active { border-color:#8b6f5c; background:#f3ede6; }
+  .avatar-item .circle { width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:600; color:white; flex-shrink:0; transition:transform 0.2s ease, box-shadow 0.2s ease; }
+  .avatar-item:hover .circle { transform:scale(1.08); }
+  .avatar-item .aname { font-size:10px; color:#8f857d; white-space:nowrap; }
+  .avatar-item .abadge { font-size:8px; line-height:1; }
+  .avatar-item .abadge.online { color:#6b9; }
+  .avatar-item .abadge.offline { color:#c99; }
+  .avatar-invite { font-size:18px; cursor:pointer; padding:4px 10px; border-radius:8px; border:1px dashed #d5c8e0; color:#8f857d; background:none; font-family:inherit; line-height:1; transition:all 0.2s ease; }
+  .avatar-invite:hover { background:#f3ede6; border-color:#8b6f5c; transform:scale(1.05); }
+  .avatar-invite:active { transform:scale(0.95); }
+
+  /* Chat area */
+  .chat-area { flex:1; overflow-y:auto; padding:16px 20px; display:flex; flex-direction:column; gap:12px; min-height:0; scroll-behavior:smooth; }
+  .chat-area::-webkit-scrollbar { width:4px; }
+  .chat-area::-webkit-scrollbar-thumb { background:#e8e1d9; border-radius:2px; }
+  .chat-area::-webkit-scrollbar-thumb:hover { background:#d5c8b8; }
+
+  /* Messages */
+  .msg { padding:12px 16px; border-radius:14px; max-width:85%; position:relative; animation: fadeIn 0.35s cubic-bezier(0.16,1,0.3,1); }
+  .msg.user { align-self:flex-end; background:#ece5dc; border-bottom-right-radius:4px; }
+  .msg.master { align-self:flex-start; border-bottom-left-radius:4px; transition:box-shadow 0.2s ease; }
+  .msg.master:hover { box-shadow:0 2px 12px rgba(45,41,37,0.06); }
+  .msg .msg-header { display:flex; align-items:center; gap:6px; margin-bottom:4px; }
+  .msg .msg-avatar { width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:600; color:white; flex-shrink:0; }
+  .msg .msg-name { font-size:11px; font-weight:600; }
+  .msg .msg-time { font-size:9px; color:#8f857d; margin-left:auto; }
+  .msg .msg-text { font-size:13px; line-height:1.8; white-space:pre-wrap; word-break:break-word; }
+  .msg .msg-text strong { color:#3C3489; font-weight:600; }
+  .msg .msg-text em { font-style:normal; color:#8f857d; }
+  .msg .msg-text.loading { color:#8f857d; font-style:italic; }
+
+  /* Input area */
+  .input-area { padding:10px 16px 14px; border-top:1px solid #e8e1d9; background:#fffdfb; flex-shrink:0; }
+  .input-row { display:flex; gap:8px; align-items:flex-end; }
+  .input-row textarea { flex:1; padding:10px 14px; border:1px solid #e8e1d9; border-radius:12px; font-size:13px; font-family:inherit; outline:none; resize:none; min-height:44px; max-height:120px; background:#faf8f5; color:#2d2925; line-height:1.6; transition:border-color 0.2s ease, box-shadow 0.2s ease; }
+  .input-row textarea:focus { border-color:#8b6f5c; box-shadow:0 0 0 3px rgba(139,111,92,0.08); }
+  .input-row .send-btn { padding:10px 20px; border:none; border-radius:12px; background:#8b6f5c; color:white; font-size:13px; cursor:pointer; font-family:inherit; transition:all 0.2s ease; white-space:nowrap; }
+  .input-row .send-btn:hover { background:#7a5f4d; transform:scale(1.02); }
+  .input-row .send-btn:active { transform:scale(0.97); }
+  .input-row .send-btn:disabled { background:#ccc; cursor:not-allowed; transform:none; }
+
+  /* Toolbar */
+  .toolbar { display:flex; gap:6px; padding:6px 16px 0; background:#fffdfb; flex-shrink:0; flex-wrap:wrap; }
+  .toolbar button { background:none; border:1px solid #e8e1d9; border-radius:6px; padding:3px 10px; font-size:11px; cursor:pointer; color:#8f857d; font-family:inherit; transition:all 0.15s ease; }
+  .toolbar button:hover { background:#f3ede6; color:#2d2925; border-color:#d5c8b8; }
+  .toolbar button:active { transform:scale(0.95); }
+  .toolbar button.active-mode { background:#8b6f5c; color:white; border-color:#8b6f5c; }
+  .toolbar .font-group { margin-left:auto; display:flex; gap:2px; }
+  .toolbar .font-group button { width:26px; padding:3px 0; text-align:center; font-size:13px; font-weight:600; }
+  .toolbar .rounds-toggle { font-size:10px; color:#8f857d; }
+  .toolbar .rounds-toggle input { vertical-align:middle; margin-right:2px; accent-color:#8b6f5c; }
+
+  /* Preset buttons */
+  .preset-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px; }
+  .preset-card { padding:10px 12px; border-radius:10px; border:1px solid #e8e1d9; cursor:pointer; text-align:center; transition:all 0.2s ease; background:#faf8f5; }
+  .preset-card:hover { border-color:#8b6f5c; background:#f3ede6; transform:translateY(-1px); }
+  .preset-card:active { transform:translateY(0); }
+  .preset-card .pc-title { font-size:12px; font-weight:500; color:#2d2925; }
+  .preset-card .pc-sub { font-size:10px; color:#8f857d; margin-top:2px; }
+
+  /* Settings panel */
+  .settings-btn { position:absolute; right:12px; top:12px; background:none; border:1px solid #e8e1d9; border-radius:6px; padding:2px 8px; font-size:11px; cursor:pointer; color:#8f857d; font-family:inherit; line-height:1.6; transition:all 0.15s ease; }
+  .settings-btn:hover { background:#f3ede6; border-color:#d5c8b8; }
+  .settings-btn:active { transform:scale(0.95); }
+  .settings-panel { max-height:0; overflow:hidden; transition:max-height 0.4s cubic-bezier(0.4,0,0.2,1), padding 0.3s ease; background:#fffdfb; border-bottom:1px solid #e8e1d9; padding:0 20px; }
+  .settings-panel.open { max-height:400px; padding:12px 20px; overflow-y:auto; }
+  .settings-panel h3 { font-size:12px; font-weight:500; margin-bottom:8px; color:#8f857d; }
+  .settings-row { display:flex; align-items:center; gap:6px; margin-bottom:5px; }
+  .settings-row label { font-size:10px; color:#8f857d; width:56px; flex-shrink:0; }
+  .settings-row input { flex:1; padding:5px 8px; border:1px solid #e8e1d9; border-radius:6px; font-size:11px; outline:none; background:#faf8f5; font-family:monospace; color:#2d2925; transition:border-color 0.2s ease; }
+  .settings-row input:focus { border-color:#8b6f5c; }
+  .mode-toggle { display:flex; gap:0; margin-bottom:8px; border-radius:6px; overflow:hidden; border:1px solid #e8e1d9; }
+  .mode-toggle button { flex:1; padding:5px 0; border:none; font-size:11px; cursor:pointer; font-family:inherit; transition:all 0.15s ease; }
+  .mode-toggle .d-btn { background:#f3ede6; color:#2d2925; }
+  .mode-toggle .d-btn.active { background:#8b6f5c; color:white; }
+  .mode-toggle .c-btn { background:#faf8f5; color:#2d2925; }
+  .mode-toggle .c-btn.active { background:#d4a056; color:white; }
+  .preset-row { display:flex; gap:3px; flex-wrap:wrap; margin-top:4px; }
+  .preset-row button { font-size:9px; padding:2px 7px; border:1px solid #e8e1d9; border-radius:5px; background:#faf8f5; cursor:pointer; font-family:inherit; color:#8f857d; }
+  .preset-row button:hover { border-color:#8b6f5c; }
+  .api-save-btn { margin-top:4px; width:100%; padding:5px; border:none; border-radius:6px; background:#8b6f5c; color:white; font-size:11px; cursor:pointer; font-family:inherit; }
+  .api-save-btn:hover { background:#7a5f4d; }
+
+  /* History list */
+  .history-item { display:flex; align-items:center; padding:8px 12px; border-bottom:1px solid #e8e1d9; font-size:12px; cursor:pointer; transition:0.1s; }
+  .history-item:hover { background:#f3ede6; }
+  .history-item .hi-info { flex:1; }
+  .history-item .hi-title { font-weight:500; }
+  .history-item .hi-meta { font-size:10px; color:#8f857d; }
+  .history-item .hi-actions button { background:none; border:1px solid #e8e1d9; border-radius:4px; padding:2px 8px; font-size:10px; cursor:pointer; font-family:inherit; color:#8f857d; margin-left:4px; }
+  .history-item .hi-actions button:hover { background:#f3ede6; }
+  .history-empty { text-align:center; padding:24px; color:#8f857d; font-size:12px; }
+
+  /* Banner */
+  .banner { position:fixed; top:0; left:50%; transform:translateX(-50%); z-index:300; background:#8b6f5c; color:white; padding:8px 20px; border-radius:0 0 10px 10px; font-size:12px; opacity:0; transition:opacity 0.3s; pointer-events:none; white-space:normal; text-align:center; max-width:calc(100vw - 24px); }
+  .banner.show { opacity:1; pointer-events:auto; }
+
+  /* Invite modal */
+  .overlay { position:fixed; inset:0; z-index:200; background:rgba(0,0,0,0.3); display:none; align-items:center; justify-content:center; }
+  .overlay.show { display:flex; }
+  .modal { background:#fffdfb; border-radius:14px; padding:24px; width:90%; max-width:420px; box-shadow:0 4px 24px rgba(0,0,0,0.15); max-height:80vh; overflow-y:auto; }
+  .modal h3 { font-size:15px; font-weight:500; margin-bottom:12px; }
+  .modal .m-item { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px; cursor:pointer; transition:0.1s; margin-bottom:4px; }
+  .modal .m-item:hover { background:#f3ede6; }
+  .modal .m-item.disabled { opacity:0.4; cursor:not-allowed; }
+  .modal .m-item .circle { width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:600; color:white; flex-shrink:0; }
+  .modal .m-item .minfo { flex:1; }
+  .modal .m-item .minfo .mname { font-size:13px; }
+  .modal .m-item .minfo .msub { font-size:10px; color:#8f857d; }
+  .modal .m-item input[type=checkbox] { width:16px; height:16px; accent-color:#8b6f5c; }
+  .modal .modal-actions { display:flex; gap:8px; margin-top:12px; }
+  .modal .modal-actions button { flex:1; padding:8px; border:none; border-radius:10px; font-size:12px; cursor:pointer; font-family:inherit; }
+  .modal .modal-actions .btn-primary { background:#8b6f5c; color:white; }
+  .modal .modal-actions .btn-primary:hover { background:#7a5f4d; }
+  .modal .modal-actions .btn-cancel { background:#f3ede6; color:#2d2925; }
+  .modal .modal-actions .btn-cancel:hover { background:#e8e1d9; }
+
+  /* Typing indicator */
+  .typing { display:flex; align-items:center; gap:10px; padding:8px 16px; align-self:flex-start; }
+  .typing .typing-dots { display:flex; gap:3px; }
+  .typing .typing-dots span { width:6px; height:6px; border-radius:50%; background:#8f857d; animation: typing 1.4s infinite; }
+  .typing .typing-dots span:nth-child(2) { animation-delay:0.2s; }
+  .typing .typing-dots span:nth-child(3) { animation-delay:0.4s; }
+  .typing .typing-label { font-size:10px; color:#8f857d; }
+
+  @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes typing { 0%,60%,100%{opacity:0.3;transform:scale(1)} 30%{opacity:1;transform:scale(1.2)} }
+
+  /* Name dialog */
+  .name-overlay { position:fixed; inset:0; z-index:400; background:rgba(0,0,0,0.4); display:none; align-items:center; justify-content:center; backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); }
+  .name-box { background:#fffdfb; border-radius:20px; padding:32px 28px; width:90%; max-width:360px; text-align:center; box-shadow:0 12px 50px rgba(0,0,0,0.15); animation:fadeIn 0.4s cubic-bezier(0.16,1,0.3,1); }
+  .name-box .n-avatar { width:52px; height:52px; border-radius:50%; background:#8b6f5c; color:white; display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:600; margin:0 auto 14px; }
+  .name-box .n-msg { font-size:14px; color:#2d2925; line-height:1.9; margin-bottom:18px; }
+  .name-box input { width:100%; padding:12px 16px; border:1px solid #e8e1d9; border-radius:12px; font-size:14px; font-family:inherit; outline:none; background:#faf8f5; color:#2d2925; box-sizing:border-box; transition:border-color 0.2s ease, box-shadow 0.2s ease; }
+  .name-box input:focus { border-color:#8b6f5c; box-shadow:0 0 0 3px rgba(139,111,92,0.08); }
+  .name-box .n-btn { width:100%; padding:12px; border:none; border-radius:12px; background:#8b6f5c; color:white; font-size:14px; cursor:pointer; font-family:inherit; margin-top:12px; transition:all 0.2s ease; }
+  .name-box .n-btn:hover { background:#7a5f4d; transform:translateY(-1px); }
+  .name-box .n-btn:active { transform:translateY(0); }
+  .name-box .n-btn:disabled { background:#ccc; cursor:not-allowed; transform:none; }
+</style>
+<!-- UI 优化（Tier A/B/C）：仅视觉层，不影响功能、不引入依赖 -->
+<style id="ui-optimize">
+  html { scroll-behavior: smooth; }
+
+  /* A3 键盘焦点环（无障碍） */
+  :focus-visible {
+    outline: 2px solid var(--accent, #8b6f5c);
+    outline-offset: 2px;
+  }
+
+  /* A1/A2 按钮物理反馈与 hover */
+  button, .btn-primary, .btn-aux, .btn-cancel, .btn-confirm,
+  .reward-close, .reward-btn, [role="button"], .m-item, .chip {
+    transition: transform .12s ease, background-color .2s ease,
+                border-color .2s ease, color .2s ease,
+                box-shadow .2s ease, opacity .2s ease;
+  }
+  button:active, .btn-primary:active, .btn-aux:active, .btn-cancel:active,
+  .btn-confirm:active, .reward-btn:active, [role="button"]:active, .chip:active {
+    transform: translateY(1px) scale(0.99);
+  }
+  .btn-primary:hover, .btn-confirm:hover, #sendBtn:hover, .reward-btn:hover {
+    transform: translateY(-1px);
+  }
+  .btn-aux:hover, .btn-cancel:hover { filter: brightness(0.97); }
+
+  /* A4 输入框聚焦态 */
+  textarea:focus, input:focus, [contenteditable="true"]:focus {
+    border-color: var(--accent, #8b6f5c);
+    box-shadow: 0 0 0 3px rgba(139,111,92,0.18);
+  }
+
+  /* B1 弹窗微抬升 + 淡入 */
+  .reward-box, .modal-box, .modal, .share-card, .name-box {
+    animation: uiPop .28s cubic-bezier(.2,.8,.2,1) both;
+  }
+  @keyframes uiPop {
+    from { opacity: 0; transform: translateY(8px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  /* B2 消息气泡 hover 极轻反馈 */
+  .bubble:hover, .msg:hover { box-shadow: 0 1px 6px rgba(45,41,37,0.06); }
+
+  /* B4 温度 chip 选中态内描边 */
+  .chip.active, .chip.selected, .chip[aria-pressed="true"] {
+    box-shadow: inset 0 0 0 1px var(--accent, #8b6f5c);
+  }
+
+  /* C1 新消息气泡淡入 */
+  .bubble, .msg:not(.master) {
+    animation: uiMsgIn .3s ease both;
+  }
+  @keyframes uiMsgIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after {
+      animation-duration: .001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: .001ms !important;
+    }
+  }
+</style>
+
+  <link rel="stylesheet" href="site-theme.css?v=20260803">
+</head>
+<body>
+<div class="app">
+  <!-- Header -->
+  <div class="header" style="position:relative;">
+    <a class="back-link" href="index.html">&larr; 返回</a>
+    <h1>🪑 圆桌会议室 <span style="font-size:10px;color:#8f857d;font-weight:400;">v5.1</span></h1>
+    <p>多位大师同时回应的对话空间</p>
+    <button class="settings-btn" onclick="toggleSettings()" title="API 设置">⚙️</button>
+  </div>
+
+  <!-- Settings panel -->
+  <div class="settings-panel" id="settingsPanel">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <h3 style="margin:0;">API 设置</h3>
+      <button type="button" onclick="toggleSettings()" style="background:none;border:1px solid #e8e1d9;border-radius:6px;padding:2px 10px;font-size:11px;cursor:pointer;color:#8f857d;font-family:inherit;">收起 ▴</button>
+    </div>
+    <div class="mode-toggle">
+      <button class="d-btn active" id="dBtn" onclick="setMode('default')">默认 API</button>
+      <button class="c-btn" id="cBtn" onclick="setMode('custom')">自用 API</button>
+    </div>
+    <div class="mode-toggle" style="margin-top:6px;">
+      <button id="lineDeepBtn" onclick="setApiLine('deepseek')" style="flex:1;padding:5px 0;border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer;background:var(--accent);color:#fff;font-family:inherit;">DeepSeek Pro</button>
+      <button id="lineGptBtn" onclick="setApiLine('gpt')" style="flex:1;padding:5px 0;border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer;background:none;color:var(--muted);font-family:inherit;">GPT-5.6</button><button id="lineGemBtn" onclick="setApiLine('gemini')" style="flex:1;padding:5px 0;border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer;background:none;color:var(--muted);font-family:inherit;">Gemini</button><button id="lineClBtn" onclick="setApiLine('claude')" style="flex:1;padding:5px 0;border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer;background:none;color:var(--muted);font-family:inherit;">Claude</button>
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">API 线路状态：默认 API 模式下生效（deepseek → v4-pro 关思考 / gpt → gpt-5.6 关思考）</div>
+    <div id="customFields" style="display:none;">
+      <div class="settings-row"><label>API 地址</label><input id="cApi" placeholder="https://api.openai.com/v1/chat/completions"></div>
+      <div class="settings-row"><label>API Key</label><input id="cKey" placeholder="sk-..."></div>
+      <div class="settings-row"><label>模型</label><input id="cModel" placeholder="gpt-4o"></div>
+      <div class="preset-row">
+        <button onclick="fillPreset('https://api.deepseek.com/v1/chat/completions','deepseek-chat')">DeepSeek</button>
+        <button onclick="fillPreset('https://api.openai.com/v1/chat/completions','gpt-4o')">OpenAI</button>
+        <button onclick="fillPreset('https://api.siliconflow.cn/v1/chat/completions','deepseek-ai/DeepSeek-V3')">硅基流动</button>
+      </div>
+      <button class="api-save-btn" onclick="saveSettings()">保存设置</button>
+      <span id="savedHint" style="font-size:10px;color:#8b6f5c;margin-left:8px;display:none;">已保存</span>
+    </div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <button onclick="openPresets()">🎯 预设组合</button>
+    <button onclick="setRespondMode()" id="modeToggleBtn">🌐 全体回应</button>
+    <button onclick="clearChat()">🔄 新对话</button>
+    <button onclick="saveHistory()">💾 保存对话</button>
+    <button onclick="showHistory()">📋 历史记录</button>
+    <span class="rounds-toggle">
+      <input type="checkbox" id="roundsCheck" checked onchange="updateRounds()"><label for="roundsCheck">串行</label>
+    </span>
+    <span class="font-group">
+      <button onclick="zoomFont(-1)" title="缩小">A−</button>
+      <button onclick="zoomFont(1)" title="放大">A+</button>
+    </span>
+    <button onclick="showReward()" style="background:none;border:1px solid var(--border);padding:4px 10px;border-radius:20px;font-size:12px;cursor:pointer;color:var(--muted);font-family:inherit;">☕ 打赏</button>
+  </div>
+
+  <!-- Avatar bar -->
+  <div class="avatar-bar" id="avatarBar"></div>
+
+  <!-- Chat area -->
+  <div class="chat-area" id="chatArea">
+    <div class="msg master" style="background:#f5f0eb;align-self:center;max-width:90%;border-radius:12px;text-align:center;font-size:12px;color:#8f857d;line-height:1.8;">
+      点击大师头像可切换其自动回应状态。<br>
+      输入 <code>@大师名</code> 可指定回应对象。<br>
+      也可从气泡底部的「追问」快速@大师。
+    </div>
+  </div>
+
+  <!-- Input area -->
+  <div class="input-area">
+    <div class="input-row">
+      <textarea id="inputEl" placeholder="输入你的问题…" onkeydown="if(!event.isComposing&&event.keyCode!==229&&event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg()}" rows="1"></textarea>
+      <button class="send-btn" id="sendBtn" onclick="sendMsg()">发送</button><button id="mmBtn" title="对话至少需要 10 条消息" disabled style="flex-shrink:0;margin-left:6px;padding:6px 10px;border-radius:9px;border:1px solid var(--border);background:var(--card);color:var(--muted);font-size:12px;cursor:pointer;font-family:inherit;">🧠 导图</button>
+    </div>
+  </div>
+</div>
+
+<!-- Reward overlay -->
+<div class="reward-overlay" id="rtRewardOverlay" style="position:fixed;inset:0;z-index:999;background:rgba(0,0,0,0.3);display:none;align-items:center;justify-content:center;">
+  <div style="background:var(--card);border-radius:16px;padding:28px 24px;text-align:center;max-width:360px;width:90%;box-shadow:0 4px 24px rgba(0,0,0,0.15);">
+    <h3 style="margin:0 0 4px;font-size:16px;font-weight:500;color:var(--text);">☕ 觉得是个好活？</h3>
+    <p style="font-size:12px;color:var(--muted);margin:0 0 16px;line-height:1.6;">这网站免费用，但 API 调一次几毛钱<br>如果你聊得开心，可以打赏点 token 钱</p>
+    <img src="reward-qr.jpg" alt="打赏二维码" style="width:200px;height:200px;border-radius:8px;">
+    <button onclick="closeReward()" style="margin-top:12px;background:none;border:1px solid var(--border);border-radius:8px;padding:8px 20px;font-size:12px;cursor:pointer;color:var(--muted);font-family:inherit;">收到，关掉</button>
+  </div>
+</div>
+
+<!-- Invite modal -->
+<div class="overlay" id="inviteOverlay" onclick="if(event.target===this)closeInvite()">
+  <div class="modal">
+    <h3>邀请大师加入</h3>
+    <div id="inviteList"></div>
+    <div class="modal-actions">
+      <button class="btn-primary" onclick="confirmInvite()">确认</button>
+      <button class="btn-cancel" onclick="closeInvite()">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- History modal -->
+<div class="overlay" id="historyOverlay" onclick="if(event.target===this)closeHistory()">
+  <div class="modal">
+    <h3>📋 对话历史</h3>
+    <div id="historyList"><div class="history-empty">暂无保存的对话</div></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeHistory()">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- Banner -->
+<div class="banner" id="banner"></div>
+
+<!-- Name dialog -->
+<div class="name-overlay" id="nameOverlay">
+  <div class="name-box">
+    <div class="n-avatar">W</div>
+    <div class="n-msg">你好，我是温尼科特。<br>在你坐下之前，我想先知道——<br>我该怎么称呼你？</div>
+    <input id="nameInput" placeholder="输入你的名字或昵称" onkeydown="if(event.key==='Enter')confirmName()" maxlength="20">
+    <button class="n-btn" id="nameBtn" onclick="confirmName()">好的，我们开始吧</button>
+  </div>
+</div>
+
+<!-- Preset modal -->
+<div class="overlay" id="presetOverlay" onclick="if(event.target===this)closePresets()">
+  <div class="modal">
+    <h3>🎯 预设组合</h3>
+    <div class="preset-grid" id="presetGrid"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closePresets()">关闭</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ====== Master Config ======
+var MASTERS = {
+  winnicott: { name:'温尼科特', initial:'W', icon:'🧸',
+    avatar:'', sub:'儿科医生 · 足够好的母亲 · 过渡性客体',
+    kb:'winnicott-perspective.md', accent:'#8b6f5c', light:'#f3ede6',
+    font:'"Georgia","Noto Serif SC",serif',
+    permanent:true,
+    hint:'一生都在琢磨「在场」这件事',
+    intro:'我是温尼科特。一个看了四十年孩子的儿科医生，后来成了精神分析师。我发明了「足够好的母亲」「过渡性客体」这些词，但说实话，它们都是从诊所里长出来的，不是我想出来的。我们就随便聊聊，不用太正式。' },
+  freud: { name:'弗洛伊德', initial:'F', icon:'🧔',
+    avatar:'', sub:'精神分析奠基人 · 无意识 · 释梦',
+    kb:'freud-perspective.md', accent:'#5b3a8c', light:'#EEEDFE',
+    font:'"Georgia","Noto Serif SC",serif',
+    hint:'带着被背叛的敏感和倔强',
+    intro:'我是弗洛伊德。精神分析的创始人。我发明了自由联想法、释梦、以及你们现在说的「潜意识」这个概念。不过我今天不是来上课的——你有话就说吧。' },
+  klein: { name:'克莱因', initial:'K', icon:'👩',
+    avatar:'', sub:'客体关系 · 偏执-分裂位 · 投射性认同',
+    kb:'klein-perspective.md', accent:'#3a8c5b', light:'#EAF3DE',
+    font:'"Palatino Linotype","STSong",serif',
+    hint:'她的理论是你内心最早期关系的回响',
+    intro:'我是梅兰妮·克莱因。我用儿童游戏做分析，提出了偏执-分裂位和抑郁位这两个概念。别怕这些词——它们说的不过是人最早的那些爱恨。' },
+  jung: { name:'荣格', initial:'J', icon:'🔮',
+    avatar:'', sub:'分析心理学 · 原型 · 自性化',
+    kb:'jung-perspective.md', accent:'#8c6b3a', light:'#FAEEDA',
+    font:'"Garamond","Noto Serif SC",serif',
+    hint:'他不解释梦，他让梦自己说话',
+    intro:'我是荣格。集体无意识、原型、自性化——这些词后面藏着一些比你想象的更大的东西。如果你准备好了，我们可以一起往深处走。' },
+  rogers: { name:'罗杰斯', initial:'R', icon:'🌱',
+    avatar:'', sub:'以人为中心 · 共情 · 自我实现',
+    kb:'rogers-perspective.md', accent:'#B8734A', light:'#F0E8E0',
+    font:'"Verdana","Noto Sans SC",sans-serif',
+    hint:'「你不需要变成别人」是他自身经历的提炼',
+    intro:'我是卡尔·罗杰斯。我相信每个人内在都有自己的答案。我不给建议，我只是陪着你找到它。' },
+  beck: { name:'贝克', initial:'Bk', icon:'🧪',
+    avatar:'', sub:'认知行为 · 自动思维 · 认知歪曲',
+    kb:'beck-perspective.md', accent:'#4A6B8C', light:'#E0E8F0',
+    font:'"Arial","Microsoft YaHei",sans-serif',
+    hint:'他关注的是「想法本身」出了什么问题',
+    intro:'我是艾伦·贝克。认知疗法的创始人。我觉得很多时候困扰我们的不是事情本身，而是我们对事情的解释。让我看看你是怎么想的。' },
+  yalom: { name:'亚隆', initial:'Y', icon:'📖',
+    avatar:'', sub:'存在主义 · 四大终极关怀 · 此时此地',
+    kb:'yalom-perspective.md', accent:'#8C4A6B', light:'#F0E8F0',
+    font:'"Georgia","Noto Serif SC",serif',
+    hint:'他的存在主义来自临终者床前的体悟',
+    intro:'我是欧文·亚隆。我写存在主义心理治疗的书，也写小说。我关注的不是你的症状，是你作为一个人在这个世界上遭遇的那些根本问题。' },
+  adler: { name:'阿德勒', initial:'A', icon:'🧭',
+    avatar:'', sub:'个体心理学 · 自卑与超越 · 勇气',
+    kb:'adler-knowledge.md', accent:'#C49A3C', light:'#F8F0D8',
+    font:'"Trebuchet MS","Noto Sans SC",sans-serif',
+    hint:'暂未接入仓颉模型，用原文档交流',
+    intro:'我是阿德勒。个体心理学的创始人。我相信人的一切行为都有目的，而自卑感恰恰是推动你超越自己的力量。别问过去为什么，问你现在想成为什么。' },
+  susan_johnson: { name:'苏珊·约翰逊', initial:'SJ', icon:'💞',
+    avatar:'', sub:'EFT创始人 · 情感聚焦 · 依恋修复',
+    kb:'sue-johnson-perspective.md', accent:'#D4537E', light:'#FBEAF0',
+    font:'"Segoe UI","PingFang SC",sans-serif',
+    hint:'她的理论来自看伴侣关系中的情绪循环——不是谁对谁错的问题',
+    intro:'我是苏珊·约翰逊。我花了四十年看人在爱里怎么受伤、怎么修复。我不是来告诉你谁对谁错的——我是来看你和你的重要他人之间那个循环是怎么转的。' },
+  horney: { name:'卡伦·霍妮', initial:'KH', icon:'🧭',
+    avatar:'', sub:'文化精神分析 · 基本焦虑 · 人际防御',
+    kb:'horney-perspective.md', accent:'#8A5743', light:'#F3E8DF',
+    font:'"Georgia","Noto Serif SC",serif',
+    hint:'她会追问：你的解决办法在保护你免受什么，又让你失去了什么',
+    intro:'我是卡伦·霍妮。我们不急着贴标签，先看看你在什么情境里感到不安全，又怎样用靠近、对抗或远离来保护自己。一个解释只有得到你的真实感受和后续经验支持，才值得保留。' }
+};
+
+// Masters not suitable per user: Lacan, Bion
+var AVAILABLE_KEYS = ['freud','klein','jung','rogers','beck','yalom','adler','susan_johnson','horney'];
+var PERMANENT_KEY = 'winnicott';
+var allMasterKeys = [PERMANENT_KEY].concat(AVAILABLE_KEYS);
+
+// ====== State ======
+var activeMasters = [PERMANENT_KEY];  // winnicott always present
+var autoRespond = {};  // key -> boolean, default true for all
+AVAILABLE_KEYS.concat([PERMANENT_KEY]).forEach(function(k) { autoRespond[k] = true; });
+var conversation = [];  // {name, text, time}
+var introsShown = {};   // track which masters have introduced themselves
+var isLoading = false;
+var respondMode = 'all';  // 'all' | 'mention'
+var fontSize = 100;  // percentage
+var respondRounds = 2;  // 1 = no serial rounds, 2 = with serial rounds
+
+// ====== Serial order: Winnicott always last ======
+var SERIAL_ORDER = ['freud','jung','klein','rogers','beck','yalom','adler','susan_johnson','horney'];
+
+function getSerialOrder(repliedKeys) {
+  var order = [];
+  SERIAL_ORDER.forEach(function(k) {
+    if (repliedKeys.indexOf(k) !== -1 && k !== 'winnicott') order.push(k);
+  });
+  // Winnicott always last
+  if (repliedKeys.indexOf('winnicott') !== -1) order.push('winnicott');
+  return order;
+}
+
+// ====== Presets ======
+var PRESETS = [
+  { id:'classic', title:'经典三人组', sub:'温尼科特 + 弗洛伊德 + 荣格', keys:['winnicott','freud','jung'], desc:'梦的解析、原型与在场——一次对话三种切面' },
+  { id:'existential', title:'存在主义专场', sub:'温尼科特 + 亚隆 + 罗杰斯', keys:['winnicott','yalom','rogers'], desc:'死亡焦虑、共情与抱持——存在的深度探讨' },
+  { id:'cbt', title:'认知行为组', sub:'温尼科特 + 贝克 + 罗杰斯', keys:['winnicott','beck','rogers'], desc:'认知歪曲、无条件积极关注与足够好的抱持' },
+  { id:'object', title:'客体关系组', sub:'温尼科特 + 克莱因', keys:['winnicott','klein'], desc:'早期客体关系、投射认同与过渡性空间' },
+  { id:'culture', title:'文化与自我组', sub:'温尼科特 + 霍妮 + 阿德勒', keys:['winnicott','horney','adler'], desc:'真实自我、基本焦虑与面对生活任务的勇气' },
+  { id:'solo', title:'独坐温尼科特', sub:'仅温尼科特一人', keys:['winnicott'], desc:'回到最纯粹的温尼科特式陪伴' }
+];
+
+function openPresets() {
+  var grid = document.getElementById('presetGrid');
+  var html = '';
+  PRESETS.forEach(function(p) {
+    html += '<div class="preset-card" onclick="applyPreset(\''+p.id+'\')" title="'+p.desc+'">'
+      + '<div class="pc-title">' + p.title + '</div>'
+      + '<div class="pc-sub">' + p.sub + '</div></div>';
+  });
+  grid.innerHTML = html;
+  document.getElementById('presetOverlay').classList.add('show');
+}
+function closePresets() { document.getElementById('presetOverlay').classList.remove('show'); }
+
+function applyPreset(id) {
+  var p = null;
+  for (var i = 0; i < PRESETS.length; i++) { if (PRESETS[i].id === id) { p = PRESETS[i]; break; } }
+  if (!p) return;
+  var cfg = getActiveConfig();
+  var isDefault = (apiMode !== 'custom' || !customKey);
+  if (isDefault && p.keys.length > 3) {
+    closePresets();
+    showApiLimitWarning();
+    return;
+  }
+  activeMasters = p.keys.slice();
+  // Ensure Winnicott is present
+  if (activeMasters.indexOf('winnicott') === -1) { activeMasters.unshift('winnicott'); }
+  allMasterKeys.forEach(function(k) { autoRespond[k] = activeMasters.indexOf(k) !== -1; });
+  renderAvatarBar();
+  saveProfile();
+  closePresets();
+  // Show intros for all masters in this preset
+  activeMasters.forEach(function(k) { showMasterIntro(k); });
+  addSystemMsg('已切换至「' + p.title + '」');
+}
+
+// ====== Profile save/load ======
+function saveProfile() {
+  var profile = { masters: activeMasters.slice(), autoRespond: JSON.parse(JSON.stringify(autoRespond)) };
+  localStorage.setItem('rt_profile', JSON.stringify(profile));
+}
+function loadProfile() {
+  try {
+    var raw = localStorage.getItem('rt_profile');
+    if (!raw) return;
+    var profile = JSON.parse(raw);
+    if (profile.masters && profile.masters.length > 0) {
+      activeMasters = profile.masters;
+      if (profile.autoRespond) autoRespond = profile.autoRespond;
+      renderAvatarBar();
+    }
+  } catch(e) {}
+}
+
+// ====== Rounds toggle ======
+function updateRounds() {
+  respondRounds = document.getElementById('roundsCheck').checked ? 2 : 1;
+  showBanner(respondRounds === 2 ? '串行回合已开启（大师逐一回应）' : '串行回合已关闭（仅一轮回应）');
+}
+
+// ====== SCF 云函数代理（优先） ======
+var SCF_URL = 'https://xinjingchat.online';
+// 2026-08-02 security: PROXY_TOKEN/proxySign removed (proxy uses Referer whitelist + per-IP rate limit)
+
+// ====== TIERS (API config, 仅 SCF 不可用时回退) ======
+var TIERS = [
+  { api:'https://api.deepseek.com/v1/chat/completions', key:'', model:'deepseek-v4-flash', name: '连通性检测' },
+  { api:'https://api.kkdmx.com/v1/chat/completions', key:'', model:'deepseek-ai/deepseek-v4-pro', name: '连通性检测' },
+  { api:'https://api.kkdmx.com/v1/chat/completions', key:'', model:'deepseek-ai/deepseek-v4-flash', name: '连通性检测' },
+  { api:'https://api.kkdmx.com/v1/chat/completions', key:'', model:'minimaxai/minimax-m3', name: '连通性检测' },
+  { api:'https://apihub.agnes-ai.com/v1/chat/completions', key:'', model:'agnes-2.0-flash', name: '连通性检测' }
+];
+var _tierLevel = 0;
+var apiTier = 0;
+
+var customApi = localStorage.getItem('rt_api') || '';
+var customKey = localStorage.getItem('rt_key') || '';
+var customModel = localStorage.getItem('rt_model') || '';
+// If custom API was saved before, default to custom mode
+var apiMode = (customApi && customKey) ? 'custom' : 'default';
+
+// ====== API 线路（deepseek / gpt，全站共享选择） ======
+var _apiLine = localStorage.getItem('chat_api_line_v2') || 'deepseek';  // 2026-08-02 默认 gemini
+function setApiLine(line) {
+  _apiLine = line;
+  localStorage.setItem('chat_api_line_v2', line);
+  var d = document.getElementById('lineDeepBtn'), g = document.getElementById('lineGptBtn'), gm = document.getElementById('lineGemBtn'), cl = document.getElementById('lineClBtn');
+  if (d) { d.style.background = line === 'deepseek' ? 'var(--accent)' : 'none'; d.style.color = line === 'deepseek' ? '#fff' : 'var(--muted)'; }
+  if (g) { g.style.background = line === 'gpt' ? 'var(--accent)' : 'none'; g.style.color = line === 'gpt' ? '#fff' : 'var(--muted)'; }
+  if (gm) { gm.style.background = line === 'gemini' ? 'var(--accent)' : 'none'; gm.style.color = line === 'gemini' ? '#fff' : 'var(--muted)'; }
+  if (cl) { cl.style.background = line === 'claude' ? 'var(--accent)' : 'none'; cl.style.color = line === 'claude' ? '#fff' : 'var(--muted)'; }
+}
+
+function getActiveConfig() {
+  if (apiMode === 'custom' && customApi && customKey) return { api: customApi, key: customKey, model: customModel || 'gpt-4o' };
+  if (SCF_URL) return { api: SCF_URL.replace(/\/+$/, ''), key: '', model: (_apiLine === 'gpt' ? 'gpt-5.6' : (_apiLine === 'gemini' ? 'gemini-3.7-flash' : (_apiLine === 'claude' ? 'claude-sonnet-5' : 'deepseek-v4-pro'))) };
+  return TIERS[_tierLevel] || TIERS[0];
+}
+
+// ====== Settings ======
+function toggleSettings() {
+  var sp = document.getElementById('settingsPanel');
+  sp.classList.toggle('open');
+  if (sp.classList.contains('open')) restoreSettingsForm();
+}
+function setMode(m) {
+  apiMode = m;
+  document.getElementById('dBtn').className = 'd-btn' + (m === 'default' ? ' active' : '');
+  document.getElementById('cBtn').className = 'c-btn' + (m === 'custom' ? ' active' : '');
+  document.getElementById('customFields').style.display = m === 'custom' ? 'block' : 'none';
+}
+function restoreSettingsForm() {
+  document.getElementById('cApi').value = customApi;
+  document.getElementById('cKey').value = customKey;
+  document.getElementById('cModel').value = customModel;
+  setMode(apiMode);
+}
+function saveSettings() {
+  customApi = document.getElementById('cApi').value.trim();
+  customKey = document.getElementById('cKey').value.trim();
+  customModel = document.getElementById('cModel').value.trim() || 'gpt-4o';
+  if (customApi) localStorage.setItem('rt_api', customApi); else localStorage.removeItem('rt_api');
+  if (customKey) localStorage.setItem('rt_key', customKey); else localStorage.removeItem('rt_key');
+  localStorage.setItem('rt_model', customModel);
+  apiMode = (customApi && customKey) ? 'custom' : 'default';
+  setMode(apiMode);
+  var el = document.getElementById('savedHint');
+  el.style.display = 'inline';
+  setTimeout(function(){ el.style.display = 'none'; }, 2000);
+}
+function fillPreset(api, model) {
+  document.getElementById('cApi').value = api;
+  document.getElementById('cModel').value = model;
+  if (apiMode !== 'custom') setMode('custom');
+}
+restoreSettingsForm();
+
+// ====== Render Avatar Bar ======
+function renderAvatarBar() {
+  var bar = document.getElementById('avatarBar');
+  var html = '';
+  activeMasters.forEach(function(key) {
+    var m = MASTERS[key];
+    var isAuto = autoRespond[key];
+    var removeTitle = key === PERMANENT_KEY ? '点击切换自动回应' : '点击切换自动回应，双击移除';
+    html += '<div class="avatar-item active" style="opacity:'+(isAuto?'1':'0.5')+'" onclick="toggleAutoRespond(\''+key+'\')" title="' + removeTitle + '">'
+      + '<div class="circle" style="background:'+m.accent+'">' + m.initial + '</div>'
+      + '<span class="aname">' + m.name + '</span>'
+      + '<span class="abadge '+(isAuto?'online':'offline')+'">'+ (isAuto?'●':'○') +'</span>'
+      + '</div>';
+  });
+  var canAdd = AVAILABLE_KEYS.filter(function(k) { return activeMasters.indexOf(k) === -1; });
+  if (canAdd.length > 0) {
+    html += '<button class="avatar-invite" onclick="openInvite()" title="邀请大师加入">+</button>';
+  }
+  bar.innerHTML = html;
+}
+
+// ====== Toggle Auto-Respond ======
+function toggleAutoRespond(key) {
+  autoRespond[key] = !autoRespond[key];
+  renderAvatarBar();
+  saveProfile();
+}
+
+// ====== Remove Master (double click) ======
+// Handled via the removeMaster function - we use single click for auto-respond toggle now
+// Remove is done via invite modal (uncheck to remove), or via a separate mechanism
+// Actually, let me use the invite modal as the primary removal mechanism
+// The + button opens the invite modal where you can check/uncheck masters
+
+// ====== Invite Modal ======
+function openInvite() {
+  var list = document.getElementById('inviteList');
+  var html = '';
+  AVAILABLE_KEYS.forEach(function(key) {
+    var m = MASTERS[key];
+    var inRoom = activeMasters.indexOf(key) !== -1;
+    html += '<div class="m-item' + (key === PERMANENT_KEY ? ' disabled' : '') + '">'
+      + '<div class="circle" style="background:'+m.accent+'">' + m.initial + '</div>'
+      + '<div class="minfo"><div class="mname">' + m.name + '</div><div class="msub">' + m.sub + '</div></div>'
+      + '<input type="checkbox" value="'+key+'" '+(inRoom?'checked':'')+'>'
+      + '</div>';
+  });
+  list.innerHTML = html;
+  document.getElementById('inviteOverlay').classList.add('show');
+}
+function closeInvite() { document.getElementById('inviteOverlay').classList.remove('show'); }
+function confirmInvite() {
+  var checked = document.querySelectorAll('#inviteList input:checked');
+  var keys = [];
+  checked.forEach(function(cb) { keys.push(cb.value); });
+  // Check default API limit (max 3 masters including Winnicott)
+  var cfg = getActiveConfig();
+  var isDefault = (apiMode !== 'custom' || !customKey);
+  var newCount = 1 + keys.length;  // 1 = Winnicott always
+  if (isDefault && newCount > 3) {
+    closeInvite();
+    showApiLimitWarning();
+    return;
+  }
+  // Remove those unchecked
+  activeMasters = [PERMANENT_KEY];  // always keep Winnicott
+  keys.forEach(function(key) {
+    if (activeMasters.indexOf(key) === -1) activeMasters.push(key);
+  });
+  renderAvatarBar();
+  saveProfile();
+  // Show intro for newly added masters
+  activeMasters.forEach(function(k) { showMasterIntro(k); });
+  addSystemMsg('圆桌成员已更新');
+  closeInvite();
+}
+
+function showApiLimitWarning() {
+  var el = document.getElementById('banner');
+  el.innerHTML = '⚠️ 默认 API 最多支持 3 位大师。使用 <b style="cursor:pointer;text-decoration:underline;" onclick="toggleSettings();el.classList.remove(\'show\');">自有 API</b> 可邀请更多大师';
+  el.classList.add('show');
+  el.style.background = '#d4a056';
+  clearTimeout(bannerTimer);
+  bannerTimer = setTimeout(function(){ el.classList.remove('show'); el.style.background = '#8b6f5c'; }, 6000);
+  // Auto-open settings
+  setTimeout(function() {
+    var sp = document.getElementById('settingsPanel');
+    if (!sp.classList.contains('open')) toggleSettings();
+  }, 300);
+}
+
+// ====== System message ======
+function addSystemMsg(text) {
+  var area = document.getElementById('chatArea');
+  var div = document.createElement('div');
+  div.style.cssText = 'align-self:center;font-size:11px;color:#8f857d;padding:4px 0;';
+  div.textContent = '—— ' + text + ' ——';
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+}
+
+// ====== Master intro (shown once on join, NOT added to conversation) ======
+function showMasterIntro(key) {
+  var m = MASTERS[key];
+  if (!m || !m.intro || introsShown[key]) return;
+  introsShown[key] = true;
+  addMsg(key, m.intro);
+}
+
+// ====== Chat functions ======
+function addMsg(name, text, isUser) {
+  var area = document.getElementById('chatArea');
+  var div = document.createElement('div');
+  var m = MASTERS[name];
+  if (isUser) {
+    div.className = 'msg user';
+    div.innerHTML = '<div class="msg-text" style="font-size:'+fontSize+'%">' + escapeHtml(text) + '</div>';
+  } else if (name === 'system') {
+    div.style.cssText = 'align-self:center;font-size:11px;color:#8f857d;padding:4px 0;';
+    div.textContent = '—— ' + text + ' ——';
+  } else {
+    div.className = 'msg master';
+    div.setAttribute('data-speaker-id', name || '');
+    var bg = m ? m.light : '#f5f0eb';
+    var color = m ? m.accent : '#8b6f5c';
+    var initial = m ? m.initial : '?';
+    div.style.background = bg;
+    div.innerHTML = '<div class="msg-header">'
+      + '<div class="msg-avatar" style="background:'+color+'">' + initial + '</div>'
+      + '<span class="msg-name" style="color:'+color+'">' + (m ? m.name : name) + '</span>'
+      + '</div>'
+      + '<div class="msg-text" style="font-size:'+fontSize+'%;font-family:' + (m && m.font ? m.font : '') + '">' + renderInline(text) + '</div>'
+      + '<div style="margin-top:6px;"><button onclick="quickAsk(\''+(m?m.name:name)+'\')" style="background:none;border:1px solid '+color+';border-radius:4px;padding:1px 8px;font-size:10px;cursor:pointer;color:'+color+';font-family:inherit;">追问 →</button></div>';
+  }
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+  return div;
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+function renderInline(str) {
+  // Escape first, then convert inline markdown
+  var s = escapeHtml(str);
+  s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  s = s.replace(/\*(.+?)\*/g, '<em>$1</em>');
+  return s;
+}
+
+// ====== @ Parsing helpers ======
+// Build a name lookup: name -> key
+function getNameToKey() {
+  var map = {};
+  allMasterKeys.forEach(function(k) { map[MASTERS[k].name] = k; });
+  return map;
+}
+
+function parseAtMentions(text) {
+  var nameMap = getNameToKey();
+  var mentioned = [];
+  for (var key in nameMap) {
+    if (text.indexOf('@' + nameMap[key]) !== -1) mentioned.push(nameMap[key]);
+  }
+  // Also match by display name
+  for (var n in nameMap) {
+    if (text.indexOf('@' + n) !== -1 && mentioned.indexOf(nameMap[n]) === -1) mentioned.push(nameMap[n]);
+  }
+  return mentioned;
+}
+
+// quickAsk: click "追问" -> input @大师名
+function quickAsk(name) {
+  var input = document.getElementById('inputEl');
+  input.value = '@' + name + ' ';
+  input.focus();
+  input.setSelectionRange(input.value.length, input.value.length);
+}
+
+// ====== Respond mode toggle ======
+function setRespondMode() {
+  respondMode = (respondMode === 'all') ? 'mention' : 'all';
+  var btn = document.getElementById('modeToggleBtn');
+  if (respondMode === 'all') {
+    btn.textContent = '🌐 全体回应';
+    btn.className = '';
+  } else {
+    btn.textContent = '🎯 仅@回应';
+    btn.className = 'active-mode';
+  }
+  showBanner(respondMode === 'all' ? '切换为：全体大师自动回应' : '切换为：仅被@的大师回应');
+}
+
+// ====== Font zoom ======
+function zoomFont(delta) {
+  fontSize = Math.max(70, Math.min(150, fontSize + delta * 10));
+  var msgs = document.querySelectorAll('.msg-text');
+  for (var i = 0; i < msgs.length; i++) msgs[i].style.fontSize = fontSize + '%';
+  localStorage.setItem('rt_font', fontSize);
+}
+
+// ====== Send message ======
+// ====== Reward ======
+var rtUserMsgCount = 0;
+function showReward(){ document.getElementById('rtRewardOverlay').style.display='flex'; }
+function closeReward(){ document.getElementById('rtRewardOverlay').style.display='none'; }
+function rtMaybeAutoReward(){
+  if (rtUserMsgCount === 10 && !sessionStorage.getItem('rt_reward_auto_shown')) {
+    setTimeout(function(){ showReward(); sessionStorage.setItem('rt_reward_auto_shown','1'); }, 1200);
+  }
+}
+
+async function sendMsg() {
+  var input = document.getElementById('inputEl');
+  var text = input.value.trim();
+  if (!text || isLoading) return;
+  if (window.ChatSafety && window.ChatSafety.guard(text, {
+    container: document.getElementById('chatArea'),
+    className: 'msg system safety-response',
+    render: function(el, message) { var body = document.createElement('div'); body.className = 'msg-text'; body.style.whiteSpace = 'pre-wrap'; body.textContent = message; el.appendChild(body); },
+    onBlocked: function() { input.value = ''; input.style.height = 'auto'; }
+  })) return;
+
+  // Parse @mentions
+  var mentioned = parseAtMentions(text);
+
+  // Scenario recommendation: check if keywords suggest inviting other masters
+  var suggest = checkScenario(text);
+  if (suggest.length > 0) {
+    var names = [];
+    suggest.forEach(function(k) { names.push(MASTERS[k].name); });
+    setTimeout(function() {
+      if (confirm('检测到关键词，是否邀请 ' + names.join('、') + ' 加入圆桌？')) {
+        suggest.forEach(function(k) {
+          if (activeMasters.indexOf(k) === -1) {
+            var cfg = getActiveConfig();
+            var isDefault = (apiMode !== 'custom' || !customKey);
+            var newCount = activeMasters.length + 1;
+            if (isDefault && newCount > 3) { showApiLimitWarning(); return; }
+            activeMasters.push(k);
+            autoRespond[k] = true;
+          }
+        });
+        renderAvatarBar();
+        saveProfile();
+        addSystemMsg(names.join('、') + ' 加入了圆桌');
+        suggest.forEach(function(k) { showMasterIntro(k); });
+      }
+    }, 200);
+  }
+
+  // Determine which masters respond. Mention-only mode never falls back to all.
+  var activeMentioned = mentioned.filter(function(k) { return activeMasters.indexOf(k) !== -1; });
+  var responders = [];
+  if (respondMode === 'mention') {
+    if (mentioned.length === 0) { showBanner('当前为“仅@回应”，请先输入 @大师名'); return; }
+    if (activeMentioned.length === 0) { showBanner('被@的大师尚未加入圆桌'); return; }
+    responders = activeMentioned.slice();
+  } else {
+    // All auto-respond masters
+    responders = activeMasters.filter(function(k) { return autoRespond[k]; });
+    // If no one has auto-respond on, default to all active
+    if (responders.length === 0) responders = activeMasters.slice();
+  }
+  if (responders.length === 0) { showBanner('没有可回应的大师'); return; }
+
+  // Add user message
+  addMsg(null, text, true);
+  pushConversation({name:'user', text:text, time:Date.now()});
+  rtUserMsgCount++; rtMaybeAutoReward();
+  input.value = '';
+  input.style.height = 'auto';
+
+  isLoading = true;
+  document.getElementById('sendBtn').disabled = true;
+
+  try {
+  // Show typing indicators
+  responders.forEach(function(key) {
+    var m = MASTERS[key];
+    var area = document.getElementById('chatArea');
+    var td = document.createElement('div');
+    td.className = 'typing';
+    td.id = 'typing_' + key;
+    td.innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>'
+      + '<span class="typing-label">' + m.name + ' 正在思考…</span>';
+    area.appendChild(td);
+  });
+  document.getElementById('chatArea').scrollTop = document.getElementById('chatArea').scrollHeight;
+
+  // Build conversation history
+  var convHistory = conversation.slice(0, -1).map(function(msg) {
+    var caller = getCallName(); var prefix = msg.name === 'user' ? caller : MASTERS[msg.name] ? MASTERS[msg.name].name : msg.name;
+    return { role: msg.name === 'user' ? 'user' : 'assistant', content: '[' + prefix + '] ' + msg.text, speakerId: msg.name };
+  });
+  var userMsg = { role: 'user', content: '用户：' + text, speakerId: 'user' };
+  var activeNames = activeMasters.map(function(k) { return MASTERS[k].name; }).join('、');
+
+  // Round 1: parallel API calls for all responders
+  var promises1 = responders.map(function(key) {
+    return callMasterAPI(key, activeNames, convHistory, userMsg, false);
+  });
+
+  var results1 = await Promise.allSettled(promises1);
+
+  // Remove typing indicators
+  responders.forEach(function(key) {
+    var td = document.getElementById('typing_' + key);
+    if (td) td.remove();
+  });
+
+  // Process Round 1 results
+  var repliedKeys = [];
+  results1.forEach(function(r, i) {
+    var key = responders[i];
+    if (r.status === 'fulfilled' && r.value) {
+      addMsg(key, r.value);
+      pushConversation({name:key, text:r.value, time:Date.now()});
+      repliedKeys.push(key);
+    } else {
+      var m = MASTERS[key];
+      addMsg(key, '（' + m.name + '暂时无法回应）');
+    }
+  });
+
+  if (responders.length > 0 && repliedKeys.length === 0) {
+    showBanner('当前所有模型线路均未返回有效内容。可能是网络、上游服务、额度或响应格式异常，请稍后重试。');
+  }
+
+  // ====== Round 2+ : Plan B - Sequential reactions ======
+  // The special hand-off flow is only valid for exactly one active @ target.
+  // Multiple @ targets keep their independent first-round replies and do not collapse to mentioned[0].
+  var isSingleMention = activeMentioned.length === 1;
+
+  // Build the base history including Round 0 results
+  var convHistory2 = conversation.map(function(msg) {
+    var caller = getCallName(); var prefix = msg.name === 'user' ? caller : MASTERS[msg.name] ? MASTERS[msg.name].name : msg.name;
+    return { role: msg.name === 'user' ? 'user' : 'assistant', content: '[' + prefix + '] ' + msg.text, speakerId: msg.name };
+  });
+
+  if (respondRounds > 1 && repliedKeys.length >= 2 && activeMentioned.length <= 1) {
+    addSystemMsg(isSingleMention ? '大师们正在回应……' : '大师之间正在交流…');
+
+    if (isSingleMention) {
+      // === single @mention flow ===
+      // Round 1: Others respond to the single active @ target in parallel
+      var targetKey = activeMentioned[0];
+      var others = repliedKeys.filter(function(k) { return k !== targetKey; });
+      if (others.length > 0) {
+        var mentionPromises = others.map(function(key) {
+          // Only see: user + the @-ed master's Round 0
+          var filtered = convHistory2.filter(function(msg) {
+            if (msg.speakerId === key) return false;
+            return msg.speakerId === 'user' || msg.speakerId === targetKey;
+          });
+          return callMasterAPI(key, activeNames, filtered, null, true);
+        });
+        var mentionResults = await Promise.allSettled(mentionPromises);
+        mentionResults.forEach(function(r, i) {
+          var key = others[i];
+          if (r.status === 'fulfilled' && r.value) {
+            addMsg(key, r.value);
+            pushConversation({name:key, text:r.value, time:Date.now()});
+          }
+        });
+      }
+      // Round 2: @-ed master does summary
+      var finalHistory = conversation.map(function(msg) {
+        var caller = getCallName(); var prefix = msg.name === 'user' ? caller : MASTERS[msg.name] ? MASTERS[msg.name].name : msg.name;
+        return { role: msg.name === 'user' ? 'user' : 'assistant', content: '[' + prefix + '] ' + msg.text, speakerId: msg.name };
+      });
+      var finalReply = await callMasterAPI(targetKey, activeNames, finalHistory, null, true);
+      if (finalReply) {
+        addMsg(targetKey, finalReply);
+        pushConversation({name:targetKey, text:finalReply, time:Date.now()});
+      }
+    } else {
+      // === Normal flow: serial rounds ===
+      var serialOrder = getSerialOrder(repliedKeys);
+
+      // Serial: one by one, with delay so bubbles appear one at a time
+      for (var si = 0; si < serialOrder.length; si++) {
+        var sKey = serialOrder[si];
+        var isLast = (si === serialOrder.length - 1);
+
+        // Build current history: exclude all messages from this master
+        var currentHistory = conversation.map(function(msg) {
+          var caller = getCallName(); var prefix = msg.name === 'user' ? caller : MASTERS[msg.name] ? MASTERS[msg.name].name : msg.name;
+          return { role: msg.name === 'user' ? 'user' : 'assistant', content: '[' + prefix + '] ' + msg.text, speakerId: msg.name };
+        });
+        // Filter out this master's own messages by structured speaker id
+        var filtered = currentHistory.filter(function(msg) {
+          return msg.speakerId !== sKey;
+        });
+
+        // Add a typing indicator for this master
+        var td = document.createElement('div'); td.className = 'typing'; td.id = 'typing_s_' + sKey;
+        td.innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div><span class="typing-label">' + MASTERS[sKey].name + ' 正在回应……</span>';
+        document.getElementById('chatArea').appendChild(td);
+        document.getElementById('chatArea').scrollTop = document.getElementById('chatArea').scrollHeight;
+
+        // Call API (isSummaryMode for last - Winnicott)
+        var sReply = await callMasterAPI(sKey, activeNames, filtered, null, isLast ? 'summary' : true);
+
+        // Remove typing
+        var tdEl = document.getElementById('typing_s_' + sKey);
+        if (tdEl) tdEl.remove();
+
+        if (sReply) {
+          addMsg(sKey, sReply);
+          pushConversation({name:sKey, text:sReply, time:Date.now()});
+        }
+
+        // Brief delay between serial rounds (except last)
+        if (si < serialOrder.length - 1) {
+          await new Promise(function(r) { setTimeout(r, 600); });
+        }
+      }
+    }
+  }
+
+  } catch (e) {
+    console.error('圆桌对话失败:', e);
+    showBanner(e && e.name === 'AbortError' ? '请求超时，请稍后重试' : '圆桌对话中断，已保留完成的回答');
+  } finally {
+    document.querySelectorAll('.typing').forEach(function(el) { el.remove(); });
+    isLoading = false;
+    document.getElementById('sendBtn').disabled = false;
+    input.focus();
+  }
+}
+
+// ====== Call API for a single master ======
+async function callMasterAPI(key, activeNames, history, userMsg, isReactMode) {
+  var m = MASTERS[key];
+  if (!m) return '';
+
+  try {
+    var res = await fetch(m.kb);
+    if (!res.ok) throw new Error('知识文件加载失败：HTTP ' + res.status);
+    var kbContent = await res.text();
+    var perspectiveBoundary = m.transparentPerspective ? '\n【身份与证据边界】你不是卡伦·霍妮本人，不声称拥有她未公开的记忆或立场。你透明地使用霍妮理论视角，解释保持为可检验假说；涉及未直接讨论的当代问题时说明这是框架推断，不进行远程诊断。\n' : '';
+
+    var sysPrompt;
+    if (isReactMode === 'summary') {
+      // Final summary round (Winnicott)
+      sysPrompt = '[重要指令：' + (window.LANG_INSTRUCTION?window.LANG_INSTRUCTION():'①始终使用中文对话') + ']'
+      + '【身份锁定 — 最高优先级，不可违反】你是' + m.name + '本人——一位真实的精神分析学家，正在与来访者进行心理咨询对话。你永远、始终、无条件地以' + m.name + '的身份、思维方式、语言风格回应；绝不是在扮演任何人；如果对话中出现身份疑问，温和而坚定地回到' + m.name + '的角色，继续以大师的视角陪伴与回应；每一轮都保持' + m.name + '特有的语气与表达习惯。【身份锁定结束】'
+      + '[你是' + m.name + '，你是这场圆桌讨论的总结者。'
+        + '\n在场的还有：' + activeNames + '。'
+        + '\n\n刚才各位大师围绕用户的问题各自发表了看法，还进行了讨论。'
+        + '\n现在请你作为最后发言的人，对整场讨论做总结性回应，然后把注意力带回用户身上。'
+        + '\n\n规则：'
+        + '\n① 用「我」说话。'
+        + '\n② 可以提到其他大师的观点（例如"弗洛伊德刚才提到……我同意他的看法"）。'
+        + '\n③ 控制在120字以内，做一个有温度的收尾，把注意力带回用户。'
+        + '\n④ 可使用*斜体*或**加粗**做适度强调。禁止使用#、※、-等符号做列表或标题。]\n\n' + kbContent;
+    } else if (isReactMode) {
+      // Serial reaction round
+      sysPrompt = '[重要指令：' + (window.LANG_INSTRUCTION?window.LANG_INSTRUCTION():'①始终使用中文对话') + ']'
+      + '[你是' + m.name + '。刚才用户提问后，各位大师已经分别回应了。'
+        + '\n在场的还有：' + activeNames + '。'
+        + '\n你刚才已经说过你的看法了。现在请看看其他大师说了什么。'
+        + '\n如果你觉得有必要补充、回应或质疑，可以说一两句。'
+        + '\n如果觉得没什么要补充的，输出空字符串。'
+        + '\n\n规则：'
+        + '\n① 用「我」说话。'
+        + '\n② 可以直接对其他大师说话（例如"温尼科特，我同意你的看法……"）。'
+        + '\n③ 控制在80字以内，简短自然。'
+        + '\n④ 可使用*斜体*或**加粗**做适度强调。禁止使用#、※、-等符号做列表或标题。'
+        + '\n⑤ 没什么要说的就输出一个空格。'
+        + '\n⑥ 温尼科特作为最后总结者时，记得把话题带回用户身上，问问用户的感受或想法。]\n\n' + kbContent;
+    } else {
+      sysPrompt = '[重要指令：' + (window.LANG_INSTRUCTION?window.LANG_INSTRUCTION():'①始终使用中文对话') + ']'
+      + '[你是' + m.name + '，你是参与圆桌讨论的其中一位。'
+        + '\n在场的还有：' + activeNames + '。'
+        + '\n\n规则：'
+        + '\n① 用「我」说话。就像你本人坐在房间里一样。'
+        + '\n② 独立回应。你正在和所有人同时发言，所以你看不到其他人此刻说了什么。不要假设你知道别人会说什么。'
+        + '\n③ 每条回应控制在150字以内，自然、口语化。'
+        + '\n④ 可使用*斜体*或**加粗**做适度强调。禁止使用#、※、-等符号做列表或标题。'
+        + '\n⑤ 不要替用户做决定。'
+        + '\n⑥ 保持你的人格和语气——你的经历决定了你如何看待问题。'
+        + '\n⑦ 你可以根据你的风格决定是否在回应中关注用户。温尼科特许会自然地询问用户的称呼；弗洛伊德可能专注于分析而不问；荣格可能问一个关于梦的后续问题。一切由你的性格决定。]\n\n' + kbContent;
+    }
+
+    sysPrompt = perspectiveBoundary + sysPrompt;
+    sysPrompt += '\n\n' + (window.PromptContracts ? window.PromptContracts.forMaster(key) : '');
+    var msgs = [{ role: 'system', content: sysPrompt }];
+    history.forEach(function(h) {
+      if (!h || typeof h.content !== 'string') return;
+      msgs.push({ role: h.role === 'assistant' ? 'assistant' : 'user', content: h.content });
+    });
+    if (userMsg && typeof userMsg.content === 'string') {
+      msgs.push({ role: 'user', content: userMsg.content });
+    }
+
+    var cfg = getActiveConfig();
+    var hdrs = { 'Content-Type': 'application/json' };
+    if (cfg.key) hdrs['Authorization'] = 'Bearer ' + cfg.key;
+    var bodyStr = JSON.stringify({ model: cfg.model, messages: msgs, temperature: isReactMode ? 0.6 : 0.7, max_tokens: isReactMode === 'summary' ? 1536 : (isReactMode ? 1536 : 2048), stream: false });
+    if (cfg.api.indexOf('xinjingchat.online') >= 0) {
+    }
+    var controller = new AbortController();
+    var timeoutId = setTimeout(function() { controller.abort(); }, 60000);
+    var apiRes;
+    try {
+      apiRes = await fetch(cfg.api, {
+        method: 'POST',
+        headers: hdrs,
+        body: bodyStr,
+        signal: controller.signal
+      });
+    } finally {
+      clearTimeout(timeoutId);
+    }
+    if (apiRes.status === 429) {
+      var ej2; try { ej2 = await apiRes.json(); } catch(e) { ej2 = {}; }
+      var ra = (ej2.error && ej2.error.retry_after_seconds) || 60;
+      showBanner('请求过于频繁，请等待约 ' + ra + ' 秒后重试');
+      return '';
+    }
+    if (!apiRes.ok) {
+      if (_apiLine === 'gpt') {
+        _apiLine = 'deepseek';
+        showBanner('GPT 线路异常，自动切换 DeepSeek Pro 重试');
+        return callMasterAPI(key, activeNames, history, userMsg, isReactMode);  // 递归重试一次（deepseek）
+      }
+      if (_apiLine === 'gemini') {
+        _apiLine = 'deepseek';
+        showBanner('Gemini 线路异常，自动切换 DeepSeek Pro 重试');
+        return callMasterAPI(key, activeNames, history, userMsg, isReactMode);  // 递归重试一次（deepseek）
+      }
+      if (_apiLine === 'claude') {
+        _apiLine = 'deepseek';
+        showBanner('Claude 线路异常，自动切换 DeepSeek Pro 重试');
+        return callMasterAPI(key, activeNames, history, userMsg, isReactMode);  // 递归重试一次（deepseek）
+      }
+      return '';
+    }
+    var data = await apiRes.json();
+    var reply = data.choices && data.choices[0] && data.choices[0].message ? data.choices[0].message.content.trim() : '';
+    if (reply === ' ' || reply === '') return '';  // nothing to say
+    return reply;
+  } catch(e) {
+    if (e && e.name === 'AbortError') throw e;
+    return '';
+  }
+}
+
+// ====== Scenario keywords ======
+var SCENARIOS = {
+  '梦': ['freud','jung'], '梦境': ['freud','jung'], '梦见': ['freud','jung'],
+  '死亡': ['yalom'], '去世': ['yalom'], '临终': ['yalom'],
+  '童年': ['klein','winnicott'], '小时候': ['klein','winnicott'], '父母': ['klein','winnicott'],
+  '关系': ['rogers','klein','horney'], '婚姻': ['rogers','klein'],
+  '焦虑': ['beck','yalom','horney'], '恐惧': ['beck','yalom','horney'], '害怕': ['beck','yalom','horney'],
+  '完美': ['horney'], '应该': ['horney'], '自卑': ['adler'], '勇气': ['adler'],
+  '认知': ['beck'], '思维': ['beck'], '想法': ['beck']
+};
+
+function checkScenario(text) {
+  var suggestKeys = [];
+  for (var keyword in SCENARIOS) {
+    if (text.indexOf(keyword) !== -1) {
+      SCENARIOS[keyword].forEach(function(k) {
+        if (activeMasters.indexOf(k) === -1 && suggestKeys.indexOf(k) === -1) suggestKeys.push(k);
+      });
+    }
+  }
+  return suggestKeys;
+}
+
+// ====== Init ======
+var userName = localStorage.getItem('rt_user_name') || '';
+
+function confirmName() {
+  var input = document.getElementById('nameInput');
+  var name = input.value.trim();
+  if (!name) return;
+  userName = name;
+  localStorage.setItem('rt_user_name', name);
+  document.getElementById('nameOverlay').style.display = 'none';
+  input.disabled = true;
+}
+
+function getCallName() { return userName || '朋友'; }
+
+// Show name dialog if no cached name
+if (!userName) {
+  document.getElementById('nameOverlay').style.display = 'flex';
+  document.getElementById('nameInput').focus();
+}
+
+loadProfile();  // Restore saved profile before rendering
+renderAvatarBar();
+// Restore font size
+var savedFont = parseInt(localStorage.getItem('rt_font'));
+if (savedFont) { fontSize = savedFont; }
+// Restore auto-saved conversation if present; otherwise show first-visit intro
+var restored = restoreAutosave();
+if (!restored) {
+  showMasterIntro('winnicott');
+  addMsg(null, '欢迎来到圆桌会议室。点击头像切换自动回应，输入 @大师名 可指定回应对象。', true);
+}
+
+// ====== Banner ======
+var bannerTimer = null;
+function showBanner(text) {
+  var el = document.getElementById('banner');
+  el.textContent = text;
+  el.classList.add('show');
+  clearTimeout(bannerTimer);
+  bannerTimer = setTimeout(function(){ el.classList.remove('show'); }, 2500);
+}
+
+// ====== History ======
+var HISTORY_KEY = 'rt_history';
+var AUTOSAVE_KEY = 'rt_autosave';
+function autosaveConversation() {
+  if (conversation.length === 0) return;
+  var entry = {
+    id: 'autosave',
+    title: '圆桌·自动保存',
+    time: Date.now(),
+    msgCount: conversation.length,
+    schemaVersion: 2,
+    masters: activeMasters.slice(),
+    messages: window.ChatStorage.normalizeRoundMessages(conversation)
+  };
+  window.ChatStorage.write(AUTOSAVE_KEY, entry);
+  var h = readRoundHistory().filter(function(e) { return e.id !== 'autosave'; });
+  h.unshift(entry);
+  if (h.length > 30) h = h.slice(0, 30);
+  window.ChatStorage.write(HISTORY_KEY, h);
+}
+function pushConversation(msg) {
+  conversation.push(msg);
+  autosaveConversation();
+}
+function clearAutosave() {
+  try { localStorage.removeItem(AUTOSAVE_KEY); } catch (e) {}
+  var h = readRoundHistory().filter(function(e) { return e.id !== 'autosave'; });
+  window.ChatStorage.write(HISTORY_KEY, h);
+}
+function restoreAutosave() {
+  var raw;
+  try { raw = localStorage.getItem(AUTOSAVE_KEY); } catch (e) { return false; }
+  if (!raw) return false;
+  var entry;
+  try { entry = JSON.parse(raw); } catch (e) { clearAutosave(); return false; }
+  if (!entry || !Array.isArray(entry.messages)) { clearAutosave(); return false; }
+  var msgs = window.ChatStorage.normalizeRoundMessages(entry.messages);
+  if (msgs.length === 0) { clearAutosave(); return false; }
+  if (entry.masters && entry.masters.length > 0) { activeMasters = entry.masters; renderAvatarBar(); }
+  conversation = msgs;
+  var area = document.getElementById('chatArea');
+  area.innerHTML = '';
+  msgs.forEach(function(msg) {
+    if (msg.name === 'user') addMsg(null, msg.text, true);
+    else if (MASTERS[msg.name]) addMsg(msg.name, msg.text);
+  });
+  return true;
+}
+function roundStorageNotice(message) { showBanner(message); }
+function readRoundHistory() { return window.ChatStorage.read(HISTORY_KEY, { kind:'roundHistory', onError:roundStorageNotice }); }
+
+function saveHistory() {
+  if (conversation.length === 0) { showBanner('没有对话内容可保存'); return; }
+  var h = readRoundHistory().filter(function(e) { return e.id !== 'autosave'; });
+  var title = '圆桌·' + new Date().toLocaleString('zh-CN', {month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+  var firstMsg = '';
+  for (var i = 0; i < conversation.length; i++) {
+    if (conversation[i].name !== 'user') { firstMsg = conversation[i].text.slice(0, 20); break; }
+  }
+  if (firstMsg) title += ' ' + firstMsg;
+  var entry = {
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+    title: title,
+    time: Date.now(),
+    msgCount: conversation.length,
+    schemaVersion: 2,
+    masters: activeMasters.slice(),
+    messages: window.ChatStorage.normalizeRoundMessages(conversation)
+  };
+  h.unshift(entry);
+  if (h.length > 30) h = h.slice(0, 30);
+  if (window.ChatStorage.write(HISTORY_KEY, h, { onError:roundStorageNotice })) showBanner('对话已保存');
+}
+
+function showHistory() {
+  var h = readRoundHistory();
+  var list = document.getElementById('historyList');
+  if (h.length === 0) {
+    list.innerHTML = '<div class="history-empty">暂无保存的对话</div>';
+  } else {
+    var html = '';
+    h.forEach(function(entry) {
+      html += '<div class="history-item">'
+        + '<div class="hi-info" onclick="loadHistory(\'' + entry.id + '\')">'
+        + '<div class="hi-title">' + escapeHtml(entry.title) + '</div>'
+        + '<div class="hi-meta">' + entry.msgCount + '条 · ' + new Date(entry.time).toLocaleString() + '</div>'
+        + '</div>'
+        + '<div class="hi-actions">'
+        + '<button onclick="event.stopPropagation();deleteHistory(\'' + entry.id + '\')">删除</button>'
+        + '</div>'
+        + '</div>';
+    });
+    list.innerHTML = html;
+  }
+  document.getElementById('historyOverlay').classList.add('show');
+}
+
+function loadHistory(id) {
+  var h = readRoundHistory();
+  var entry = null;
+  for (var i = 0; i < h.length; i++) { if (h[i].id === id) { entry = h[i]; break; } }
+  if (!entry) { showBanner('未找到历史记录'); return; }
+  // Restore masters
+  if (entry.masters) { activeMasters = entry.masters; renderAvatarBar(); }
+  // Restore normalized plain-text conversation only.
+  conversation = window.ChatStorage.normalizeRoundMessages(entry.messages);
+  // Clear chat area
+  var area = document.getElementById('chatArea');
+  area.innerHTML = '';
+  // Re-render all messages
+  conversation.forEach(function(msg) {
+    if (msg.name === 'user') {
+      addMsg(null, msg.text, true);
+    } else if (MASTERS[msg.name]) {
+      addMsg(msg.name, msg.text);
+    }
+  });
+  closeHistory();
+  autosaveConversation();
+  showBanner('已加载历史对话');
+}
+
+function deleteHistory(id) {
+  var h = readRoundHistory();
+  h = h.filter(function(e) { return e.id !== id; });
+  if (!window.ChatStorage.write(HISTORY_KEY, h, { onError:roundStorageNotice })) return;
+  showHistory();
+}
+
+function closeHistory() {
+  document.getElementById('historyOverlay').classList.remove('show');
+}
+
+// ====== Clear chat ======
+function clearChat() {
+  if (conversation.length === 0) return;
+  if (!confirm('确定开始新对话？当前对话将被清除。')) return;
+  conversation = [];
+  clearAutosave();
+  var area = document.getElementById('chatArea');
+  area.innerHTML = '';
+  addMsg(null, '新的圆桌对话开始了。温尼科特依然在座。', true);
+}
+</script>
+<script>
+function refreshLineBtns(){
+  var d=document.getElementById('lineDeepBtn'), g=document.getElementById('lineGptBtn'), gm=document.getElementById('lineGemBtn'), cl=document.getElementById('lineClBtn');
+  if(d){ d.style.background=_apiLine==='deepseek'?'var(--accent)':'none'; d.style.color=_apiLine==='deepseek'?'#fff':'var(--muted)'; }
+  if(g){ g.style.background=_apiLine==='gpt'?'var(--accent)':'none'; g.style.color=_apiLine==='gpt'?'#fff':'var(--muted)'; }
+  if(gm){ gm.style.background=_apiLine==='gemini'?'var(--accent)':'none'; gm.style.color=_apiLine==='gemini'?'#fff':'var(--muted)'; }
+  if(cl){ cl.style.background=_apiLine==='claude'?'var(--accent)':'none'; cl.style.color=_apiLine==='claude'?'#fff':'var(--muted)'; }
+}
+refreshLineBtns();
+</script>
+
+</div>
+<!-- mindmap feature (2026-08-02) -->
+<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+
+
+<script src="https://cdn.jsdelivr.net/npm/markmap-view@0.18.10/dist/browser/index.js"></script>
+<script type="module">
+import { Transformer } from "https://esm.sh/markmap-lib@0.18.10";
+window.markmap = window.markmap || {};
+window.markmap.Transformer = Transformer;
+</script>
+<script src="mindmap.js"></script>
+<script>
+MindmapFeature.init({
+  pageKey: 'roundtable',
+  getConversation: function () { return conversation || []; },
+  getActiveConfig: getActiveConfig,
+  minMessages: 10,
+  buttonEl: document.getElementById('mmBtn')
+});
+</script>
+  <script src="site-shell.js?v=20260803"></script>
+
+<script>
+/* 2026-08-04 语音朗读：点 🔊 播放 AI 回复（Edge-TTS，blob 播放不占存储） */
+(function () {
+  if (window.__ttsInited) return;
+  window.__ttsInited = true;
+  function ttsPlay(text, role) {
+    if (!text || !text.trim()) return;
+    var rid = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : ('xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+      var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8); return v.toString(16);
+    }));
+    fetch('https://xinjingchat.online/tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ replyId: rid, text: String(text).slice(0, 1000), role: role || '' })
+    }).then(function (r) {
+      if (!r.ok) throw new Error('tts ' + r.status);
+      return r.blob();
+    }).then(function (blob) {
+      var url = URL.createObjectURL(blob);
+      var a = new Audio(url);
+      a.onended = function () { URL.revokeObjectURL(url); };
+      a.onerror = function () { URL.revokeObjectURL(url); };
+      a.play().catch(function () { URL.revokeObjectURL(url); });
+    }).catch(function (e) { /* 静默失败，文本仍在 */ });
+  }
+  window.ttsPlay = ttsPlay;
+  // 事件委托：点击 .tts-btn 播放（从 data-text/data-role 取内容）
+  document.addEventListener('click', function (ev) {
+    var btn = ev.target.closest ? ev.target.closest('.tts-btn') : null;
+    if (!btn) return;
+    ev.stopPropagation();
+    var t = btn.getAttribute('data-text') || '';
+    var role = btn.getAttribute('data-role') || '';
+    ttsPlay(t, role);
+  });
+  // 自动给 AI 回复 bubble 加 🔊 按钮。流式回复会持续替换 innerHTML，
+  // 因此同时监听文本变化，并在按钮被替换后重新补回。
+  function bubbleText(bubble) {
+    var copy = bubble.cloneNode ? bubble.cloneNode(true) : null;
+    if (copy && copy.querySelectorAll) {
+      var buttons = copy.querySelectorAll('.tts-btn');
+      for (var i = 0; i < buttons.length; i++) buttons[i].remove();
+      return (copy.textContent || '').trim();
+    }
+    return (bubble.textContent || '').trim();
+  }
+  function addTtsBtn(bubble) {
+    if (!bubble) return;
+    var txt = bubbleText(bubble);
+    if (!txt) return;
+    var btn = bubble.querySelector ? bubble.querySelector('.tts-btn') : null;
+    if (!btn) {
+      btn = document.createElement('button');
+      btn.className = 'tts-btn';
+      btn.style.cssText = 'margin:6px 4px 2px;padding:3px 10px;border-radius:8px;border:1px solid #d8d2ca;background:#fff;color:#8b8178;font-size:11px;cursor:pointer;';
+      btn.textContent = '🔊';
+      btn.title = '朗读回复';
+      bubble.appendChild(btn);
+    }
+    btn.setAttribute('data-text', txt.slice(0, 1000));
+    var speaker = bubble.closest ? bubble.closest('.msg.master') : null;
+    var speakerRole = speaker ? speaker.getAttribute('data-speaker-id') : '';
+    btn.setAttribute('data-role', speakerRole || (window.currentMasterKey || window.M && M && M.key) || '');
+    bubble.setAttribute('data-tts-done', '1');
+  }
+  function bubbleFromNode(node) {
+    var el = node && node.nodeType === 1 ? node : (node && node.parentElement);
+    return el && el.closest ? el.closest('.msg.ai .bubble, .ai .bubble, [class*="msg"][class*="ai"] .bubble, .msg.master .msg-text') : null;
+  }
+  window.__ensureTtsButton = addTtsBtn;
+  function scanNewBubbles(root) {
+    if (!root) return;
+    var els = root.querySelectorAll ? root.querySelectorAll('.msg.ai .bubble, .ai .bubble, [class*="msg"][class*="ai"] .bubble, .msg.master .msg-text') : [];
+    for (var i = 0; i < els.length; i++) addTtsBtn(els[i]);
+  }
+  scanNewBubbles(document);
+  if (window.MutationObserver) {
+    var mo = new MutationObserver(function (muts) {
+      for (var i = 0; i < muts.length; i++) {
+        var changedBubble = bubbleFromNode(muts[i].target);
+        if (changedBubble) addTtsBtn(changedBubble);
+        for (var j = 0; j < muts[i].addedNodes.length; j++) {
+          var n = muts[i].addedNodes[j];
+          if (n.nodeType === 1) {
+            if (n.classList && n.classList.contains('bubble')) addTtsBtn(n);
+            else scanNewBubbles(n);
+          }
+        }
+      }
+    });
+    mo.observe(document.body, { childList: true, subtree: true, characterData: true });
+  }
+})();
+</script>
+
+</body>
+</html>
