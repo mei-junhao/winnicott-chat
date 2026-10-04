@@ -365,7 +365,7 @@
       </div>
       <div style="display:flex;gap:6px;margin-bottom:6px;">
         <button id="lineDeepBtn" onclick="setApiLine('deepseek')" style="flex:1;padding:4px 0;border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer;background:var(--accent);color:#fff;font-family:inherit;">DeepSeek Pro</button>
-        <button id="lineGptBtn" onclick="setApiLine('gpt')" style="flex:1;padding:4px 0;border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer;background:none;color:var(--muted);font-family:inherit;">GPT-5.6</button><button id="lineGemBtn" onclick="setApiLine('gemini')" style="flex:1;padding:4px 0;border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer;background:none;color:var(--muted);font-family:inherit;">Gemini</button><button id="lineClBtn" onclick="setApiLine('claude')" style="flex:1;padding:4px 0;border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer;background:none;color:var(--muted);font-family:inherit;">Claude</button>
+        <button id="lineGptBtn" onclick="setApiLine('gpt')" style="flex:1;padding:4px 0;border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer;background:none;color:var(--muted);font-family:inherit;">GPT-6.1 Sol</button><button id="lineGemBtn" onclick="setApiLine('gemini')" style="flex:1;padding:4px 0;border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer;background:none;color:var(--muted);font-family:inherit;">Gemini</button><button id="lineClBtn" onclick="setApiLine('claude')" style="flex:1;padding:4px 0;border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer;background:none;color:var(--muted);font-family:inherit;">Claude</button>
       </div>
       <div id="apiHealthRow" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
     </div>
@@ -802,7 +802,7 @@ function setApiLine(line) {
   if (cl) { cl.style.background = line === 'claude' ? 'var(--accent)' : 'none'; cl.style.color = line === 'claude' ? '#fff' : 'var(--muted)'; }
   checkAllAPIs();
 }
-function getActiveConfig() { if(apiMode==='custom'&&customApi&&customKey) return {api:customApi,key:customKey,model:customModel,name:'自定义'}; return {api:API_PROXY,key:'',model:(_apiLine==='gpt'?'gpt-5.6':(_apiLine==='gemini'?'gemini-3.7-flash':(_apiLine==='claude'?'claude-sonnet-5':'deepseek-v4-pro'))),name:(_apiLine==='gpt'?'GPT-5.6':(_apiLine==='gemini'?'Gemini':(_apiLine==='claude'?'Claude':'DeepSeek Pro')))}; }
+function getActiveConfig() { if(apiMode==='custom'&&customApi&&customKey) return {api:customApi,key:customKey,model:customModel,name:'自定义'}; return {api:API_PROXY,key:'',model:(_apiLine==='gpt'?'gpt-6.1-sol':(_apiLine==='gemini'?'gemini-3.7-flash':(_apiLine==='claude'?'claude-sonnet-5':'deepseek-v4-pro'))),name:(_apiLine==='gpt'?'GPT-6.1 Sol':(_apiLine==='gemini'?'Gemini':(_apiLine==='claude'?'Claude':'DeepSeek Pro')))}; }
 
 function updateTemp(val,persist) {
   var old=talkTemp; talkTemp=parseInt(val);
@@ -817,7 +817,7 @@ function updateLength(val) { var l=['简洁','适中','详细']; var t=[1024,0,4
 
 async function checkAllAPIs() {
   var row=document.getElementById('apiHealthRow');
-  row.innerHTML='<span style="background:#eee;color:#999;padding:2px 8px;border-radius:8px;font-size:10px;">DeepSeek Pro …</span><span style="background:#eee;color:#999;padding:2px 8px;border-radius:8px;font-size:10px;">GPT-5.6 …</span>';
+  row.innerHTML='<span style="background:#eee;color:#999;padding:2px 8px;border-radius:8px;font-size:10px;">DeepSeek Pro …</span><span style="background:#eee;color:#999;padding:2px 8px;border-radius:8px;font-size:10px;">GPT-6.1 Sol …</span>';
   var ac=new AbortController(); var tm=setTimeout(function(){ac.abort();},10000);
   try{
     var b1=JSON.stringify({model:'deepseek-v4-pro',messages:[{role:'user',content:'hi'}],max_tokens:1});
@@ -832,15 +832,15 @@ async function checkAllAPIs() {
   }
   var ac2=new AbortController(); var tm2=setTimeout(function(){ac2.abort();},15000);
   try{
-    var b2=JSON.stringify({model:'gpt-5.6',messages:[{role:'user',content:'hi'}],max_tokens:1});
+    var b2=JSON.stringify({model:'gpt-6.1-sol',messages:[{role:'user',content:'hi'}],max_tokens:1});
     var h2={'Content-Type':'application/json'};
     var r2=await fetch(API_PROXY,{method:'POST',headers:h2,body:b2,signal:ac2.signal});
     clearTimeout(tm2);
     var color2=(r2.ok||r2.status<500)?'#4a9':'#c60';
-    updateBadge('GPT-5.6',color2,r2.ok?'✓':'⚡ '+r2.status);
+    updateBadge('GPT-6.1 Sol',color2,r2.ok?'✓':'⚡ '+r2.status);
   }catch(e){
     clearTimeout(tm2);
-    updateBadge('GPT-5.6','#c33','✗ 离线');
+    updateBadge('GPT-6.1 Sol','#c33','✗ 离线');
   }
 }
 function updateBadge(name,color,label) {

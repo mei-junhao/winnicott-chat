@@ -593,7 +593,7 @@
       </div>
       <div style="display:flex;gap:6px;margin-bottom:6px;">
         <button id="lineDeepBtn" onclick="setApiLine('deepseek')" style="flex:1;padding:4px 0;border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer;background:var(--accent);color:#fff;font-family:inherit;">DeepSeek Pro</button>
-        <button id="lineGptBtn" onclick="setApiLine('gpt')" style="flex:1;padding:4px 0;border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer;background:none;color:var(--muted);font-family:inherit;">GPT-5.6</button>
+        <button id="lineGptBtn" onclick="setApiLine('gpt')" style="flex:1;padding:4px 0;border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer;background:none;color:var(--muted);font-family:inherit;">GPT-6.1 Sol</button>
       </div>
       <div id="apiHealthRow" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
     </div>
@@ -954,7 +954,7 @@ function getActiveConfig() {
     var t = TIERS[Math.min(_tierLevel, TIERS.length - 1)];
     return { api: t.api, key: t.key, model: t.model };
   }
-  return { api: 'https://xinjingchat.online', key: '', model: (_apiLine === 'gpt' ? 'gpt-5.6' : 'deepseek-v4-pro') };
+  return { api: 'https://xinjingchat.online', key: '', model: (_apiLine === 'gpt' ? 'gpt-6.1-sol' : 'deepseek-v4-pro') };
 }
 var _msgIdCounter = 0;
 var _msgToConvIdx = {};
@@ -1346,7 +1346,7 @@ function closeSharePreview() {
 // API Health Check
 async function checkAllAPIs() {
   var row = document.getElementById('apiHealthRow');
-  row.innerHTML = '<span style="background:#eee;color:#999;padding:2px 8px;border-radius:8px;font-size:10px;">DeepSeek Pro …</span><span style="background:#eee;color:#999;padding:2px 8px;border-radius:8px;font-size:10px;">GPT-5.6 …</span>' + TIERS.map(function(t){ return '<span style="background:#eee;color:#999;padding:2px 8px;border-radius:8px;font-size:10px;">' + t.name + ' …</span>'; }).join('');
+  row.innerHTML = '<span style="background:#eee;color:#999;padding:2px 8px;border-radius:8px;font-size:10px;">DeepSeek Pro …</span><span style="background:#eee;color:#999;padding:2px 8px;border-radius:8px;font-size:10px;">GPT-6.1 Sol …</span>' + TIERS.map(function(t){ return '<span style="background:#eee;color:#999;padding:2px 8px;border-radius:8px;font-size:10px;">' + t.name + ' …</span>'; }).join('');
   var proxy = 'https://xinjingchat.online';
   var ac=new AbortController(); var tm=setTimeout(function(){ac.abort();},10000);
   try{
@@ -1356,10 +1356,10 @@ async function checkAllAPIs() {
   }catch(e){ clearTimeout(tm); updateTierBadge('DeepSeek Pro','#c33','✗ 离线'); }
   var ac2=new AbortController(); var tm2=setTimeout(function(){ac2.abort();},15000);
   try{
-    var b2=JSON.stringify({model:'gpt-5.6',messages:[{role:'user',content:'hi'}],max_tokens:1});
+    var b2=JSON.stringify({model:'gpt-6.1-sol',messages:[{role:'user',content:'hi'}],max_tokens:1});
     var r2=await fetch(proxy,{method:'POST',headers:h2,body:b2,signal:ac2.signal});
-    clearTimeout(tm2); updateTierBadge('GPT-5.6',r2.ok?'#4a9':'#c60',r2.ok?'✓':'⚡ '+r2.status);
-  }catch(e){ clearTimeout(tm2); updateTierBadge('GPT-5.6','#c33','✗ 离线'); }
+    clearTimeout(tm2); updateTierBadge('GPT-6.1 Sol',r2.ok?'#4a9':'#c60',r2.ok?'✓':'⚡ '+r2.status);
+  }catch(e){ clearTimeout(tm2); updateTierBadge('GPT-6.1 Sol','#c33','✗ 离线'); }
   TIERS.forEach(function(tier, i) {
     setTimeout(function() {
       var api = tier.api.replace(/\/v1\/chat\/completions.*/, '/v1/chat/completions');
@@ -1932,7 +1932,7 @@ refreshLineBtns();
   <div style="background:#fff;border-radius:14px;max-width:540px;width:100%;padding:20px 22px;box-shadow:0 8px 40px rgba(0,0,0,.3);max-height:86vh;overflow-y:auto;color:#333;font-size:13px;line-height:1.75;">
     <h3 style="margin:0 0 10px;font-size:17px;color:#4a3f35;">🔬 模型升级公告</h3>
     <p style="margin:0 0 8px;">根据对三款模型的深入评测（deepseek-v4-flash、deepseek-v4-pro、gpt-5.6），我们决定<strong>不再使用 flash 模型</strong>，统一使用 <strong>pro</strong> 与 <strong>gpt</strong> 模型，回复成本大幅上升。如果你感觉回复质量有所提升，欢迎多多打赏支持 💖</p>
-    <p style="margin:0 0 10px;">现在可以在 <strong>设置 → API 线路状态</strong> 中切换模型线路（DeepSeek Pro / GPT-5.6）。</p>
+    <p style="margin:0 0 10px;">现在可以在 <strong>设置 → API 线路状态</strong> 中切换模型线路（DeepSeek Pro / GPT-6.1 Sol）。</p>
     <table style="width:100%;border-collapse:collapse;font-size:12px;text-align:center;">
       <thead><tr style="background:#f4efe8;"><th style="padding:7px 4px;">模型</th><th>临床敏锐</th><th>理论一致</th><th>风格贴合</th><th>可操作</th><th>材料忠实</th><th>综合分</th></tr></thead>
       <tbody>

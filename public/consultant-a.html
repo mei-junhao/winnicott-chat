@@ -388,7 +388,7 @@
       </div>
       <div style="display:flex;gap:6px;margin-bottom:6px;">
         <button id="lineDeepBtn" onclick="setApiLine('deepseek')" style="flex:1;padding:4px 0;border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer;background:var(--accent);color:#fff;font-family:inherit;">DeepSeek Pro</button>
-        <button id="lineGptBtn" onclick="setApiLine('gpt')" style="flex:1;padding:4px 0;border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer;background:none;color:var(--muted);font-family:inherit;">GPT-5.6</button><button id="lineGemBtn" onclick="setApiLine('gemini')" style="flex:1;padding:4px 0;border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer;background:none;color:var(--muted);font-family:inherit;">Gemini</button><button id="lineClBtn" onclick="setApiLine('claude')" style="flex:1;padding:4px 0;border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer;background:none;color:var(--muted);font-family:inherit;">Claude</button>
+        <button id="lineGptBtn" onclick="setApiLine('gpt')" style="flex:1;padding:4px 0;border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer;background:none;color:var(--muted);font-family:inherit;">GPT-6.1 Sol</button><button id="lineGemBtn" onclick="setApiLine('gemini')" style="flex:1;padding:4px 0;border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer;background:none;color:var(--muted);font-family:inherit;">Gemini</button><button id="lineClBtn" onclick="setApiLine('claude')" style="flex:1;padding:4px 0;border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer;background:none;color:var(--muted);font-family:inherit;">Claude</button>
       </div>
       <div id="apiHealthRow" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
     </div>
@@ -790,7 +790,7 @@ function setApiLine(line) {
   checkAllAPIs();
 }
 // 2026-08-02 security: PROXY_TOKEN/proxySign removed (proxy uses Referer whitelist + per-IP rate limit)
-function getActiveConfig() { if(apiMode==='custom'&&customApi&&customKey) return {api:customApi,key:customKey,model:customModel}; if(_tierLevel>0){ var t=TIERS[Math.min(_tierLevel,TIERS.length-1)]; return {api:t.api,key:t.key,model:t.model}; } return {api:'https://xinjingchat.online',key:'',model:(_apiLine==='gpt'?'gpt-5.6':(_apiLine==='gemini'?'gemini-3.7-flash':(_apiLine==='claude'?'claude-sonnet-5':'deepseek-v4-pro')))}; }
+function getActiveConfig() { if(apiMode==='custom'&&customApi&&customKey) return {api:customApi,key:customKey,model:customModel}; if(_tierLevel>0){ var t=TIERS[Math.min(_tierLevel,TIERS.length-1)]; return {api:t.api,key:t.key,model:t.model}; } return {api:'https://xinjingchat.online',key:'',model:(_apiLine==='gpt'?'gpt-6.1-sol':(_apiLine==='gemini'?'gemini-3.7-flash':(_apiLine==='claude'?'claude-sonnet-5':'deepseek-v4-pro')))}; }
 
 function updateTemp(val) {
   var old=talkTemp; talkTemp=parseInt(val);
@@ -803,7 +803,7 @@ function updateTemp(val) {
 function updateLength(val) { var l=['简洁','适中','详细']; var t=[1024,0,4096]; _maxTokens=t[parseInt(val)]; localStorage.setItem('mc_len_'+masterKey,_maxTokens); document.getElementById('lenLabel').textContent=l[parseInt(val)]; document.getElementById('lenSlider').style.background='linear-gradient(to right, var(--accent) '+(parseInt(val)/2*100)+'%, var(--border) '+(parseInt(val)/2*100)+'%)'; }
 
 async function checkAllAPIs() {
-  var row=document.getElementById('apiHealthRow'); row.innerHTML='<span style="background:#eee;color:#999;padding:2px 8px;border-radius:8px;font-size:10px;">DeepSeek Pro …</span><span style="background:#eee;color:#999;padding:2px 8px;border-radius:8px;font-size:10px;">GPT-5.6 …</span>'+TIERS.map(function(t){return '<span style="background:#eee;color:#999;padding:2px 8px;border-radius:8px;font-size:10px;">'+t.name+' …</span>';}).join('');
+  var row=document.getElementById('apiHealthRow'); row.innerHTML='<span style="background:#eee;color:#999;padding:2px 8px;border-radius:8px;font-size:10px;">DeepSeek Pro …</span><span style="background:#eee;color:#999;padding:2px 8px;border-radius:8px;font-size:10px;">GPT-6.1 Sol …</span>'+TIERS.map(function(t){return '<span style="background:#eee;color:#999;padding:2px 8px;border-radius:8px;font-size:10px;">'+t.name+' …</span>';}).join('');
   var acp=new AbortController(); var tmp=setTimeout(function(){acp.abort();},10000);
   try{
     var b1=JSON.stringify({model:'deepseek-v4-pro',messages:[{role:'user',content:'hi'}],max_tokens:1});
@@ -812,10 +812,10 @@ async function checkAllAPIs() {
   }catch(e){ clearTimeout(tmp); updateBadge('DeepSeek Pro','#c33','✗ 离线'); }
   var acg=new AbortController(); var tmg=setTimeout(function(){acg.abort();},15000);
   try{
-    var b2=JSON.stringify({model:'gpt-5.6',messages:[{role:'user',content:'hi'}],max_tokens:1});
+    var b2=JSON.stringify({model:'gpt-6.1-sol',messages:[{role:'user',content:'hi'}],max_tokens:1});
     var r2=await fetch('https://xinjingchat.online',{method:'POST',headers:h2,body:b2,signal:acg.signal});
-    clearTimeout(tmg); updateBadge('GPT-5.6',r2.ok?'#4a9':'#c60',r2.ok?'✓':'⚡ '+r2.status);
-  }catch(e){ clearTimeout(tmg); updateBadge('GPT-5.6','#c33','✗ 离线'); }
+    clearTimeout(tmg); updateBadge('GPT-6.1 Sol',r2.ok?'#4a9':'#c60',r2.ok?'✓':'⚡ '+r2.status);
+  }catch(e){ clearTimeout(tmg); updateBadge('GPT-6.1 Sol','#c33','✗ 离线'); }
   TIERS.forEach(function(t,i){ setTimeout(function(){
     var start=Date.now();
     // AbortController for timeout

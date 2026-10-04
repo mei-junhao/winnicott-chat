@@ -419,11 +419,11 @@
       </div>
       <div class="line-toggle" style="display:flex;gap:6px;margin:8px 0 2px;">
         <button class="default-btn active" id="lineDeepBtn" onclick="setApiLine('deepseek')">DeepSeek Pro</button>
-        <button class="custom-btn" id="lineGptBtn" onclick="setApiLine('gpt')">GPT-5.6</button>
+        <button class="custom-btn" id="lineGptBtn" onclick="setApiLine('gpt')">GPT-6.1 Sol</button>
         <button class="custom-btn" id="lineGemBtn" onclick="setApiLine('gemini')">Gemini</button>
         <button class="custom-btn" id="lineClBtn" onclick="setApiLine('claude')">Claude</button>
       </div>
-      <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">API 线路状态：默认 API 模式下生效，点击切换后端模型（deepseek → v4-pro 关思考 / gpt → gpt-5.6 关思考）</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">API 线路状态：默认 API 模式下生效，点击切换后端模型（deepseek → v4-pro 关思考 / gpt → gpt-6.1-sol 关思考）</div>
       <div id="customFields" style="display:none;">
         <div class="settings-row"><label>API 地址</label><input id="customApi" placeholder="https://api.openai.com/v1/chat/completions"></div>
         <div class="settings-row"><label>API Key</label><input id="customKey" placeholder="sk-..."></div>
@@ -746,12 +746,12 @@ loadSupervisorPrompt();
 
 // ==================== API ====================
 // 默认走 VPS 代理（xinjingchat.online），前端不带任何 API key；
-// 后端按 model 路由：deepseek 线路 → deepseek-v4-pro（关思考，opencode）；gpt 线路 → gpt-5.6（关思考，skyapi）。
+// 后端按 model 路由：deepseek 线路 → deepseek-v4-pro（关思考，opencode）；gpt 线路 → gpt-6.1-sol（关思考）。
 // 若代理不可用，可在 ⚙️ 设置中切到「自用 API」填入自己的 key（仅存本机 localStorage）。
 // 2026-08-02 security: PROXY_TOKEN/proxySign removed (proxy uses Referer whitelist + per-IP rate limit)
 var TIERS = [
   { api:'https://xinjingchat.online', key:'', model:'deepseek-v4-pro', name: 'DeepSeek Pro' },
-  { api:'https://xinjingchat.online', key:'', model:'gpt-5.6', name: 'GPT-5.6' }
+  { api:'https://xinjingchat.online', key:'', model:'gpt-6.1-sol', name: 'GPT-6.1 Sol' }
 ];
 // 2026-08-02: 默认 gpt（chat_api_line_v2），失败自动回退 deepseek（TIERS 递增兜底）
 var apiTier = 0;
@@ -813,7 +813,7 @@ function fillPreset(api, model) {
 function getActiveConfig() {
   if (apiMode === 'custom' && customApi && customKey) return { api: customApi, key: customKey, model: customModel };
   var t = TIERS[apiTier] || TIERS[0];
-  return Object.assign({}, t, { model: (_apiLine === 'gpt' ? 'gpt-5.6' : (_apiLine === 'gemini' ? 'gemini-3.7-flash' : (_apiLine === 'claude' ? 'claude-sonnet-5' : 'deepseek-v4-pro'))), name: (_apiLine === 'gpt' ? 'GPT-5.6' : (_apiLine === 'gemini' ? 'Gemini' : (_apiLine === 'claude' ? 'Claude' : 'DeepSeek Pro'))) });
+  return Object.assign({}, t, { model: (_apiLine === 'gpt' ? 'gpt-6.1-sol' : (_apiLine === 'gemini' ? 'gemini-3.7-flash' : (_apiLine === 'claude' ? 'claude-sonnet-5' : 'deepseek-v4-pro'))), name: (_apiLine === 'gpt' ? 'GPT-6.1 Sol' : (_apiLine === 'gemini' ? 'Gemini' : (_apiLine === 'claude' ? 'Claude' : 'DeepSeek Pro'))) });
 }
 // Init restore
 restoreForm();
@@ -880,7 +880,7 @@ async function generateImpression() {
   var _rateLimited = false;
 
   while (!gotContent && (apiMode === 'custom' ? apiTier < 1 : apiTier < TIERS.length)) {
-    var tier = apiMode === 'custom' ? getActiveConfig() : (Object.assign({}, TIERS[apiTier], { model: (_apiLine === 'gpt' ? 'gpt-5.6' : (_apiLine === 'gemini' ? 'gemini-3.7-flash' : (_apiLine === 'claude' ? 'claude-sonnet-5' : 'deepseek-v4-pro'))), name: (_apiLine === 'gpt' ? 'GPT-5.6' : (_apiLine === 'gemini' ? 'Gemini' : (_apiLine === 'claude' ? 'Claude' : 'DeepSeek Pro'))) }));
+    var tier = apiMode === 'custom' ? getActiveConfig() : (Object.assign({}, TIERS[apiTier], { model: (_apiLine === 'gpt' ? 'gpt-6.1-sol' : (_apiLine === 'gemini' ? 'gemini-3.7-flash' : (_apiLine === 'claude' ? 'claude-sonnet-5' : 'deepseek-v4-pro'))), name: (_apiLine === 'gpt' ? 'GPT-6.1 Sol' : (_apiLine === 'gemini' ? 'Gemini' : (_apiLine === 'claude' ? 'Claude' : 'DeepSeek Pro'))) }));
 
     if (apiTier > 0 && finalReply) {
       var switchNote = '\n\n<span style="color:var(--muted);font-size:11px;">&#x26A0;&#xFE0F; 线路 ' + apiTier + ' 中断，切换至 ' + tier.name + '……</span>\n';
@@ -1056,7 +1056,7 @@ async function sendChat() {
   var _rateLimited = false;
 
   while (!gotContent && (apiMode === 'custom' ? apiTier < 1 : apiTier < TIERS.length)) {
-    var tier = apiMode === 'custom' ? getActiveConfig() : (Object.assign({}, TIERS[apiTier], { model: (_apiLine === 'gpt' ? 'gpt-5.6' : (_apiLine === 'gemini' ? 'gemini-3.7-flash' : (_apiLine === 'claude' ? 'claude-sonnet-5' : 'deepseek-v4-pro'))), name: (_apiLine === 'gpt' ? 'GPT-5.6' : (_apiLine === 'gemini' ? 'Gemini' : (_apiLine === 'claude' ? 'Claude' : 'DeepSeek Pro'))) }));
+    var tier = apiMode === 'custom' ? getActiveConfig() : (Object.assign({}, TIERS[apiTier], { model: (_apiLine === 'gpt' ? 'gpt-6.1-sol' : (_apiLine === 'gemini' ? 'gemini-3.7-flash' : (_apiLine === 'claude' ? 'claude-sonnet-5' : 'deepseek-v4-pro'))), name: (_apiLine === 'gpt' ? 'GPT-6.1 Sol' : (_apiLine === 'gemini' ? 'Gemini' : (_apiLine === 'claude' ? 'Claude' : 'DeepSeek Pro'))) }));
 
     if (apiTier > 0 && msgDiv && finalReply) {
       msgDiv.innerHTML = escapeHtml(finalReply).replace(/\n/g,'<br>') + '<div style="color:var(--muted);font-size:11px;margin-top:6px">&#x26A0;&#xFE0F; 切换至 ' + tier.name + '……</div>';
