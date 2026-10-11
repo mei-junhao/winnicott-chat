@@ -14,6 +14,7 @@ ALLOWED_EXACT = {
     'about-winnicott-chat.html', 'about-winnicott-chat-video.html',
     'xinjing-landing.html', 'i18n.js', 'proxy.js', 'mindmap.js', 'safety.js',
     'prompt-contracts.js', 'adaptive-dialogue.js',
+    'storage.js', 'site-shell.js', 'site-theme.css',
     'lacan-avatar.jpg', 'reward-qr.jpg', 'assets/xinjing-workbench.png',
     'prompts/supervisor.txt'
 }
