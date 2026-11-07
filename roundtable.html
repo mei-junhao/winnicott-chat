@@ -473,11 +473,17 @@ var MASTERS = {
     kb:'horney-perspective.md', accent:'#8A5743', light:'#F3E8DF',
     font:'"Georgia","Noto Serif SC",serif',
     hint:'她会追问：你的解决办法在保护你免受什么，又让你失去了什么',
-    intro:'我是卡伦·霍妮。我们不急着贴标签，先看看你在什么情境里感到不安全，又怎样用靠近、对抗或远离来保护自己。一个解释只有得到你的真实感受和后续经验支持，才值得保留。' }
+    intro:'我是卡伦·霍妮。我们不急着贴标签，先看看你在什么情境里感到不安全，又怎样用靠近、对抗或远离来保护自己。一个解释只有得到你的真实感受和后续经验支持，才值得保留。' },
+  se: { name:'SE 躯体体验', initial:'SE', icon:'🌱',
+    avatar:'', sub:'躯体体验取向 · 身体追踪 · 滴定 · 摆荡',
+    kb:'se-perspective.md', accent:'#3F7263', light:'#E8F0EC',
+    font:'"Georgia","Noto Serif SC",serif',
+    hint:'她不太追问故事，只问：你说到这里的时候，身体哪里最有感觉',
+    intro:'我是做躯体体验的咨询师。我不要求你讲完整的故事——故事只是门口。我更想知道：你说这句话的时候，身体哪个地方动了一下，那个感觉是在变大还是在变小。我们慢一点，只走一小步。' }
 };
 
 // Masters not suitable per user: Lacan, Bion
-var AVAILABLE_KEYS = ['freud','klein','jung','rogers','beck','yalom','adler','susan_johnson','horney'];
+var AVAILABLE_KEYS = ['freud','klein','jung','rogers','beck','yalom','adler','susan_johnson','horney','se'];
 var PERMANENT_KEY = 'winnicott';
 var allMasterKeys = [PERMANENT_KEY].concat(AVAILABLE_KEYS);
 
@@ -493,7 +499,7 @@ var fontSize = 100;  // percentage
 var respondRounds = 2;  // 1 = no serial rounds, 2 = with serial rounds
 
 // ====== Serial order: Winnicott always last ======
-var SERIAL_ORDER = ['freud','jung','klein','rogers','beck','yalom','adler','susan_johnson','horney'];
+var SERIAL_ORDER = ['freud','jung','klein','rogers','beck','yalom','adler','susan_johnson','horney','se'];
 
 function getSerialOrder(repliedKeys) {
   var order = [];

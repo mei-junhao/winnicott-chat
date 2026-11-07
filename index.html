@@ -284,6 +284,15 @@
     <span class="arrow" data-i18n="idx_go">前往 →</span>
   </div>
 
+  <div class="card" onclick="openModeOverlay('se')" data-master="se">
+    <div class="circle" style="background:#E8F0EC;color:#3F7263;">SE</div>
+    <div class="info">
+      <div class="name" data-i18n="idx_m_se_name">SE 躯体体验</div>
+      <div class="desc" data-i18n="idx_m_se_desc">躯体体验取向 · 身体追踪 · 滴定 · 摆荡 · 创伤与神经系统</div>
+    </div>
+    <span class="arrow" data-i18n="idx_go">前往 →</span>
+  </div>
+
   <div class="msg-section">
     <p data-i18n="idx_suggest_prompt">你还想与哪位大师对话？写下名字发送给我们</p>
     <div class="msg-row">
@@ -452,6 +461,15 @@ var MODE_OPTIONS = {
       {temp:20, title:'听见真实感情', sub:'从焦虑与保护背后，辨认真正的需要'},
       {temp:60, title:'关系冲突与防御', sub:'分析趋向、对抗与远离之间的安全循环'},
       {temp:90, title:'霍妮理论研讨', sub:'文化、神经症结构、理想化自我与成长'}
+    ]
+  },
+  se: {
+    name: 'SE 躯体体验',
+    url: 'master-chat.html?master=se',
+    modes: [
+      {temp:20, title:'先落地再说', sub:'慢下来，先感受身体，一小步一小步走'},
+      {temp:60, title:'追踪与摆荡', sub:'从身体感觉进入，在紧与松之间来回'},
+      {temp:90, title:'SE 理论与督导', sub:'ROSE、SIBAM、TRIPODS 与临床判断'}
     ]
   }
 };

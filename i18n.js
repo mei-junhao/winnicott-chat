@@ -72,6 +72,8 @@
     idx_m_sj_desc: { zh: 'EFT创始人 · 情感聚焦 · 依恋联结 · 爱的修复', en: 'Founder of EFT · Emotion-focused · Attachment bonds · Repairing love', pt: 'Fundadora da EFT · Focada nas emoções · Vínculos de apego · Reparação do amor' },
     idx_m_horney_name: { zh: '卡伦·霍妮', en: 'Karen Horney', pt: 'Karen Horney' },
     idx_m_horney_desc: { zh: '文化精神分析 · 基本焦虑 · 人际防御 · 理想化自我 · 真实成长', en: 'Cultural psychoanalysis · Basic anxiety · Interpersonal defenses · Idealized self · Authentic growth', pt: 'Psicanálise cultural · Ansiedade básica · Defesas interpessoais · Self idealizado · Crescimento autêntico' },
+    idx_m_se_name: { zh: 'SE 躯体体验', en: 'Somatic Experiencing', pt: 'Experiência Somática' },
+    idx_m_se_desc: { zh: '躯体体验取向 · 身体追踪 · 滴定 · 摆荡 · 创伤与神经系统', en: 'Somatic Experiencing · Body tracking · Titration · Pendulation · Trauma and the nervous system', pt: 'Experiência Somática · Rastreamento corporal · Titulação · Pendulação · Trauma e sistema nervoso' },
 
     idx_suggest_prompt: { zh: '你还想与哪位大师对话？写下名字发送给我们', en: 'Which master would you like to talk with next? Write a name and send it to us', pt: 'Com que mestre gostaria de conversar a seguir? Escreva um nome e envie-nos' },
     idx_suggest_ph: { zh: '输入大师姓名', en: 'Enter a master’s name', pt: 'Digite o nome de um mestre' },
